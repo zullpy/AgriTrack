@@ -17,14 +17,39 @@ jobs:
         port: ${{ secrets.HOSTINGER_PORT }}
         script: |
           cd ${{ secrets.HOSTINGER_PATH }}
+
           # Cek apakah folder sudah git repository
           if [ ! -d .git ]; then
             git init
             git remote add origin https://github.com/zullpy/agritrack.git
           fi
+
           git pull origin main
+
+          # Install PHP dependencies
           composer install --no-dev --optimize-autoloader
+
+          # Install & build JS/CSS assets
+          npm ci --prefer-offline
+          npm run build
+
+          # Pastikan .env ada di server (file ini harus sudah ada secara manual)
+          if [ ! -f .env ]; then
+            echo "ERROR: .env file tidak ditemukan di server!"
+            exit 1
+          fi
+
+          # Fix permissions
+          chmod -R 775 storage bootstrap/cache
+          chown -R $USER:www-data storage bootstrap/cache 2>/dev/null || true
+
+          # Storage symlink
+          php artisan storage:link --force 2>/dev/null || true
+
+          # Jalankan migrasi
           php artisan migrate --force
+
+          # Clear & rebuild cache
           php artisan optimize:clear
           php artisan config:cache
           php artisan route:cache
