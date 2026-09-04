@@ -4,6 +4,40 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-primary: #2FB344;
+    --color-primary-dark: #1F7A3D;
+    --color-primary-light: #D6F5E3;
+
+    --color-accent-purple: #8B7CF6;
+    --color-accent-yellow: #F5A623;
+    --color-accent-red: #E4574C;
+
+    --color-surface: #FFFFFF;
+    --color-page: #F5F7F6;
+    --color-text: #1E2A24;
+    --color-text-secondary: #6B7B76;
+    --color-text-muted: #8A9A94;
+
+    --radius-card: 16px;
+    --radius-sm: 12px;
+    --radius-pill: 9999px;
 }
+
+/* Smooth slide-up entrance */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slideUp 0.3s ease both; }
+
+/* Page-level scroll */
+html { scroll-behavior: smooth; }
+
+/* Thin scrollbar */
+::-webkit-scrollbar          { width: 6px; height: 6px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: #d1dbd7; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #adbdb6; }
