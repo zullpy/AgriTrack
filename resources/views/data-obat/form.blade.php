@@ -862,6 +862,7 @@ function bindRupiahInput(inputEl) {
 
 // Array untuk menyimpan file yang baru dipilih & dikompres
 let selectedCompressedFiles = [];
+window.selectedCompressedFiles = selectedCompressedFiles;
 
 function updatePhotoCountBadge() {
     const badge = document.getElementById('foto-count-badge');

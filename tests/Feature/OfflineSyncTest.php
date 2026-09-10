@@ -116,4 +116,51 @@ class OfflineSyncTest extends TestCase
             'id' => $medicine->id,
         ]);
     }
+
+    public function test_can_sync_offline_created_medicine_with_photo(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $fakeBase64 = 'data:image/jpeg;base64,' . base64_encode('fake-image-content');
+
+        $payload = [
+            'mutations' => [
+                [
+                    'action' => 'create',
+                    'local_id' => 'offline_photo_1',
+                    'data' => [
+                        'nama' => 'Insektisida Foto Offline',
+                        'jenis' => 'Insektisida',
+                        'tanaman_sasaran' => 'Bawang Merah',
+                        'toko_obat' => 'Toko Tani Berkah',
+                        'harga' => 75000,
+                        'photos_base64' => [$fakeBase64],
+                    ],
+                ],
+            ],
+        ];
+
+        $response = $this->postJson('/api/medicines/sync', $payload);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'processed_count' => 1,
+        ]);
+
+        $created = Medicine::where('nama', 'Insektisida Foto Offline')->first();
+        $this->assertNotNull($created);
+        $this->assertNotNull($created->foto_nota);
+        $paths = $created->foto_paths;
+        $this->assertCount(1, $paths);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($paths[0]);
+
+        $this->assertDatabaseHas('medicine_purchases', [
+            'medicine_id' => $created->id,
+            'toko_obat' => 'Toko Tani Berkah',
+            'harga' => 75000,
+            'foto_nota' => $paths[0],
+        ]);
+    }
 }
+

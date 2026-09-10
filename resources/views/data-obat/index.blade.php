@@ -1036,7 +1036,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </span>
                             <span class="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-700">${item.jenis}</span>
                         </div>
-                        <h2 class="text-base font-bold text-gray-900">${item.nama}</h2>
+                        <div class="flex items-center gap-2.5">
+                            ${(item.photos_base64 && item.photos_base64.length > 0) ? `<img src="${item.photos_base64[0]}" class="w-10 h-10 object-cover rounded-lg border border-amber-300 shrink-0" alt="Foto">` : ''}
+                            <h2 class="text-base font-bold text-gray-900 truncate">${item.nama}</h2>
+                        </div>
                         <div class="grid grid-cols-2 gap-2 text-xs">
                             <div class="bg-white p-2 rounded-lg border border-amber-200">
                                 <span class="text-[10px] text-gray-400 font-bold uppercase">Sasaran</span>

@@ -53,6 +53,11 @@ class MedicineSyncController extends Controller
                 $validTypes = ['Fungisida', 'Insektisida', 'Pupuk', 'Vitamin', 'Bibit', 'Perlengkapan', 'Peralatan'];
 
                 if ($action === 'create') {
+                    $newPhotos = [];
+                    if (!empty($data['photos_base64']) && is_array($data['photos_base64'])) {
+                        $newPhotos = $this->saveBase64Photos($data['photos_base64']);
+                    }
+
                     $medicine = Medicine::create([
                         'nama' => $data['nama'] ?? 'Tanpa Nama',
                         'jenis' => in_array($data['jenis'] ?? '', $validTypes) ? $data['jenis'] : 'Fungisida',
@@ -64,11 +69,22 @@ class MedicineSyncController extends Controller
                         'harga' => isset($data['harga']) && is_numeric($data['harga']) ? (int)$data['harga'] : null,
                         'unsur_bahan' => $data['unsur_bahan'] ?? null,
                         'fase' => $data['fase'] ?? null,
+                        'foto_nota' => !empty($newPhotos) ? json_encode($newPhotos) : null,
                         'catatan_keamanan' => $data['catatan_keamanan'] ?? null,
                         'keterangan' => $data['keterangan'] ?? null,
                         'tanggal_beli' => $data['tanggal_beli'] ?? null,
                         'toko_obat' => $data['toko_obat'] ?? null,
                     ]);
+
+                    if (!empty($data['toko_obat']) || !empty($data['harga']) || !empty($data['tanggal_beli'])) {
+                        $medicine->purchases()->create([
+                            'toko_obat' => $data['toko_obat'] ?? null,
+                            'harga' => isset($data['harga']) && is_numeric($data['harga']) ? (int)$data['harga'] : null,
+                            'tanggal_beli' => $data['tanggal_beli'] ?? null,
+                            'catatan' => null,
+                            'foto_nota' => $newPhotos[0] ?? null,
+                        ]);
+                    }
 
                     if ($localId) {
                         $idMappings[$localId] = $medicine->id;
@@ -94,6 +110,15 @@ class MedicineSyncController extends Controller
                             if (array_key_exists('keterangan', $data)) $updateData['keterangan'] = $data['keterangan'];
                             if (array_key_exists('tanggal_beli', $data)) $updateData['tanggal_beli'] = $data['tanggal_beli'];
                             if (array_key_exists('toko_obat', $data)) $updateData['toko_obat'] = $data['toko_obat'];
+
+                            if (!empty($data['photos_base64']) && is_array($data['photos_base64'])) {
+                                $newPhotos = $this->saveBase64Photos($data['photos_base64']);
+                                if (!empty($newPhotos)) {
+                                    $existingPaths = $medicine->foto_paths;
+                                    $mergedPaths = array_values(array_unique(array_merge($existingPaths, $newPhotos)));
+                                    $updateData['foto_nota'] = json_encode($mergedPaths);
+                                }
+                            }
 
                             $medicine->update($updateData);
                             $processedCount++;
@@ -130,4 +155,39 @@ class MedicineSyncController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Decode and save base64 photos to public storage.
+     *
+     * @param array $base64List
+     * @return array
+     */
+    private function saveBase64Photos(array $base64List): array
+    {
+        $paths = [];
+        foreach ($base64List as $base64) {
+            if (!is_string($base64)) continue;
+
+            $data = $base64;
+            $extension = 'jpg';
+
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64, $type)) {
+                $data = substr($base64, strpos($base64, ',') + 1);
+                $ext = strtolower($type[1]);
+                if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                    $extension = $ext === 'jpeg' ? 'jpg' : $ext;
+                }
+            }
+
+            $binary = base64_decode($data);
+            if ($binary !== false && strlen($binary) > 0) {
+                $filename = 'medicines/' . \Illuminate\Support\Str::random(40) . '.' . $extension;
+                \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $binary);
+                $paths[] = $filename;
+            }
+        }
+
+        return $paths;
+    }
 }
+

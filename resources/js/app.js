@@ -213,6 +213,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const formData = new FormData(medicineForm);
                 const rawHarga = (formData.get('harga') || '').toString().replace(/\D/g, '');
+
+                // Kumpulkan foto dalam format base64 agar tersimpan di IndexedDB saat offline
+                const photosBase64 = [];
+                if (window.selectedCompressedFiles && window.selectedCompressedFiles.length > 0) {
+                    for (const item of window.selectedCompressedFiles) {
+                        if (item.dataUrl) {
+                            photosBase64.push(item.dataUrl);
+                        } else if (item.file) {
+                            const b64 = await new Promise((res) => {
+                                const r = new FileReader();
+                                r.onload = () => res(r.result);
+                                r.onerror = () => res(null);
+                                r.readAsDataURL(item.file);
+                            });
+                            if (b64) photosBase64.push(b64);
+                        }
+                    }
+                } else {
+                    const fileInput = document.getElementById('foto_nota');
+                    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                        for (let i = 0; i < fileInput.files.length; i++) {
+                            const f = fileInput.files[i];
+                            const b64 = await new Promise((res) => {
+                                const r = new FileReader();
+                                r.onload = () => res(r.result);
+                                r.onerror = () => res(null);
+                                r.readAsDataURL(f);
+                            });
+                            if (b64) photosBase64.push(b64);
+                        }
+                    }
+                }
+
                 const data = {
                     nama: formData.get('nama') || '',
                     jenis: formData.get('jenis') || 'Fungisida',
@@ -225,7 +258,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     fase: formData.get('fase') || null,
                     keterangan: formData.get('keterangan') || '',
                     tanggal_beli: formData.get('tanggal_beli') || null,
-                    toko_obat: formData.get('toko_obat') || ''
+                    toko_obat: formData.get('toko_obat') || '',
+                    photos_base64: photosBase64
                 };
 
                 const methodField = medicineForm.querySelector('input[name="_method"]');
