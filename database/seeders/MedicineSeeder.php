@@ -6,14 +6,19 @@ use App\Models\Medicine;
 use App\Models\MedicinePurchase;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class MedicineSeeder extends Seeder
 {
     public function run(): void
     {
-        // Hapus data obat lama sesuai permintaan user
+        // Nonaktifkan foreign key checks agar aman di MySQL production saat reset data
+        Schema::disableForeignKeyConstraints();
+
         MedicinePurchase::query()->delete();
         Medicine::query()->delete();
+
+        Schema::enableForeignKeyConstraints();
 
         $medicines = [
             // ================= HALAMAN 2 =================
