@@ -12,6 +12,7 @@ class Crop extends Model
     protected $fillable = [
         'nama_tanaman',
         'varietas',
+        'populasi',
         'tanggal_tanam',
         'status',
         'tanggal_panen',

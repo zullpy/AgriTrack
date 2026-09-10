@@ -108,7 +108,7 @@
                 @php
                     $currentCk = request('cara_kerja');
                     $ckList = [
-                        '' => 'Semua Cara Kerja',
+                        '' => 'Semua',
                         'Sistemik' => 'Sistemik',
                         'Kontak' => 'Kontak',
                         'Sistemik + Kontak' => 'Sistemik + Kontak',
@@ -288,7 +288,7 @@
                         $hasExtraInfo = $medicine->unsur_bahan || $medicine->fase || $medicine->toko_obat || $medicine->tanggal_beli || $medicine->keterangan || ($medicine->purchases && $medicine->purchases->count() > 0) || $medicine->foto_nota;
                     @endphp
 
-                    @if ($hasExtraInfo)
+                    <!-- @if ($hasExtraInfo)
                         <div class="w-full min-w-0">
                             <button type="button"
                                     onclick="toggleDetails({{ $medicine->id }})"
@@ -366,7 +366,7 @@
                                 @endif
                             </div>
                         </div>
-                    @endif
+                    @endif -->
 
                     {{-- Row 5: Action Buttons (Grid 3 Kolom) --}}
                     <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-gray-100 w-full min-w-0 box-border">

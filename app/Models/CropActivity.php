@@ -11,10 +11,13 @@ class CropActivity extends Model
     protected $fillable = [
         'crop_id',
         'nama_kegiatan',
+        'aplikasi_obat',
+        'sasaran',
         'target_hst',
         'status',
         'tanggal_selesai',
         'catatan',
+        'keterangan',
     ];
 
     protected function casts(): array

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Crop;
 use App\Models\CropActivity;
+use App\Models\Medicine;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -122,6 +123,7 @@ class KalenderHstController extends Controller
         $validated = $request->validate([
             'nama_tanaman' => 'required|string|max:255',
             'varietas' => 'nullable|string|max:255',
+            'populasi' => 'nullable|string|max:255',
             'tanggal_tanam' => 'required|date',
             'catatan' => 'nullable|string|max:1000',
         ]);
@@ -138,13 +140,14 @@ class KalenderHstController extends Controller
         $validated = $request->validate([
             'nama_tanaman' => 'required|string|max:255',
             'varietas' => 'nullable|string|max:255',
+            'populasi' => 'nullable|string|max:255',
             'tanggal_tanam' => 'required|date',
             'catatan' => 'nullable|string|max:1000',
         ]);
 
         $crop->update($validated);
 
-        return redirect('/kalender-hst?tab=aktif')->with('success', 'Informasi tanaman berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Informasi tanaman berhasil diperbarui.');
     }
 
     public function destroyCrop(Crop $crop): RedirectResponse
@@ -185,80 +188,44 @@ class KalenderHstController extends Controller
         $currentHst = $crop->current_hst;
         $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
 
-        // Tentukan batas atas HST yang ditampilkan:
+        // Ambil data obat untuk kemudahan input aplikasi obat
+        $medicines = Medicine::orderBy('nama')->get(['id', 'nama', 'jenis', 'dosis_anjuran', 'sasaran_obat']);
+
+        $activitiesByHst = $crop->activities->groupBy('target_hst');
+        $maxActivityHst = (int) ($crop->activities->max('target_hst') ?? 0);
+
+        // Tentukan batas atas HST yang ditampilkan dalam tabel
         if ($crop->status === 'Sudah Dipanen') {
             $harvestHst = (int) ($crop->total_hst_panen ?? 0);
-            $maxHst = $harvestHst;
-
-            // Kelompokkan kegiatan per HST
-            $activitiesByHst = $crop->activities->groupBy('target_hst');
-
-            // Untuk tanaman yang sudah dipanen, tampilkan hari-hari penting (Hari Tanam, semua kegiatan, dan hari panen)
-            $meaningfulHsts = collect([0, $harvestHst])
-                ->merge($crop->activities->pluck('target_hst'))
-                ->unique()
-                ->sort();
-
-            $timelineDays = [];
-            foreach ($meaningfulHsts as $hst) {
-                $dayDate = $plantDate->copy()->addDays($hst);
-                $isHarvestDay = ($hst === $harvestHst);
-
-                $timelineDays[] = [
-                    'hst' => $hst,
-                    'date' => $dayDate,
-                    'is_today' => false,
-                    'is_past' => true,
-                    'is_future' => false,
-                    'is_harvest' => $isHarvestDay,
-                    'activities' => $activitiesByHst->get($hst, collect()),
-                ];
-            }
+            $maxRowHst = max($harvestHst, $maxActivityHst);
         } else {
-            $maxHst = $currentHst + 1;
-
-            // Kelompokkan kegiatan per HST
-            $activitiesByHst = $crop->activities->groupBy('target_hst');
-
-            // Buat daftar timeline per HST dari HST 0 sampai BESOK
-            $timelineDays = [];
-            for ($hst = 0; $hst <= $maxHst; $hst++) {
-                $dayDate = $plantDate->copy()->addDays($hst);
-                $isToday = $crop->status === 'Sedang Ditanam' && $dayDate->isToday();
-                $isPast = $crop->status === 'Sedang Ditanam' ? ($dayDate->isPast() && !$dayDate->isToday()) : true;
-                $isFuture = $crop->status === 'Sedang Ditanam' && $dayDate->isFuture();
-
-                $timelineDays[] = [
-                    'hst' => $hst,
-                    'date' => $dayDate,
-                    'is_today' => $isToday,
-                    'is_past' => $isPast,
-                    'is_future' => $isFuture,
-                    'is_harvest' => false,
-                    'activities' => $activitiesByHst->get($hst, collect()),
-                ];
+            $requestedLimit = $request->input('limit_hst');
+            if ($requestedLimit !== null && is_numeric($requestedLimit)) {
+                $maxRowHst = max(0, (int) $requestedLimit);
+            } else {
+                // Sesuai instruksi: Tampilkan baris HST hanya sampai besok
+                $maxRowHst = $currentHst + 1;
             }
+        }
 
-            // Jika ada jadwal kegiatan manual yang pernah diinput lebih dari besok (HST > maxHst),
-            // tampilkan hanya hari-hari tersebut tanpa membuat puluhan kartu kosong di antaranya
-            $futureActivityHsts = $crop->activities
-                ->pluck('target_hst')
-                ->filter(fn ($h) => $h > $maxHst)
-                ->unique()
-                ->sort();
+        $tableRows = [];
+        for ($hst = 0; $hst <= $maxRowHst; $hst++) {
+            $dayDate = $plantDate->copy()->addDays($hst);
+            $isToday = $crop->status === 'Sedang Ditanam' && $dayDate->isToday();
+            $isTomorrow = $crop->status === 'Sedang Ditanam' && $dayDate->isTomorrow();
+            $isHarvestDay = ($crop->status === 'Sudah Dipanen' && $hst === (int) $crop->total_hst_panen);
+            $isPast = $crop->status === 'Sedang Ditanam' ? ($dayDate->lt(now()->startOfDay())) : true;
 
-            foreach ($futureActivityHsts as $fHst) {
-                $dayDate = $plantDate->copy()->addDays($fHst);
-                $timelineDays[] = [
-                    'hst' => $fHst,
-                    'date' => $dayDate,
-                    'is_today' => false,
-                    'is_past' => false,
-                    'is_future' => true,
-                    'is_harvest' => false,
-                    'activities' => $activitiesByHst->get($fHst, collect()),
-                ];
-            }
+            $tableRows[] = [
+                'hst' => $hst,
+                'date' => $dayDate,
+                'is_today' => $isToday,
+                'is_tomorrow' => $isTomorrow,
+                'is_past' => $isPast,
+                'is_harvest' => $isHarvestDay,
+                'is_planting_day' => ($hst === 0),
+                'activities' => $activitiesByHst->get($hst, collect()),
+            ];
         }
 
         $totalActivities = $crop->activities->count();
@@ -269,8 +236,9 @@ class KalenderHstController extends Controller
         return view('kalender-hst.show', compact(
             'crop',
             'currentHst',
-            'maxHst',
-            'timelineDays',
+            'maxRowHst',
+            'tableRows',
+            'medicines',
             'totalActivities',
             'completedActivities',
             'pendingActivities',
@@ -282,6 +250,9 @@ class KalenderHstController extends Controller
     {
         $validated = $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
+            'aplikasi_obat' => 'nullable|string|max:2000',
+            'sasaran' => 'nullable|string|max:500',
+            'keterangan' => 'nullable|string|max:1000',
             'target_hst' => 'nullable|integer|min:0',
             'tanggal_kegiatan' => 'nullable|date',
             'catatan' => 'nullable|string|max:1000',
@@ -299,11 +270,16 @@ class KalenderHstController extends Controller
             $targetHst = $crop->current_hst;
         }
 
+        $keteranganFinal = $validated['keterangan'] ?? $validated['catatan'] ?? null;
+
         $crop->activities()->create([
             'nama_kegiatan' => $validated['nama_kegiatan'],
+            'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
+            'sasaran' => $validated['sasaran'] ?? null,
             'target_hst' => $targetHst,
             'status' => 'Belum',
-            'catatan' => $validated['catatan'] ?? null,
+            'keterangan' => $keteranganFinal,
+            'catatan' => $keteranganFinal,
         ]);
 
         $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat pada HST {$targetHst}.";
@@ -319,11 +295,23 @@ class KalenderHstController extends Controller
     {
         $validated = $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
+            'aplikasi_obat' => 'nullable|string|max:2000',
+            'sasaran' => 'nullable|string|max:500',
+            'keterangan' => 'nullable|string|max:1000',
             'target_hst' => 'required|integer|min:0',
             'catatan' => 'nullable|string|max:1000',
         ]);
 
-        $activity->update($validated);
+        $keteranganFinal = $validated['keterangan'] ?? $validated['catatan'] ?? null;
+
+        $activity->update([
+            'nama_kegiatan' => $validated['nama_kegiatan'],
+            'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
+            'sasaran' => $validated['sasaran'] ?? null,
+            'target_hst' => (int) $validated['target_hst'],
+            'keterangan' => $keteranganFinal,
+            'catatan' => $keteranganFinal,
+        ]);
 
         return redirect()->back()->with('success', 'Data kegiatan perawatan berhasil diperbarui.');
     }

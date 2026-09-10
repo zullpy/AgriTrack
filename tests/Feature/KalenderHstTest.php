@@ -274,6 +274,85 @@ class KalenderHstTest extends TestCase
         $response->assertDontSee('HST 20');
         $response->assertSee('Besok');
     }
+
+    public function test_crop_table_layout_shows_benih_populasi_and_auto_hari_menanam_on_0hst(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Cabai Rawit Merah',
+            'varietas' => 'Kaliber',
+            'populasi' => '2.500 Pohon',
+            'tanggal_tanam' => Carbon::parse('2026-09-09')->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        CropActivity::create([
+            'crop_id' => $crop->id,
+            'nama_kegiatan' => 'Nyemprot',
+            'aplikasi_obat' => 'Fungisida : Dithane 2 sendok (16 liter), Insektisida : Curacron 15 ml (16 liter), Vitamin : Gandasil D 2 sendok (16 liter)',
+            'sasaran' => 'Ulat Grayak & Patek',
+            'target_hst' => 1,
+            'status' => 'Belum',
+            'keterangan' => 'Semprot kabut merata',
+        ]);
+
+        $response = $this->get("/kalender-hst/tanaman/{$crop->id}");
+        $response->assertStatus(200);
+
+        // Header check
+        $response->assertSee('BENIH YANG DITANAM :');
+        $response->assertSee('Kaliber');
+        $response->assertSee('POPULASI :');
+        $response->assertSee('2.500 Pohon');
+        $response->assertSee('TANGGAL MENANAM :');
+
+        // Table headers check
+        $response->assertSee('KALENDER');
+        $response->assertSee('KEGIATAN');
+        $response->assertSee('APLIKASI OBAT');
+        $response->assertSee('SASARAN');
+        $response->assertSee('KETERANGAN');
+
+        // 0HST check: automatic 'Hari Menanam'
+        $response->assertSee('0HST');
+        $response->assertSee('Hari Menanam');
+
+        // 1HST row check: Nyemprot, obat, sasaran, keterangan
+        $response->assertSee('1HST');
+        $response->assertSee('Nyemprot');
+        $response->assertSee('Dithane 2 sendok');
+        $response->assertSee('Curacron 15 ml');
+        $response->assertSee('Gandasil D 2 sendok');
+        $response->assertSee('Ulat Grayak &amp; Patek', false);
+        $response->assertSee('Semprot kabut merata');
+    }
+
+    public function test_can_create_activity_with_aplikasi_obat_sasaran_and_keterangan(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Bawang Merah',
+            'varietas' => 'Tajuk',
+            'populasi' => '1.000 kg bibit',
+            'tanggal_tanam' => Carbon::today()->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        $response = $this->post("/kalender-hst/tanaman/{$crop->id}/kegiatan", [
+            'nama_kegiatan' => 'Nyemprot Pagi',
+            'aplikasi_obat' => 'Insektisida : Curacron 500 EC 15 ml (16 liter)',
+            'sasaran' => 'Ulat Grayak',
+            'keterangan' => 'Aplikasi pagi pukul 06:30',
+            'target_hst' => 3,
+        ]);
+
+        $this->assertDatabaseHas('crop_activities', [
+            'crop_id' => $crop->id,
+            'nama_kegiatan' => 'Nyemprot Pagi',
+            'aplikasi_obat' => 'Insektisida : Curacron 500 EC 15 ml (16 liter)',
+            'sasaran' => 'Ulat Grayak',
+            'keterangan' => 'Aplikasi pagi pukul 06:30',
+            'target_hst' => 3,
+        ]);
+    }
 }
 
 
