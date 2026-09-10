@@ -3,10 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>AgriTrack — @yield('title', 'Data Obat')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2FB344">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="AgriTrack">
+    <link rel="apple-touch-icon" href="/images/icon.png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         /* Sidebar active glow */
@@ -46,10 +53,192 @@
             opacity: 0; transform: scaleX(0.3);
             transition: all 0.2s ease;
         }
+
+        /* SweetAlert2 AgriTrack Design System */
+        /* Modal Backdrop ONLY (never for toasts) */
+        body:not(.swal2-toast-shown) .swal2-container.swal2-backdrop-show {
+            backdrop-filter: blur(4px) !important;
+            background: rgba(18, 38, 26, 0.45) !important;
+        }
+
+        /* Toast Container must be completely transparent without backdrop */
+        body.swal2-toast-shown .swal2-container,
+        .swal2-container:has(.swal2-toast) {
+            background: transparent !important;
+            backdrop-filter: none !important;
+            pointer-events: none !important;
+        }
+
+        /* Toast Container Positioning */
+        .swal2-container.swal2-top-end,
+        .swal2-container.swal2-top {
+            top: 16px !important;
+            right: 16px !important;
+            left: auto !important;
+            bottom: auto !important;
+            padding: 0 !important;
+            z-index: 99999 !important;
+        }
+
+        @media (max-width: 640px) {
+            .swal2-container.swal2-top-end,
+            .swal2-container.swal2-top {
+                top: 12px !important;
+                right: 12px !important;
+                left: 12px !important;
+                width: calc(100% - 24px) !important;
+                display: flex !important;
+                justify-content: center !important;
+            }
+        }
+
+        /* Modal Dialog */
+        .swal2-popup.agri-swal-popup {
+            border-radius: 20px !important;
+            padding: 24px 22px 22px !important;
+            font-family: 'Inter', sans-serif !important;
+            box-shadow: 0 25px 50px -12px rgba(15, 45, 25, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+            border: none !important;
+            background: #ffffff !important;
+            max-width: 420px !important;
+        }
+        .swal2-title.agri-swal-title {
+            font-family: 'Inter', sans-serif !important;
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            color: #1E2A24 !important;
+            padding: 0.25rem 0 0 !important;
+            line-height: 1.35 !important;
+        }
+        .swal2-html-container.agri-swal-html {
+            font-size: 0.875rem !important;
+            color: #4A5B53 !important;
+            line-height: 1.55 !important;
+            margin: 0.5rem 0 1.25rem !important;
+        }
+        .agri-swal-subtitle {
+            font-size: 0.8125rem;
+            color: #8A9A94;
+            display: inline-block;
+            margin-top: 0.35rem;
+        }
+        .swal2-icon.swal2-warning.agri-swal-icon-warning {
+            border-color: #FED7AA !important;
+            color: #E4574C !important;
+            background: #FEF2F2 !important;
+            width: 60px !important;
+            height: 60px !important;
+            margin: 0.5rem auto 1rem !important;
+        }
+        .swal2-icon.swal2-warning.agri-swal-icon-warning .swal2-icon-content {
+            font-size: 32px !important;
+            color: #E4574C !important;
+            font-weight: 600 !important;
+        }
+        .agri-swal-actions {
+            display: flex !important;
+            gap: 10px !important;
+            width: 100% !important;
+            margin-top: 0.75rem !important;
+        }
+        .agri-swal-btn-danger {
+            flex: 1 !important;
+            background-color: #E4574C !important;
+            color: #ffffff !important;
+            border-radius: 12px !important;
+            padding: 10px 18px !important;
+            font-size: 0.875rem !important;
+            font-weight: 600 !important;
+            border: none !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 12px rgba(228, 87, 76, 0.28) !important;
+            transition: all 0.15s ease !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .agri-swal-btn-danger:hover {
+            background-color: #cf4338 !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 16px rgba(228, 87, 76, 0.35) !important;
+        }
+        .agri-swal-btn-cancel {
+            flex: 1 !important;
+            background-color: #F3F5F4 !important;
+            color: #4A5B53 !important;
+            border: 1px solid #E2E8E5 !important;
+            border-radius: 12px !important;
+            padding: 10px 18px !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            transition: all 0.15s ease !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .agri-swal-btn-cancel:hover {
+            background-color: #E7ECE9 !important;
+            color: #1E2A24 !important;
+        }
+
+        /* ── Compact Modern Toast ── */
+        .swal2-popup.swal2-toast {
+            position: relative !important;
+            overflow: hidden !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-direction: row !important;
+            width: auto !important;
+            min-width: 280px !important;
+            max-width: 440px !important;
+            padding: 12px 18px !important;
+            border-radius: 14px !important;
+            background: #ffffff !important;
+            box-shadow: 0 10px 30px -4px rgba(15, 45, 25, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+            border: none !important;
+            border-left: 4px solid #2FB344 !important;
+            pointer-events: auto !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+        }
+        .swal2-popup.swal2-toast.agri-swal-toast-error {
+            border-left: 4px solid #E4574C !important;
+        }
+        .swal2-popup.swal2-toast .swal2-icon {
+            margin: 0 12px 0 0 !important;
+            transform: scale(0.65) !important;
+            transform-origin: center center !important;
+            flex-shrink: 0 !important;
+        }
+        .swal2-popup.swal2-toast .swal2-title.agri-swal-toast-title,
+        .swal2-popup.swal2-toast .swal2-title {
+            color: #1E2A24 !important;
+            font-size: 0.875rem !important;
+            font-weight: 600 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1.4 !important;
+            text-align: left !important;
+            flex: 1 1 auto !important;
+        }
+        .swal2-popup.swal2-toast .swal2-timer-progress-bar-container,
+        .swal2-popup.swal2-toast .swal2-timer-progress-bar {
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 3.5px !important;
+            background: #2FB344 !important;
+        }
+        .swal2-popup.swal2-toast.agri-swal-toast-error .swal2-timer-progress-bar {
+            background: #E4574C !important;
+        }
     </style>
 </head>
-<body class="bg-page font-sans text-text antialiased">
-    <div class="flex min-h-screen">
+<body class="bg-page font-sans text-text antialiased overflow-x-hidden w-full max-w-full">
+    <div class="flex min-h-screen w-full max-w-full overflow-x-hidden">
 
         {{-- ── Sidebar (desktop) ── --}}
         <aside class="hidden lg:flex flex-col w-60 fixed inset-y-0 left-0 z-30 bg-surface border-r border-gray-100 shadow-[2px_0_16px_rgba(0,0,0,0.04)]">
@@ -100,23 +289,36 @@
                     @endif
                 </a>
             </nav>
+
+            {{-- Connection Indicator (Desktop) --}}
+            <div class="p-3 border-t border-gray-100 mt-auto">
+                <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-gray-50/80 border border-gray-100">
+                    <span class="text-[11px] text-text-secondary font-medium">Koneksi</span>
+                    <span class="connection-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+                    </span>
+                </div>
+            </div>
         </aside>
 
         {{-- ── Main content ── --}}
-        <div class="flex-1 lg:ml-60 flex flex-col min-h-screen">
+        <div class="flex-1 lg:ml-60 flex flex-col min-h-screen min-w-0 w-full max-w-full overflow-x-hidden">
 
             {{-- Mobile header --}}
-            <header class="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 bg-surface/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
+            <header class="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-surface/95 backdrop-blur-sm border-b border-gray-100 shadow-sm w-full max-w-full">
                 <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-sm">
                         <img src="/images/icon.png" alt="icon" class="w-full h-full rounded-xl object-cover">
                     </div>
                     <span class="text-base font-semibold text-text">AgriTrack</span>
                 </div>
+                <div class="connection-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+                </div>
             </header>
 
             {{-- Page content --}}
-            <main class="flex-1 p-4 lg:p-8 pb-24 lg:pb-8">
+            <main class="flex-1 p-3.5 sm:p-4 lg:p-8 pb-24 lg:pb-8 min-w-0 w-full max-w-full overflow-x-hidden">
                 @yield('content')
             </main>
         </div>
@@ -154,6 +356,115 @@
             </a>
         </div>
     </nav>
+
+    {{-- SweetAlert2 CDN Library --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Ensure AgriSwal is available if bundled module runs later
+        if (!window.AgriSwal && window.Swal) {
+            window.AgriSwal = {
+                confirmDelete: function(title, itemName, onConfirm) {
+                    return Swal.fire({
+                        title: title || 'Hapus Data?',
+                        html: `Apakah Anda yakin ingin menghapus <strong>"${itemName}"</strong>?<br><span class="agri-swal-subtitle">Data yang dihapus tidak dapat dipulihkan kembali.</span>`,
+                        icon: 'warning',
+                        iconColor: '#E4574C',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, Hapus',
+                        cancelButtonText: 'Batal',
+                        reverseButtons: true,
+                        focusCancel: true,
+                        customClass: {
+                            popup: 'agri-swal-popup',
+                            title: 'agri-swal-title',
+                            htmlContainer: 'agri-swal-html',
+                            confirmButton: 'agri-swal-btn-danger',
+                            cancelButton: 'agri-swal-btn-cancel',
+                            actions: 'agri-swal-actions',
+                            icon: 'agri-swal-icon-warning'
+                        },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed && typeof onConfirm === 'function') {
+                            onConfirm();
+                        }
+                        return result;
+                    });
+                },
+
+                toastSuccess: function(message) {
+                    return Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        iconColor: '#2FB344',
+                        title: message,
+                        showConfirmButton: false,
+                        timer: 3500,
+                        timerProgressBar: true,
+                        customClass: {
+                            popup: 'agri-swal-toast',
+                            title: 'agri-swal-toast-title',
+                            timerProgressBar: 'agri-swal-progress'
+                        },
+                        didOpen: (toast) => {
+                            toast.addEventListener('mouseenter', Swal.stopTimer);
+                            toast.addEventListener('mouseleave', Swal.resumeTimer);
+                        }
+                    });
+                },
+
+                toastError: function(message) {
+                    return Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'error',
+                        iconColor: '#E4574C',
+                        title: message,
+                        showConfirmButton: false,
+                        timer: 4000,
+                        timerProgressBar: true,
+                        customClass: {
+                            popup: 'agri-swal-toast agri-swal-toast-error',
+                            title: 'agri-swal-toast-title'
+                        }
+                    });
+                }
+            };
+
+            // Global listener for forms with data-confirm-delete
+            document.addEventListener('submit', function(e) {
+                const form = e.target.closest('form[data-confirm-delete]');
+                if (!form || form.dataset.confirmed === 'true') return;
+
+                e.preventDefault();
+                const itemName = form.dataset.confirmDelete || 'data ini';
+                const title = form.dataset.confirmTitle || 'Hapus Data Obat?';
+
+                window.AgriSwal.confirmDelete(title, itemName, function() {
+                    form.dataset.confirmed = 'true';
+                    form.submit();
+                });
+            });
+        }
+
+        // Auto-trigger Toast on Laravel Flash Sessions
+        @if (session('success'))
+            document.addEventListener('DOMContentLoaded', function() {
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastSuccess(@json(session('success')));
+                }
+            });
+        @endif
+
+        @if (session('error'))
+            document.addEventListener('DOMContentLoaded', function() {
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastError(@json(session('error')));
+                }
+            });
+        @endif
+    </script>
 
     @stack('scripts')
 </body>

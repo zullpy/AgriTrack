@@ -1,0 +1,18 @@
+{
+  "name": "AgriTrack — Manajemen Pertanian",
+  "short_name": "AgriTrack",
+  "description": "Aplikasi manajemen data obat tanaman dan kalender HST kebun",
+  "start_url": "/data-obat",
+  "display": "standalone",
+  "background_color": "#F5F7F6",
+  "theme_color": "#2FB344",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

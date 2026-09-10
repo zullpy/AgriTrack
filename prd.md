@@ -36,7 +36,7 @@ Mengikuti layout referensi:
 Modul pencatatan penggunaan pestisida/pupuk/obat tanaman.
 - **Daftar Obat**: tabel berisi Nama Obat, Jenis (Pestisida/Fungisida/Pupuk/Herbisida), Tanaman Sasaran.
 - **Tambah/Edit Obat**: form input nama, jenis, dosis anjuran, interval aplikasi, catatan keamanan.
-- **Filter & Pencarian**: berdasarkan jenis obat, tanaman, status stok.
+- **Filter & Pencarian**: berdasarkan jenis obat dan nama tanaman.
 
 ### 4.4 Kalender HST (Hari Setelah Tanam)
 Modul penjadwalan berbasis umur tanaman.
@@ -69,7 +69,7 @@ Modul penjadwalan berbasis umur tanaman.
 - Data tersimpan lokal/persisten antar sesi (tanpa akun pengguna).
 
 ## 7. Metrik Keberhasilan
-- Waktu untuk menemukan info stok obat < 5 detik.
+- Waktu untuk menemukan info obat < 5 detik.
 - HST & tanggal semua tanaman aktif selalu akurat tanpa input manual.
 - Pengguna bisa menambah/mengubah kegiatan perawatan kapan saja tanpa dibatasi jadwal bawaan sistem.
 - Tidak ada friksi tambahan dari proses login (karena dihilangkan).

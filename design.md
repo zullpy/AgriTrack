@@ -20,7 +20,7 @@ Referensi visual: dashboard "FarmVista" (lihat gambar terlampir) — tema hijau-
 | Abu Latar | `#F5F7F6` | Background halaman |
 | Abu Teks Sekunder | `#8A9A94` / `#6B7B76` | Label, subteks |
 | Teks Utama | `#1E2A24` / `#222` | Judul, angka besar |
-| Merah Peringatan | `#E4574C` | Badge stok habis / kadaluarsa |
+| Merah Peringatan | `#E4574C` | Status peringatan / hapus |
 
 ## 3. Tipografi
 - **Font**: sans-serif modern (mis. Inter, Poppins, atau Manrope).
