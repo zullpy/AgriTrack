@@ -141,16 +141,26 @@
         <div class="bg-surface rounded-2xl border border-gray-200 shadow-sm p-8 text-center w-full min-w-0">
             <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto mb-3">
                 <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.309 48.309 0 01-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                 </svg>
             </div>
-            <h3 class="text-base font-bold text-gray-900 mb-1">Data Tidak Ditemukan</h3>
-            <p class="text-xs sm:text-sm text-gray-500 max-w-xs mx-auto mb-4">
-                Tidak ada obat yang cocok dengan kata kunci atau filter yang Anda pilih.
+            <h3 class="text-base font-bold text-gray-900 mb-1">Tambah Obat</h3>
+            <p class="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto mb-4">
+                Belum ada data obat yang tersimpan. Silakan tambahkan obat baru untuk mulai mencatat stok, dosis, dan jadwal aplikasi.
             </p>
-            <a href="/data-obat" class="inline-flex items-center px-4 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200">
-                Tampilkan Semua Obat
-            </a>
+            <div class="flex flex-wrap items-center justify-center gap-2">
+                <a href="/data-obat/tambah" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95">
+                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    <span>Tambah Obat</span>
+                </a>
+                @if(request()->hasAny(['search', 'kategori', 'cara_kerja', 'sasaran', 'fase']))
+                    <a href="/data-obat" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-xs sm:text-sm font-bold hover:bg-gray-200 transition-colors">
+                        Tampilkan Semua Obat
+                    </a>
+                @endif
+            </div>
         </div>
 
     @else
