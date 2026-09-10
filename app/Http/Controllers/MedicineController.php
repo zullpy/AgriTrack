@@ -34,6 +34,10 @@ class MedicineController extends Controller
             $query->where('cara_kerja', $caraKerja);
         }
 
+        if ($fase = $request->input('fase')) {
+            $query->where('fase', $fase);
+        }
+
         $medicines = $query->latest()->paginate(10)->withQueryString();
 
         return view('data-obat.index', compact('medicines'));

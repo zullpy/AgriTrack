@@ -72,6 +72,35 @@ class MedicineTest extends TestCase
         $response2->assertDontSee('Gandasil D');
     }
 
+    public function test_can_filter_medicines_by_fase(): void
+    {
+        Medicine::create([
+            'nama' => 'Pupuk Vegetatif Nitrea',
+            'jenis' => 'Pupuk',
+            'cara_kerja' => 'Sistemik',
+            'tanaman_sasaran' => 'Padi',
+            'fase' => 'Vegetatif',
+        ]);
+
+        Medicine::create([
+            'nama' => 'Pupuk Generatif MKP',
+            'jenis' => 'Pupuk',
+            'cara_kerja' => 'Sistemik',
+            'tanaman_sasaran' => 'Cabai',
+            'fase' => 'Generatif',
+        ]);
+
+        $response = $this->get('/data-obat?fase=Vegetatif');
+        $response->assertStatus(200);
+        $response->assertSee('Pupuk Vegetatif Nitrea');
+        $response->assertDontSee('Pupuk Generatif MKP');
+
+        $response2 = $this->get('/data-obat?fase=Generatif');
+        $response2->assertStatus(200);
+        $response2->assertSee('Pupuk Generatif MKP');
+        $response2->assertDontSee('Pupuk Vegetatif Nitrea');
+    }
+
     public function test_mobile_view_renders_priority_fields_and_no_gradient(): void
     {
         $medicine = Medicine::create([
