@@ -96,7 +96,7 @@
 
                 @foreach($kategoriList as $key => $label)
                     @php $isActive = ($currentJenis === $key) || ($key === '' && empty($currentJenis)); @endphp
-                    <a href="{{ request()->fullUrlWithQuery(['jenis' => $key ?: null]) }}"
+                    <a href="{{ request()->fullUrlWithQuery(['jenis' => $key ?: null, 'page' => null]) }}"
                        class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 {{ $isActive ? 'bg-primary text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
                         {{ $label }}
                     </a>
@@ -122,7 +122,7 @@
 
                 @foreach($ckList as $key => $label)
                     @php $isActive = ($currentCk === $key) || ($key === '' && empty($currentCk)); @endphp
-                    <a href="{{ request()->fullUrlWithQuery(['cara_kerja' => $key ?: null]) }}"
+                    <a href="{{ request()->fullUrlWithQuery(['cara_kerja' => $key ?: null, 'page' => null]) }}"
                        class="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold transition-all shrink-0 {{ $isActive ? 'bg-gray-900 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
                         {{ $label }}
                     </a>
@@ -145,7 +145,7 @@
 
                 @foreach($faseList as $key => $label)
                     @php $isActive = ($currentFase === $key) || ($key === '' && empty($currentFase)); @endphp
-                    <a href="{{ request()->fullUrlWithQuery(['fase' => $key ?: null]) }}"
+                    <a href="{{ request()->fullUrlWithQuery(['fase' => $key ?: null, 'page' => null]) }}"
                        class="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold transition-all shrink-0 {{ $isActive ? 'bg-primary text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
                         {{ $label }}
                     </a>
@@ -162,27 +162,46 @@
 
     {{-- ── Data Listing ── --}}
     @if ($medicines->isEmpty())
+        @php
+            $hasActiveFilter = request()->hasAny(['search', 'jenis', 'cara_kerja', 'fase']);
+        @endphp
         {{-- Empty state --}}
         <div class="bg-surface rounded-2xl border border-gray-200 shadow-sm p-8 text-center w-full min-w-0">
             <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto mb-3">
-                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-                </svg>
-            </div>
-            <h3 class="text-base font-bold text-gray-900 mb-1">Tambah Obat</h3>
-            <p class="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto mb-4">
-                Belum ada data obat yang tersimpan. Silakan tambahkan obat baru untuk mulai mencatat stok, dosis, dan jadwal aplikasi.
-            </p>
-            <div class="flex flex-wrap items-center justify-center gap-2">
-                <a href="/data-obat/tambah" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95">
-                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                @if($hasActiveFilter)
+                    <svg class="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                    </svg>
+                @else
+                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                     </svg>
-                    <span>Tambah Obat</span>
-                </a>
-                @if(request()->hasAny(['search', 'kategori', 'cara_kerja', 'sasaran', 'fase']))
-                    <a href="/data-obat" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-xs sm:text-sm font-bold hover:bg-gray-200 transition-colors">
-                        Tampilkan Semua Obat
+                @endif
+            </div>
+            <h3 class="text-base font-bold text-gray-900 mb-1">
+                {{ $hasActiveFilter ? 'Tidak Ada Obat Ditemukan' : 'Tambah Obat' }}
+            </h3>
+            <p class="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto mb-4">
+                @if($hasActiveFilter)
+                    Tidak ada obat yang cocok dengan filter yang Anda pilih. Silakan klik tombol di bawah untuk menampilkan seluruh data.
+                @else
+                    Belum ada data obat yang tersimpan. Silakan tambahkan obat baru untuk mulai mencatat stok, dosis, dan jadwal aplikasi.
+                @endif
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-2">
+                @if($hasActiveFilter)
+                    <a href="/data-obat" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95">
+                        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
+                        </svg>
+                        <span>Tampilkan Semua Obat</span>
+                    </a>
+                @else
+                    <a href="/data-obat/tambah" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95">
+                        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                        </svg>
+                        <span>Tambah Obat</span>
                     </a>
                 @endif
             </div>
@@ -484,11 +503,11 @@
                                         <span class="text-gray-400 text-xs">—</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-4 max-w-[180px]">
+                                <td class="px-4 py-4 max-w-[220px]">
                                     @if ($medicine->sasaran_obat)
-                                        <span class="inline-block text-xs font-semibold text-emerald-900 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-lg break-words line-clamp-2" title="{{ $medicine->sasaran_obat }}">
-                                            {{ $medicine->sasaran_obat }}
-                                        </span>
+                                        <div class="text-xs text-gray-700 font-medium leading-relaxed" title="{{ $medicine->sasaran_obat }}">
+                                            {{ Str::limit($medicine->sasaran_obat, 65) }}
+                                        </div>
                                     @else
                                         <span class="text-gray-400 text-xs">—</span>
                                     @endif
