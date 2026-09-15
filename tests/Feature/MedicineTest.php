@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Medicine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MedicineTest extends TestCase
@@ -310,9 +312,9 @@ class MedicineTest extends TestCase
 
     public function test_photo_upload_and_storage(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
-        $file = \Illuminate\Http\UploadedFile::fake()->image('nota_obat.jpg', 600, 600);
+        $file = UploadedFile::fake()->image('nota_obat.jpg', 600, 600);
 
         $payload = [
             'nama' => 'Score 250 EC',
@@ -328,17 +330,17 @@ class MedicineTest extends TestCase
         $this->assertNotNull($medicine);
         $this->assertNotNull($medicine->foto_nota);
         $this->assertNotEmpty($medicine->foto_paths);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($medicine->foto_paths[0]);
+        Storage::disk('public')->assertExists($medicine->foto_paths[0]);
         $this->assertNotNull($medicine->foto_url);
         $this->assertCount(1, $medicine->foto_urls);
     }
 
     public function test_multiple_photo_upload_and_storage(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
-        $file1 = \Illuminate\Http\UploadedFile::fake()->image('nota_1.jpg', 600, 600);
-        $file2 = \Illuminate\Http\UploadedFile::fake()->image('nota_2.png', 800, 800);
+        $file1 = UploadedFile::fake()->image('nota_1.jpg', 600, 600);
+        $file2 = UploadedFile::fake()->image('nota_2.png', 800, 800);
 
         $payload = [
             'nama' => 'Amistartop 325 SC',
@@ -356,7 +358,7 @@ class MedicineTest extends TestCase
         $this->assertCount(2, $medicine->foto_urls);
 
         foreach ($medicine->foto_paths as $storedPath) {
-            \Illuminate\Support\Facades\Storage::disk('public')->assertExists($storedPath);
+            Storage::disk('public')->assertExists($storedPath);
         }
 
         // Test delete on update: delete first photo
@@ -372,8 +374,8 @@ class MedicineTest extends TestCase
 
         $this->put("/data-obat/{$medicine->id}", $updatePayload)->assertRedirect('/data-obat');
 
-        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($deletedPhoto);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($remainingPhoto);
+        Storage::disk('public')->assertMissing($deletedPhoto);
+        Storage::disk('public')->assertExists($remainingPhoto);
 
         $medicine->refresh();
         $this->assertCount(1, $medicine->foto_paths);
@@ -382,9 +384,9 @@ class MedicineTest extends TestCase
 
     public function test_merging_photos_when_submitting_existing_medicine(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
-        $file1 = \Illuminate\Http\UploadedFile::fake()->image('nota_lama.jpg', 600, 600);
+        $file1 = UploadedFile::fake()->image('nota_lama.jpg', 600, 600);
         $this->post('/data-obat', [
             'nama' => 'Antracol 70 WP',
             'jenis' => 'Fungisida',
@@ -396,7 +398,7 @@ class MedicineTest extends TestCase
         $this->assertCount(1, $medicine->foto_paths);
         $oldPath = $medicine->foto_paths[0];
 
-        $file2 = \Illuminate\Http\UploadedFile::fake()->image('nota_baru.jpg', 600, 600);
+        $file2 = UploadedFile::fake()->image('nota_baru.jpg', 600, 600);
         $this->post('/data-obat', [
             'nama' => 'Antracol 70 WP',
             'jenis' => 'Fungisida',
@@ -406,8 +408,8 @@ class MedicineTest extends TestCase
 
         $medicine->refresh();
         $this->assertCount(2, $medicine->foto_paths);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($oldPath);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($medicine->foto_paths[1]);
+        Storage::disk('public')->assertExists($oldPath);
+        Storage::disk('public')->assertExists($medicine->foto_paths[1]);
     }
 
     public function test_same_store_updates_price_and_date_instead_of_adding_duplicate_purchase(): void
@@ -457,10 +459,10 @@ class MedicineTest extends TestCase
 
     public function test_destroy_photo_removes_physical_file_and_database_record(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
-        $file1 = \Illuminate\Http\UploadedFile::fake()->image('foto_a.jpg', 600, 600);
-        $file2 = \Illuminate\Http\UploadedFile::fake()->image('foto_b.jpg', 600, 600);
+        $file1 = UploadedFile::fake()->image('foto_a.jpg', 600, 600);
+        $file2 = UploadedFile::fake()->image('foto_b.jpg', 600, 600);
 
         $this->post('/data-obat', [
             'nama' => 'Starban 585 EC',
@@ -475,8 +477,8 @@ class MedicineTest extends TestCase
         $photoToDelete = $medicine->foto_paths[0];
         $photoToKeep = $medicine->foto_paths[1];
 
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($photoToDelete);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($photoToKeep);
+        Storage::disk('public')->assertExists($photoToDelete);
+        Storage::disk('public')->assertExists($photoToKeep);
 
         // Panggil endpoint hapus foto
         $response = $this->deleteJson("/data-obat/{$medicine->id}/foto", [
@@ -487,8 +489,8 @@ class MedicineTest extends TestCase
         $response->assertJson(['success' => true]);
 
         // Verifikasi file fisik terhapus dari storage
-        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($photoToDelete);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($photoToKeep);
+        Storage::disk('public')->assertMissing($photoToDelete);
+        Storage::disk('public')->assertExists($photoToKeep);
 
         // Verifikasi database record diperbarui
         $medicine->refresh();
@@ -528,7 +530,7 @@ class MedicineTest extends TestCase
                     'toko_obat' => 'Toko Tani Makmur',
                     'harga' => '', // Dihapus/dikosongkan di baris pembelian juga
                     'tanggal_beli' => '2026-09-01',
-                ]
+                ],
             ],
         ];
 
@@ -543,7 +545,3 @@ class MedicineTest extends TestCase
         $this->assertNull($purchase->harga);
     }
 }
-
-
-
-

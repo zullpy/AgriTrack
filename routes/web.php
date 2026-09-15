@@ -1,13 +1,19 @@
 <?php
 
 use App\Http\Controllers\Api\MedicineSyncController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KalenderHstController;
 use App\Http\Controllers\MedicineController;
+use App\Http\Controllers\PlantCatalogController;
+use App\Http\Controllers\StepController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect('/data-obat');
+    return redirect('/dashboard');
 });
+
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::resource('tanaman-katalog', PlantCatalogController::class)->only(['index', 'edit', 'update']);
 
 Route::get('/data-obat', [MedicineController::class, 'index']);
 Route::get('/data-obat/tambah', [MedicineController::class, 'create']);
@@ -17,8 +23,9 @@ Route::put('/data-obat/{medicine}', [MedicineController::class, 'update']);
 Route::delete('/data-obat/{medicine}', [MedicineController::class, 'destroy']);
 Route::delete('/data-obat/{medicine}/foto', [MedicineController::class, 'destroyPhoto']);
 
-// Kalender HST
+// Kalender HST / Tahapan
 Route::get('/kalender-hst', [KalenderHstController::class, 'index'])->name('kalender-hst.index');
+Route::get('/steps', [StepController::class, 'index'])->name('steps.index');
 Route::get('/kalender-hst/tanaman/{crop}', [KalenderHstController::class, 'showCrop'])->name('kalender-hst.crop.show');
 Route::post('/kalender-hst/tanaman', [KalenderHstController::class, 'storeCrop']);
 Route::put('/kalender-hst/tanaman/{crop}', [KalenderHstController::class, 'updateCrop']);

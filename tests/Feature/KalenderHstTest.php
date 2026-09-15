@@ -123,7 +123,7 @@ class KalenderHstTest extends TestCase
         ]);
 
         $response->assertRedirect('/kalender-hst?tab=riwayat');
-        
+
         $crop->refresh();
         $this->assertEquals('Sudah Dipanen', $crop->status);
         $this->assertEquals($harvestDate, $crop->tanggal_panen->toDateString());
@@ -299,11 +299,11 @@ class KalenderHstTest extends TestCase
         $response->assertStatus(200);
 
         // Header check
-        $response->assertSee('BENIH YANG DITANAM :');
+        $response->assertSee('Benih yang Ditanam');
         $response->assertSee('Kaliber');
-        $response->assertSee('POPULASI :');
+        $response->assertSee('Populasi');
         $response->assertSee('2.500 Pohon');
-        $response->assertSee('TANGGAL MENANAM :');
+        $response->assertSee('Tanggal Menanam');
 
         // Table headers check
         $response->assertSee('KALENDER');
@@ -354,5 +354,3 @@ class KalenderHstTest extends TestCase
         ]);
     }
 }
-
-

@@ -32,14 +32,14 @@ return new class extends Migration
         foreach ($existing as $med) {
             if ($med->toko_obat || $med->harga !== null || $med->tanggal_beli) {
                 DB::table('medicine_purchases')->insert([
-                    'medicine_id'  => $med->id,
-                    'toko_obat'    => $med->toko_obat,
-                    'harga'        => $med->harga,
+                    'medicine_id' => $med->id,
+                    'toko_obat' => $med->toko_obat,
+                    'harga' => $med->harga,
                     'tanggal_beli' => $med->tanggal_beli,
-                    'foto_nota'    => null,
-                    'catatan'      => null,
-                    'created_at'   => $now,
-                    'updated_at'   => $now,
+                    'foto_nota' => null,
+                    'catatan' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]);
             }
         }

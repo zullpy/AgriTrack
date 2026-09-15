@@ -38,7 +38,7 @@ class CropActivity extends Model
      */
     public function getTargetDateAttribute(): ?Carbon
     {
-        if (!$this->crop || !$this->crop->tanggal_tanam) {
+        if (! $this->crop || ! $this->crop->tanggal_tanam) {
             return null;
         }
 
@@ -50,7 +50,10 @@ class CropActivity extends Model
      */
     public function getIsDueOrPassedAttribute(): bool
     {
-        if (!$this->crop) return false;
+        if (! $this->crop) {
+            return false;
+        }
+
         return $this->crop->current_hst >= $this->target_hst;
     }
 }

@@ -38,12 +38,12 @@ class MedicinePurchase extends Model
             return null;
         }
 
-        return 'Rp ' . number_format($this->harga, 0, ',', '.');
+        return 'Rp '.number_format($this->harga, 0, ',', '.');
     }
 
     public function getFotoUrlAttribute(): ?string
     {
-        if (!$this->foto_nota) {
+        if (! $this->foto_nota) {
             return null;
         }
 

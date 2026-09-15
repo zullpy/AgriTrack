@@ -32,7 +32,7 @@
             @endif
 
 
-            <button type="button"
+            <!-- <button type="button"
                     onclick="window.print()"
                     class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white text-text-secondary hover:text-text hover:bg-gray-50 text-xs font-medium transition-all shadow-xs print:hidden"
                     title="Cetak Jadwal">
@@ -40,7 +40,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m11.318-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.656"/>
                 </svg>
                 <span>Cetak</span>
-            </button>
+            </button> -->
 
             <form method="POST"
                   action="/kalender-hst/tanaman/{{ $crop->id }}"
@@ -73,39 +73,34 @@
     @endif
 
     {{-- ══════════════════════════════════════════════════════════════════════════ --}}
-    {{-- ── HEADER INFORMASI TANAMAN (PERSIS SESUAI DESAIN GAMBAR)               ── --}}
     {{-- ══════════════════════════════════════════════════════════════════════════ --}}
-    <div class="bg-white rounded-2xl border border-gray-300 shadow-sm overflow-hidden mb-6">
-        <div class="p-4 sm:p-6 space-y-3 font-mono text-sm sm:text-base text-gray-900 border-b-2 border-gray-900 bg-linear-to-r from-gray-50/70 via-white to-gray-50/70">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div class="flex items-baseline gap-2">
-                    <span class="font-extrabold tracking-wide uppercase text-gray-950">BENIH YANG DITANAM :</span>
-                    <span class="font-semibold text-primary-dark">
-                        {{ $crop->varietas ? $crop->varietas : ($crop->nama_tanaman ?? '-') }}
-                        @if($crop->varietas && $crop->nama_tanaman && $crop->varietas !== $crop->nama_tanaman)
-                            <span class="text-xs text-text-muted font-sans font-normal">({{ $crop->nama_tanaman }})</span>
-                        @endif
-                    </span>
+    {{-- ── HEADER INFORMASI TANAMAN                                             ── --}}
+    {{-- ══════════════════════════════════════════════════════════════════════════ --}}
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+        <div class="p-4 sm:p-5">
+            {{-- Top Row: Identity, Status, and Edit Action --}}
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-emerald-50/90 border border-emerald-100/80 text-2xl flex items-center justify-center shadow-xs shrink-0 select-none">
+                        <span class="leading-none">{{ $crop->emoji }}</span>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 leading-tight truncate">
+                                {{ $crop->nama_tanaman }}
+                            </h2>
+                            @if($crop->varietas)
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-700">
+                                    {{ $crop->varietas }}
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-xs text-text-muted mt-0.5">Detail penanaman & log jadwal harian</p>
+                    </div>
                 </div>
 
-                <div class="flex items-baseline gap-2 sm:text-right">
-                    <span class="font-extrabold tracking-wide uppercase text-gray-950">POPULASI :</span>
-                    <span class="font-semibold text-primary-dark">
-                        {{ $crop->populasi ? $crop->populasi : '-' }}
-                    </span>
-                </div>
-            </div>
-
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                <div class="flex items-baseline gap-2">
-                    <span class="font-extrabold tracking-wide uppercase text-gray-950">TANGGAL MENANAM :</span>
-                    <span class="font-semibold text-primary-dark">
-                        {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->locale('id')->isoFormat('dddd, DD MMMM YYYY') }}
-                    </span>
-                </div>
-
-                <div class="flex items-center gap-3 font-sans text-xs">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg {{ $crop->status === 'Sedang Ditanam' ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-blue-100 text-blue-800 font-bold' }}">
+                <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold {{ $crop->status === 'Sedang Ditanam' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
                         @if ($crop->status === 'Sedang Ditanam')
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             HST {{ $currentHst }} • Sedang Ditanam
@@ -115,71 +110,60 @@
                     </span>
                     <button type="button"
                             onclick="openEditCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ addslashes($crop->varietas ?? '') }}', '{{ addslashes($crop->populasi ?? '') }}', '{{ $crop->tanggal_tanam->toDateString() }}', `{{ addslashes($crop->catatan ?? '') }}`)"
-                            class="text-xs text-text-muted hover:text-primary underline">
-                        Ubah Info
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-semibold text-text-secondary hover:text-text transition-all shadow-xs">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                        <span>Ubah</span>
                     </button>
                 </div>
             </div>
 
-            <div class="hidden">Log Kegiatan Per HST</div>
+            {{-- Bottom Row: Key Information Cards / Grid --}}
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3.5">
+                <div class="p-3 rounded-xl bg-gray-50/80 border border-gray-100">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Benih yang Ditanam</span>
+                    <span class="text-xs sm:text-sm font-bold text-gray-900 mt-0.5 block truncate" title="{{ $crop->varietas ?: ($crop->nama_tanaman ?? '-') }}">
+                        {{ $crop->varietas ? $crop->varietas : ($crop->nama_tanaman ?? '-') }}
+                    </span>
+                </div>
+
+                <div class="p-3 rounded-xl bg-gray-50/80 border border-gray-100">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Populasi</span>
+                    <span class="text-xs sm:text-sm font-bold text-gray-900 mt-0.5 block">
+                        {{ $crop->populasi ? $crop->populasi : '-' }}
+                    </span>
+                </div>
+
+                <div class="col-span-2 sm:col-span-1 p-3 rounded-xl bg-gray-50/80 border border-gray-100">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Tanggal Menanam</span>
+                    <span class="text-xs sm:text-sm font-bold text-gray-900 mt-0.5 block">
+                        {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->locale('id')->isoFormat('dddd, DD MMMM YYYY') }}
+                    </span>
+                </div>
+            </div>
 
             @if ($crop->catatan)
-                <div class="pt-2 text-xs font-sans text-text-secondary italic border-t border-gray-200">
-                    Catatan: {{ $crop->catatan }}
+                <div class="mt-3 p-3 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs text-amber-900 flex items-start gap-2">
+                    <span class="font-bold shrink-0">Catatan:</span>
+                    <span class="leading-relaxed">{{ $crop->catatan }}</span>
                 </div>
             @endif
         </div>
 
-        {{-- ── Filter & Quick Jump Bar ── --}}
-        <div class="p-3 sm:p-4 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-            <div class="flex flex-wrap items-center gap-1.5" id="table-filters">
-                <button type="button"
-                        onclick="filterTable('all')"
-                        id="filter-btn-all"
-                        class="filter-chip px-3 py-1.5 rounded-lg font-semibold bg-gray-900 text-white transition-all shadow-xs">
-                    Semua HST
-                </button>
-                <button type="button"
-                        onclick="filterTable('today')"
-                        id="filter-btn-today"
-                        class="filter-chip px-3 py-1.5 rounded-lg font-semibold text-text-secondary hover:text-text hover:bg-gray-200 transition-all">
-                    Hari Ini ({{ $currentHst }}HST)
-                </button>
-                @if ($crop->status === 'Sedang Ditanam')
-                    <button type="button"
-                            onclick="filterTable('tomorrow')"
-                            id="filter-btn-tomorrow"
-                            class="filter-chip px-3 py-1.5 rounded-lg font-semibold text-text-secondary hover:text-text hover:bg-gray-200 transition-all">
-                        Besok ({{ $currentHst + 1 }}HST)
-                    </button>
-                @endif
-                <button type="button"
-                        onclick="filterTable('has-activity')"
-                        id="filter-btn-has-activity"
-                        class="filter-chip px-3 py-1.5 rounded-lg font-semibold text-text-secondary hover:text-text hover:bg-gray-200 transition-all">
-                    Ada Kegiatan Saja ({{ $totalActivities }})
-                </button>
-                <button type="button"
-                        onclick="filterTable('pending')"
-                        id="filter-btn-pending"
-                        class="filter-chip px-3 py-1.5 rounded-lg font-semibold text-text-secondary hover:text-text hover:bg-gray-200 transition-all">
-                    Belum Selesai ({{ $pendingActivities }})
-                </button>
-            </div>
-
-            <div class="flex items-center gap-3">
-                
-
-                <button type="button"
-                        onclick="openAddActivityModal({{ $currentHst }})"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0">
-                    <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-                    </svg>
-                    <span>Catat Kegiatan</span>
-                </button>
-            </div>
+        {{-- ── Action Bar ── --}}
+        <div class="p-3 sm:p-4 bg-gray-50/90 border-t border-gray-200 flex items-center justify-between gap-3 text-xs">
+            <span class="font-bold text-gray-700 uppercase tracking-wider text-[11px]">Log Kegiatan Per HST</span>
+            <button type="button"
+                    onclick="openAddActivityModal({{ $currentHst }})"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0">
+                <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                <span>Catat Kegiatan</span>
+            </button>
         </div>
+    </div>
 
         {{-- ══════════════════════════════════════════════════════════════════════ --}}
         {{-- ── TABEL LOG HST PER TANAMAN (PERSIS SESUAI DESAIN GAMBAR)          ── --}}

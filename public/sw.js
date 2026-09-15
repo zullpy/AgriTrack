@@ -1,8 +1,11 @@
-const CACHE_NAME = 'agritrack-v1';
+const CACHE_NAME = 'agritrack-v2';
 const PRECACHE_ASSETS = [
+    '/',
+    '/dashboard',
+    '/kalender-hst',
+    '/steps',
     '/data-obat',
     '/data-obat/tambah',
-    '/kalender-hst',
     '/images/icon.png',
     '/manifest.json'
 ];
@@ -54,12 +57,14 @@ self.addEventListener('fetch', (event) => {
                     return response;
                 })
                 .catch(async () => {
-                    // Offline fallback: check cache for exact match, or fallback to /data-obat shell
+                    // Offline fallback: check cache for exact match, or fallback to main shells
                     const cachedResponse = await caches.match(request);
                     if (cachedResponse) {
                         return cachedResponse;
                     }
-                    return caches.match('/data-obat');
+                    return (await caches.match('/dashboard'))
+                        || (await caches.match('/kalender-hst'))
+                        || (await caches.match('/data-obat'));
                 })
         );
         return;

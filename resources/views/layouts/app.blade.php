@@ -261,16 +261,44 @@
             <nav class="flex-1 px-3 py-4 space-y-0.5">
                 <p class="px-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-2">Menu</p>
 
+                <a href="/dashboard"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                          {{ request()->is('dashboard*') ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
+                    <span class="w-8 h-8 rounded-lg {{ request()->is('dashboard*') ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0c0-3.866 3.134-7 7-7-1.5 4-4 7-7 7zm0 0c0-3.866-3.134-7-7-7 1.5 4 4 7 7 7z"/>
+                        </svg>
+                    </span>
+                    <span>Dashboard</span>
+                    @if(request()->is('dashboard*'))
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    @endif
+                </a>
+
                 <a href="/data-obat"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
                           {{ request()->is('data-obat*') ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
                     <span class="w-8 h-8 rounded-lg {{ request()->is('data-obat*') ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.309 48.309 0 01-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
                         </svg>
                     </span>
-                    <span>Data Obat Tanaman</span>
+                    <span>Data Obat</span>
                     @if(request()->is('data-obat*'))
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    @endif
+                </a>
+
+                <a href="/steps"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                          {{ (request()->is('steps*')) ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
+                    <span class="w-8 h-8 rounded-lg {{ (request()->is('steps*')) ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
+                        </svg>
+                    </span>
+                    <span>Tahapan</span>
+                    @if(request()->is('steps*'))
                         <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
                     @endif
                 </a>
@@ -279,8 +307,8 @@
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
                           {{ request()->is('kalender-hst*') ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
                     <span class="w-8 h-8 rounded-lg {{ request()->is('kalender-hst*') ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-68-76a12,12,0,1,1-12-12A12,12,0,0,1,140,132Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,132ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,140,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"></path>
                         </svg>
                     </span>
                     <span>Kalender HST</span>
@@ -293,7 +321,6 @@
             {{-- Connection Indicator (Desktop) --}}
             <div class="p-3 border-t border-gray-100 mt-auto">
                 <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-gray-50/80 border border-gray-100">
-                    <span class="text-[11px] text-text-secondary font-medium">Koneksi</span>
                     <span class="connection-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
                     </span>
@@ -325,34 +352,66 @@
     </div>
 
     {{-- ── Mobile bottom navigation ── --}}
-    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
-        <div class="flex items-center justify-around px-2 py-1">
-            <a href="/data-obat"
-               class="flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all
-                      {{ request()->is('data-obat*') ? 'text-primary' : 'text-text-muted' }}">
-                <div class="relative">
-                    @if(request()->is('data-obat*'))
-                        <div class="absolute -inset-1.5 rounded-xl bg-primary-light/70"></div>
-                    @endif
-                    <svg class="w-5 h-5 relative" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.309 48.309 0 01-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 w-full z-30 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]" style="width: 100%; left: 0; right: 0;">
+        <div class="flex items-center justify-around w-full px-2 pt-1.5 pb-2" style="width: 100%; display: flex;">
+            {{-- 1. Dashboard --}}
+            @php $isDashboard = request()->is('dashboard*') || request()->is('/'); @endphp
+            <a href="/dashboard"
+               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-4 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isDashboard ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDashboard ? '2' : '1.8' }}">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0c0-3.866 3.134-7 7-7-1.5 4-4 7-7 7zm0 0c0-3.866-3.134-7-7-7 1.5 4 4 7 7 7z"/>
                     </svg>
                 </div>
-                <span class="text-[10px] font-semibold">Data Obat</span>
+                <span class="text-[11px] font-medium mt-1 {{ $isDashboard ? 'font-semibold' : '' }}"
+                      style="{{ $isDashboard ? 'color: #16a34a;' : 'color: #6b7280;' }}">Dashboard</span>
             </a>
 
-            <a href="/kalender-hst"
-               class="flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all
-                      {{ request()->is('kalender-hst*') ? 'text-primary' : 'text-text-muted' }}">
-                <div class="relative">
-                    @if(request()->is('kalender-hst*'))
-                        <div class="absolute -inset-1.5 rounded-xl bg-primary-light/70"></div>
-                    @endif
-                    <svg class="w-5 h-5 relative" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+            {{-- 2. Data Obat --}}
+            @php $isDataObat = request()->is('data-obat*'); @endphp
+            <a href="/data-obat"
+               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-4 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isDataObat ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDataObat ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
                     </svg>
                 </div>
-                <span class="text-[10px] font-semibold">Kalender HST</span>
+                <span class="text-[11px] font-medium mt-1 {{ $isDataObat ? 'font-semibold' : '' }}"
+                      style="{{ $isDataObat ? 'color: #16a34a;' : 'color: #6b7280;' }}">Data Obat</span>
+            </a>
+
+            {{-- 3. Tahapan --}}
+            @php $isTahapan = request()->is('steps*'); @endphp
+            <a href="/steps"
+               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-4 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isTahapan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isTahapan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
+                    </svg>
+                </div>
+                <span class="text-[11px] font-medium mt-1 {{ $isTahapan ? 'font-semibold' : '' }}"
+                      style="{{ $isTahapan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tahapan</span>
+            </a>
+
+            <!-- 4. kalender hst -->
+            @php $isKalenderHst = request()->is('kalender-hst*'); @endphp
+            <a href="/kalender-hst"
+               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-4 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isKalenderHst ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKalenderHst ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                </div>
+                <span class="text-[11px] font-medium mt-1 {{ $isKalenderHst ? 'font-semibold' : '' }}"
+                      style="{{ $isKalenderHst ? 'color: #16a34a;' : 'color: #6b7280;' }}">Kalender HST</span>
             </a>
         </div>
     </nav>

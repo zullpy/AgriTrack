@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Medicine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class OfflineSyncTest extends TestCase
@@ -119,9 +120,9 @@ class OfflineSyncTest extends TestCase
 
     public function test_can_sync_offline_created_medicine_with_photo(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
-        $fakeBase64 = 'data:image/jpeg;base64,' . base64_encode('fake-image-content');
+        $fakeBase64 = 'data:image/jpeg;base64,'.base64_encode('fake-image-content');
 
         $payload = [
             'mutations' => [
@@ -153,7 +154,7 @@ class OfflineSyncTest extends TestCase
         $this->assertNotNull($created->foto_nota);
         $paths = $created->foto_paths;
         $this->assertCount(1, $paths);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($paths[0]);
+        Storage::disk('public')->assertExists($paths[0]);
 
         $this->assertDatabaseHas('medicine_purchases', [
             'medicine_id' => $created->id,
@@ -163,4 +164,3 @@ class OfflineSyncTest extends TestCase
         ]);
     }
 }
-

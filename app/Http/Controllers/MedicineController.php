@@ -16,13 +16,13 @@ class MedicineController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
-                  ->orWhere('sasaran_obat', 'like', "%{$search}%")
-                  ->orWhere('tanaman_sasaran', 'like', "%{$search}%")
-                  ->orWhere('unsur_bahan', 'like', "%{$search}%")
-                  ->orWhere('toko_obat', 'like', "%{$search}%")
-                  ->orWhereHas('purchases', function ($pq) use ($search) {
-                      $pq->where('toko_obat', 'like', "%{$search}%");
-                  });
+                    ->orWhere('sasaran_obat', 'like', "%{$search}%")
+                    ->orWhere('tanaman_sasaran', 'like', "%{$search}%")
+                    ->orWhere('unsur_bahan', 'like', "%{$search}%")
+                    ->orWhere('toko_obat', 'like', "%{$search}%")
+                    ->orWhereHas('purchases', function ($pq) use ($search) {
+                        $pq->where('toko_obat', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -46,6 +46,7 @@ class MedicineController extends Controller
     public function create()
     {
         $existingMedicines = Medicine::with('purchases')->get();
+
         return view('data-obat.form', compact('existingMedicines'));
     }
 
@@ -114,7 +115,7 @@ class MedicineController extends Controller
             }
         }
         $primaryFotoPath = $uploadedPhotoPaths[0] ?? null;
-        $validated['foto_nota'] = !empty($uploadedPhotoPaths) ? json_encode($uploadedPhotoPaths) : null;
+        $validated['foto_nota'] = ! empty($uploadedPhotoPaths) ? json_encode($uploadedPhotoPaths) : null;
 
         // Cek apakah obat dengan nama yang sama sudah ada (case-insensitive & trim)
         $existing = Medicine::whereRaw('LOWER(TRIM(nama)) = ?', [strtolower(trim($validated['nama']))])->first();
@@ -129,26 +130,26 @@ class MedicineController extends Controller
                     if ($request->hasFile("purchases.{$idx}.foto_nota")) {
                         $pFoto = $request->file("purchases.{$idx}.foto_nota")->store('medicines', 'public');
                     }
-                    if (!empty($pData['toko_obat']) || !empty($pData['harga']) || !empty($pData['tanggal_beli'])) {
+                    if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli'])) {
                         $purchasesInput[] = [
-                            'toko_obat'    => $pData['toko_obat'] ?? null,
-                            'harga'        => $pData['harga'] ?? null,
+                            'toko_obat' => $pData['toko_obat'] ?? null,
+                            'harga' => $pData['harga'] ?? null,
                             'tanggal_beli' => $pData['tanggal_beli'] ?? null,
-                            'catatan'      => $pData['catatan'] ?? null,
-                            'foto_nota'    => $pFoto ?? $primaryFotoPath,
+                            'catatan' => $pData['catatan'] ?? null,
+                            'foto_nota' => $pFoto ?? $primaryFotoPath,
                         ];
                     }
                 }
             }
 
             // Jika tidak menggunakan array purchases, gunakan input tunggal
-            if (empty($purchasesInput) && (!empty($validated['toko_obat']) || !empty($validated['harga']) || !empty($validated['tanggal_beli']))) {
+            if (empty($purchasesInput) && (! empty($validated['toko_obat']) || ! empty($validated['harga']) || ! empty($validated['tanggal_beli']))) {
                 $purchasesInput[] = [
-                    'toko_obat'    => $validated['toko_obat'] ?? null,
-                    'harga'        => $validated['harga'] ?? null,
+                    'toko_obat' => $validated['toko_obat'] ?? null,
+                    'harga' => $validated['harga'] ?? null,
                     'tanggal_beli' => $validated['tanggal_beli'] ?? null,
-                    'catatan'      => null,
-                    'foto_nota'    => $primaryFotoPath,
+                    'catatan' => null,
+                    'foto_nota' => $primaryFotoPath,
                 ];
             }
 
@@ -159,7 +160,7 @@ class MedicineController extends Controller
                 $storeName = trim($p['toko_obat'] ?? '');
                 $existingPurchase = null;
 
-                if (!empty($storeName)) {
+                if (! empty($storeName)) {
                     $existingPurchase = $existing->purchases()
                         ->whereRaw('LOWER(TRIM(toko_obat)) = ?', [strtolower($storeName)])
                         ->first();
@@ -171,27 +172,27 @@ class MedicineController extends Controller
                     if (array_key_exists('harga', $p)) {
                         $updatePurchaseData['harga'] = $p['harga'];
                     }
-                    if (!empty($p['tanggal_beli'])) {
+                    if (! empty($p['tanggal_beli'])) {
                         $updatePurchaseData['tanggal_beli'] = $p['tanggal_beli'];
                     }
-                    if (!empty($p['catatan'])) {
+                    if (! empty($p['catatan'])) {
                         $updatePurchaseData['catatan'] = $p['catatan'];
                     }
-                    if (!empty($p['foto_nota'])) {
+                    if (! empty($p['foto_nota'])) {
                         if ($existingPurchase->foto_nota && $existingPurchase->foto_nota !== $p['foto_nota']) {
                             Storage::disk('public')->delete($existingPurchase->foto_nota);
                         }
                         $updatePurchaseData['foto_nota'] = $p['foto_nota'];
                     }
 
-                    if (!empty($updatePurchaseData)) {
+                    if (! empty($updatePurchaseData)) {
                         $existingPurchase->update($updatePurchaseData);
                     }
                     $updatedStores[] = $existingPurchase->toko_obat;
                 } else {
                     // Nama toko baru: buat baris pembelian baru
                     $newP = $existing->purchases()->create($p);
-                    if (!empty($newP->toko_obat)) {
+                    if (! empty($newP->toko_obat)) {
                         $addedStores[] = $newP->toko_obat;
                     }
                 }
@@ -200,11 +201,11 @@ class MedicineController extends Controller
             // Perbarui data utama obat dengan data terbaru jika ada
             $masterUpdates = [];
             foreach (['jenis', 'cara_kerja', 'sasaran_obat', 'tanaman_sasaran', 'dosis_anjuran', 'unsur_bahan', 'fase', 'keterangan'] as $field) {
-                if (!empty($validated[$field])) {
+                if (! empty($validated[$field])) {
                     $masterUpdates[$field] = $validated[$field];
                 }
             }
-            if (!empty($uploadedPhotoPaths)) {
+            if (! empty($uploadedPhotoPaths)) {
                 $combined = array_values(array_unique(array_merge($existing->foto_paths, $uploadedPhotoPaths)));
                 $masterUpdates['foto_nota'] = json_encode($combined);
             }
@@ -212,27 +213,31 @@ class MedicineController extends Controller
             // Update harga dan toko terakhir pada master record
             if (array_key_exists('harga', $validated) && $validated['harga'] === null) {
                 $masterUpdates['harga'] = null;
-            } else if (!empty($purchasesInput)) {
+            } elseif (! empty($purchasesInput)) {
                 $lastP = end($purchasesInput);
                 if (array_key_exists('harga', $lastP)) {
                     $masterUpdates['harga'] = $lastP['harga'];
                 }
-                if (!empty($lastP['toko_obat'])) $masterUpdates['toko_obat'] = $lastP['toko_obat'];
-                if (!empty($lastP['tanggal_beli'])) $masterUpdates['tanggal_beli'] = $lastP['tanggal_beli'];
+                if (! empty($lastP['toko_obat'])) {
+                    $masterUpdates['toko_obat'] = $lastP['toko_obat'];
+                }
+                if (! empty($lastP['tanggal_beli'])) {
+                    $masterUpdates['tanggal_beli'] = $lastP['tanggal_beli'];
+                }
             }
 
-            if (!empty($masterUpdates)) {
+            if (! empty($masterUpdates)) {
                 $existing->update($masterUpdates);
             }
 
             $msgParts = [];
-            if (!empty($updatedStores)) {
-                $msgParts[] = "harga & tanggal toko '" . implode(', ', $updatedStores) . "' berhasil diperbarui";
+            if (! empty($updatedStores)) {
+                $msgParts[] = "harga & tanggal toko '".implode(', ', $updatedStores)."' berhasil diperbarui";
             }
-            if (!empty($addedStores)) {
-                $msgParts[] = "pembelian dari toko baru '" . implode(', ', $addedStores) . "' berhasil ditambahkan";
+            if (! empty($addedStores)) {
+                $msgParts[] = "pembelian dari toko baru '".implode(', ', $addedStores)."' berhasil ditambahkan";
             }
-            $msgDetail = !empty($msgParts) ? ' (' . implode(', ', $msgParts) . ')' : '';
+            $msgDetail = ! empty($msgParts) ? ' ('.implode(', ', $msgParts).')' : '';
 
             return redirect('/data-obat')->with('success', "Obat '{$existing->nama}' sudah terdaftar{$msgDetail}.");
         }
@@ -248,25 +253,25 @@ class MedicineController extends Controller
                 if ($request->hasFile("purchases.{$idx}.foto_nota")) {
                     $pFoto = $request->file("purchases.{$idx}.foto_nota")->store('medicines', 'public');
                 }
-                if (!empty($pData['toko_obat']) || !empty($pData['harga']) || !empty($pData['tanggal_beli'])) {
+                if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli'])) {
                     $purchasesToAdd[] = [
-                        'toko_obat'    => $pData['toko_obat'] ?? null,
-                        'harga'        => $pData['harga'] ?? null,
+                        'toko_obat' => $pData['toko_obat'] ?? null,
+                        'harga' => $pData['harga'] ?? null,
                         'tanggal_beli' => $pData['tanggal_beli'] ?? null,
-                        'catatan'      => $pData['catatan'] ?? null,
-                        'foto_nota'    => $pFoto ?? $primaryFotoPath,
+                        'catatan' => $pData['catatan'] ?? null,
+                        'foto_nota' => $pFoto ?? $primaryFotoPath,
                     ];
                 }
             }
         }
 
-        if (empty($purchasesToAdd) && (!empty($validated['toko_obat']) || !empty($validated['harga']) || !empty($validated['tanggal_beli']))) {
+        if (empty($purchasesToAdd) && (! empty($validated['toko_obat']) || ! empty($validated['harga']) || ! empty($validated['tanggal_beli']))) {
             $purchasesToAdd[] = [
-                'toko_obat'    => $validated['toko_obat'] ?? null,
-                'harga'        => $validated['harga'] ?? null,
+                'toko_obat' => $validated['toko_obat'] ?? null,
+                'harga' => $validated['harga'] ?? null,
                 'tanggal_beli' => $validated['tanggal_beli'] ?? null,
-                'catatan'      => null,
-                'foto_nota'    => $primaryFotoPath,
+                'catatan' => null,
+                'foto_nota' => $primaryFotoPath,
             ];
         }
 
@@ -281,6 +286,7 @@ class MedicineController extends Controller
     {
         $medicine->load('purchases');
         $existingMedicines = Medicine::with('purchases')->where('id', '!=', $medicine->id)->get();
+
         return view('data-obat.form', compact('medicine', 'existingMedicines'));
     }
 
@@ -343,12 +349,12 @@ class MedicineController extends Controller
         // Tangani foto yang dihapus oleh user pada form edit
         $currentPaths = $medicine->foto_paths;
         if ($request->has('deleted_foto_paths') && is_array($request->input('deleted_foto_paths'))) {
-            $deletedPaths = array_map(fn($p) => str_replace('\\', '/', trim((string) $p)), $request->input('deleted_foto_paths'));
+            $deletedPaths = array_map(fn ($p) => str_replace('\\', '/', trim((string) $p)), $request->input('deleted_foto_paths'));
             foreach ($deletedPaths as $delPath) {
                 if (Storage::disk('public')->exists($delPath)) {
                     Storage::disk('public')->delete($delPath);
                 }
-                $currentPaths = array_values(array_filter($currentPaths, fn($p) => str_replace('\\', '/', trim((string) $p)) !== $delPath));
+                $currentPaths = array_values(array_filter($currentPaths, fn ($p) => str_replace('\\', '/', trim((string) $p)) !== $delPath));
             }
         }
 
@@ -364,7 +370,7 @@ class MedicineController extends Controller
         }
 
         $allPhotoPaths = array_values(array_unique(array_merge($currentPaths, $newPhotoPaths)));
-        $validated['foto_nota'] = !empty($allPhotoPaths) ? json_encode($allPhotoPaths) : null;
+        $validated['foto_nota'] = ! empty($allPhotoPaths) ? json_encode($allPhotoPaths) : null;
         unset($validated['deleted_foto_paths']);
 
         $medicine->update($validated);
@@ -373,12 +379,12 @@ class MedicineController extends Controller
         if ($request->has('purchases') && is_array($request->input('purchases'))) {
             $existingIds = [];
             foreach ($request->input('purchases') as $idx => $pData) {
-                $hasStore = !empty(trim($pData['toko_obat'] ?? ''));
-                $hasDate = !empty($pData['tanggal_beli']);
+                $hasStore = ! empty(trim($pData['toko_obat'] ?? ''));
+                $hasDate = ! empty($pData['tanggal_beli']);
                 $hasPrice = isset($pData['harga']) && $pData['harga'] !== null && $pData['harga'] !== '';
-                $hasId = !empty($pData['id']);
+                $hasId = ! empty($pData['id']);
 
-                if (!$hasStore && !$hasDate && !$hasPrice && !$hasId) {
+                if (! $hasStore && ! $hasDate && ! $hasPrice && ! $hasId) {
                     continue;
                 }
 
@@ -394,7 +400,7 @@ class MedicineController extends Controller
                 }
 
                 // Jika ID tidak ada, cek apakah toko dengan nama yang sama sudah ada di obat ini
-                if (!$purchase && !empty($pData['toko_obat'])) {
+                if (! $purchase && ! empty($pData['toko_obat'])) {
                     $purchase = $medicine->purchases()
                         ->whereRaw('LOWER(TRIM(toko_obat)) = ?', [strtolower(trim($pData['toko_obat']))])
                         ->first();
@@ -406,31 +412,33 @@ class MedicineController extends Controller
 
                 if ($purchase) {
                     $updateData = [
-                        'toko_obat'    => $pData['toko_obat'] ?? $purchase->toko_obat,
-                        'harga'        => $cleanPrice,
-                        'tanggal_beli' => !empty($pData['tanggal_beli']) ? $pData['tanggal_beli'] : null,
-                        'catatan'      => $pData['catatan'] ?? $purchase->catatan,
+                        'toko_obat' => $pData['toko_obat'] ?? $purchase->toko_obat,
+                        'harga' => $cleanPrice,
+                        'tanggal_beli' => ! empty($pData['tanggal_beli']) ? $pData['tanggal_beli'] : null,
+                        'catatan' => $pData['catatan'] ?? $purchase->catatan,
                     ];
                     if ($pFoto) {
-                        if ($purchase->foto_nota) Storage::disk('public')->delete($purchase->foto_nota);
+                        if ($purchase->foto_nota) {
+                            Storage::disk('public')->delete($purchase->foto_nota);
+                        }
                         $updateData['foto_nota'] = $pFoto;
                     }
                     $purchase->update($updateData);
                     $existingIds[] = $purchase->id;
                 } else {
                     $newPurchase = $medicine->purchases()->create([
-                        'toko_obat'    => $pData['toko_obat'] ?? null,
-                        'harga'        => $cleanPrice,
-                        'tanggal_beli' => !empty($pData['tanggal_beli']) ? $pData['tanggal_beli'] : null,
-                        'catatan'      => $pData['catatan'] ?? null,
-                        'foto_nota'    => $pFoto ?? ($allPhotoPaths[0] ?? null),
+                        'toko_obat' => $pData['toko_obat'] ?? null,
+                        'harga' => $cleanPrice,
+                        'tanggal_beli' => ! empty($pData['tanggal_beli']) ? $pData['tanggal_beli'] : null,
+                        'catatan' => $pData['catatan'] ?? null,
+                        'foto_nota' => $pFoto ?? ($allPhotoPaths[0] ?? null),
                     ]);
                     $existingIds[] = $newPurchase->id;
                 }
             }
 
             // Hapus pembelian yang sudah di-remove dari form oleh user
-            if (!empty($existingIds)) {
+            if (! empty($existingIds)) {
                 $medicine->purchases()->whereNotIn('id', $existingIds)->delete();
             } else {
                 $medicine->purchases()->delete();
@@ -489,7 +497,7 @@ class MedicineController extends Controller
     public function destroyPhoto(Request $request, Medicine $medicine)
     {
         $rawPath = $request->input('path');
-        if (!$rawPath) {
+        if (! $rawPath) {
             return response()->json(['success' => false, 'message' => 'Path foto tidak valid.'], 400);
         }
 
@@ -502,10 +510,10 @@ class MedicineController extends Controller
 
         // Hapus dari foto_paths obat
         $currentPaths = $medicine->foto_paths;
-        $remaining = array_values(array_filter($currentPaths, fn($p) => str_replace('\\', '/', trim((string) $p)) !== $normalizedPath));
+        $remaining = array_values(array_filter($currentPaths, fn ($p) => str_replace('\\', '/', trim((string) $p)) !== $normalizedPath));
 
         $medicine->update([
-            'foto_nota' => !empty($remaining) ? json_encode($remaining) : null,
+            'foto_nota' => ! empty($remaining) ? json_encode($remaining) : null,
         ]);
 
         // Hapus juga dari purchases jika merujuk ke path yang sama

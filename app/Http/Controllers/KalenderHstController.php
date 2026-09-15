@@ -18,8 +18,12 @@ class KalenderHstController extends Controller
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
 
-        if ($month < 1 || $month > 12) $month = now()->month;
-        if ($year < 2000 || $year > 2100) $year = now()->year;
+        if ($month < 1 || $month > 12) {
+            $month = now()->month;
+        }
+        if ($year < 2000 || $year > 2100) {
+            $year = now()->year;
+        }
 
         $currentMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
         $prevMonth = $currentMonth->copy()->subMonth();
@@ -161,7 +165,7 @@ class KalenderHstController extends Controller
     public function markAsHarvested(Request $request, Crop $crop): RedirectResponse
     {
         $validated = $request->validate([
-            'tanggal_panen' => 'required|date|after_or_equal:' . $crop->tanggal_tanam->toDateString(),
+            'tanggal_panen' => 'required|date|after_or_equal:'.$crop->tanggal_tanam->toDateString(),
             'catatan' => 'nullable|string|max:1000',
         ]);
 
@@ -173,7 +177,7 @@ class KalenderHstController extends Controller
             'status' => 'Sudah Dipanen',
             'tanggal_panen' => $validated['tanggal_panen'],
             'total_hst_panen' => $totalHst,
-            'catatan' => $validated['catatan'] ? ($crop->catatan . "\n[Panen]: " . $validated['catatan']) : $crop->catatan,
+            'catatan' => $validated['catatan'] ? ($crop->catatan."\n[Panen]: ".$validated['catatan']) : $crop->catatan,
         ]);
 
         return redirect('/kalender-hst?tab=riwayat')->with('success', "Tanaman {$crop->nama_tanaman} telah ditandai sudah dipanen (HST {$totalHst}).");
@@ -285,7 +289,7 @@ class KalenderHstController extends Controller
         $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat pada HST {$targetHst}.";
 
         if ($request->input('redirect_to') === 'show') {
-            return redirect('/kalender-hst/tanaman/' . $crop->id)->with('success', $msg);
+            return redirect('/kalender-hst/tanaman/'.$crop->id)->with('success', $msg);
         }
 
         return redirect()->back(fallback: '/kalender-hst?tab=aktif')->with('success', $msg);

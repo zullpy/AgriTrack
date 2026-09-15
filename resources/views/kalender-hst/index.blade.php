@@ -28,7 +28,7 @@
     </div>
 
     {{-- Stats Pill Bar --}}
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 pt-5 border-t border-white/10">
+    <!-- <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 pt-5 border-t border-white/10">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -64,7 +64,7 @@
                 <p class="text-base font-bold text-white leading-tight">{{ $harvestedCrops->total() }} riwayat</p>
             </div>
         </div>
-    </div>
+    </div> -->
 </div>
 
 {{-- ── Flash message ── --}}
@@ -248,21 +248,26 @@
                     <div>
                         {{-- Card Header --}}
                         <div class="flex items-start justify-between gap-4 pb-4 border-b border-gray-100">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h3 class="text-lg font-bold text-text">{{ $crop->nama_tanaman }}</h3>
-                                    @if ($crop->varietas)
-                                        <span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-text-secondary">
-                                            {{ $crop->varietas }}
-                                        </span>
-                                    @endif
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50/80 border border-emerald-100/80 text-xl flex items-center justify-center shrink-0 select-none">
+                                    {{ $crop->emoji }}
                                 </div>
-                                <p class="text-xs text-text-secondary mt-1 flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                                    </svg>
-                                    Tanam: <span class="font-medium text-text">{{ \Carbon\Carbon::parse($crop->tanggal_tanam)->translatedFormat('d M Y') }}</span>
-                                </p>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="text-lg font-bold text-text">{{ $crop->nama_tanaman }}</h3>
+                                        @if ($crop->varietas)
+                                            <span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-text-secondary">
+                                                {{ $crop->varietas }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs text-text-secondary mt-1 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                                        </svg>
+                                        Tanam: <span class="font-medium text-text">{{ \Carbon\Carbon::parse($crop->tanggal_tanam)->translatedFormat('d M Y') }}</span>
+                                    </p>
+                                </div>
                             </div>
 
                             {{-- HST Running Counter Pill --}}
@@ -357,16 +362,20 @@
                     <div>
                         {{-- Card Header --}}
                         <div class="flex items-start justify-between gap-4 pb-4 border-b border-gray-100">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h3 class="text-lg font-bold text-text">{{ $crop->nama_tanaman }}</h3>
-                                    @if ($crop->varietas)
-                                        <span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-text-secondary">
-                                            {{ $crop->varietas }}
-                                        </span>
-                                    @endif
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 text-xl flex items-center justify-center shrink-0 select-none">
+                                    {{ $crop->emoji }}
                                 </div>
-                                <div class="mt-2 space-y-1 text-xs text-text-secondary">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="text-lg font-bold text-text">{{ $crop->nama_tanaman }}</h3>
+                                        @if ($crop->varietas)
+                                            <span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-text-secondary">
+                                                {{ $crop->varietas }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="mt-2 space-y-1 text-xs text-text-secondary">
                                     <p class="flex items-center gap-1.5">
                                         <svg class="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>

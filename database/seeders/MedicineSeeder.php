@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Medicine;
 use App\Models\MedicinePurchase;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class MedicineSeeder extends Seeder
@@ -950,7 +949,7 @@ class MedicineSeeder extends Seeder
                     'toko_obat' => $item['toko_obat'],
                     'harga' => $item['harga'],
                     'tanggal_beli' => $item['tanggal_beli'],
-                    'catatan' => 'Pembelian awal inventaris ' . $item['nama'],
+                    'catatan' => 'Pembelian awal inventaris '.$item['nama'],
                 ]);
             }
         }

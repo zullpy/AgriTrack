@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'nama',
@@ -42,7 +44,7 @@ class Medicine extends Model
     /**
      * Relasi ke riwayat pembelian / toko obat.
      */
-    public function purchases(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function purchases(): HasMany
     {
         return $this->hasMany(MedicinePurchase::class)->orderBy('tanggal_beli', 'desc')->orderBy('id', 'desc');
     }
@@ -56,7 +58,7 @@ class Medicine extends Model
             return null;
         }
 
-        return 'Rp ' . number_format($this->harga, 0, ',', '.');
+        return 'Rp '.number_format($this->harga, 0, ',', '.');
     }
 
     /**
@@ -66,7 +68,7 @@ class Medicine extends Model
      */
     public function getFotoPathsAttribute(): array
     {
-        if (!$this->foto_nota) {
+        if (! $this->foto_nota) {
             return [];
         }
 
@@ -93,7 +95,7 @@ class Medicine extends Model
         $urls = [];
         foreach ($paths as $path) {
             if ($path) {
-                $urls[] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+                $urls[] = Storage::disk('public')->url($path);
             }
         }
 
@@ -101,7 +103,7 @@ class Medicine extends Model
         if (empty($urls)) {
             $purchases = $this->relationLoaded('purchases') ? $this->purchases : $this->purchases()->get();
             foreach ($purchases as $p) {
-                if ($p->foto_url && !in_array($p->foto_url, $urls, true)) {
+                if ($p->foto_url && ! in_array($p->foto_url, $urls, true)) {
                     $urls[] = $p->foto_url;
                 }
             }
@@ -116,6 +118,7 @@ class Medicine extends Model
     public function getFotoUrlAttribute(): ?string
     {
         $urls = $this->foto_urls;
+
         return $urls[0] ?? null;
     }
 }

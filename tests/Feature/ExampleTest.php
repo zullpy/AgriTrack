@@ -8,11 +8,12 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     use RefreshDatabase;
-    public function test_the_root_redirects_to_data_obat(): void
+
+    public function test_the_root_redirects_to_dashboard(): void
     {
         $response = $this->get('/');
 
-        $response->assertRedirect('/data-obat');
+        $response->assertRedirect('/dashboard');
     }
 
     public function test_data_obat_page_loads_successfully(): void

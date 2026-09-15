@@ -77,6 +77,82 @@ class Crop extends Model
         return (int) $plantDate->diffInDays($targetDate);
     }
 
+    /**
+     * Dapatkan emoji tanaman sesuai katalog atau nama komoditas.
+     */
+    public function getEmojiAttribute(): string
+    {
+        $name = strtolower($this->nama_tanaman ?? '');
+        $varietas = strtolower($this->varietas ?? '');
+
+        // 1. Cek dari PlantCatalog aktif (pencocokan nama & keywords persis seperti di Dashboard)
+        try {
+            $catalogs = PlantCatalog::aktif()->get();
+            $matched = $catalogs->first(function (PlantCatalog $cat) use ($name, $varietas) {
+                $catName = strtolower($cat->name);
+                if ($catName === $name || str_contains($name, $catName) || str_contains($catName, $name)) {
+                    return true;
+                }
+                if ($varietas && (str_contains($varietas, $catName) || str_contains($catName, $varietas))) {
+                    return true;
+                }
+                if ($cat->keywords) {
+                    $kws = array_map('trim', explode(',', strtolower($cat->keywords)));
+                    foreach ($kws as $kw) {
+                        if ($kw && (str_contains($name, $kw) || ($varietas && str_contains($varietas, $kw)))) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            });
+
+            if ($matched && ! empty($matched->emoji)) {
+                return $matched->emoji;
+            }
+        } catch (\Throwable) {
+            // fallback below
+        }
+
+        // 2. Fallback kamus emoji komoditas umum
+        $map = [
+            'jagung' => '🌽',
+            'padi' => '🌾',
+            'beras' => '🌾',
+            'cabai' => '🌶️',
+            'cabe' => '🌶️',
+            'tomat' => '🍅',
+            'terong' => '🍆',
+            'mentimun' => '🥒',
+            'timun' => '🥒',
+            'semangka' => '🍉',
+            'melon' => '🍈',
+            'bawang' => '🧅',
+            'kentang' => '🥔',
+            'wortel' => '🥕',
+            'singkong' => '🌿',
+            'kedelai' => '🫘',
+            'kacang' => '🥜',
+            'bayam' => '🥬',
+            'sawi' => '🥬',
+            'kangkung' => '🥬',
+            'kopi' => '☕',
+            'kakao' => '🍫',
+            'sawit' => '🌴',
+            'tebu' => '🎋',
+            'tembakau' => '🍂',
+        ];
+
+        foreach ($map as $keyword => $emoji) {
+            if (str_contains($name, $keyword) || str_contains($varietas, $keyword)) {
+                return $emoji;
+            }
+        }
+
+        return '🌱';
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'Sedang Ditanam');
