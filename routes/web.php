@@ -13,7 +13,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-Route::resource('tanaman-katalog', PlantCatalogController::class)->only(['index', 'edit', 'update']);
+Route::resource('tanaman-katalog', PlantCatalogController::class)->except(['destroy']);
 
 Route::get('/data-obat', [MedicineController::class, 'index']);
 Route::get('/data-obat/tambah', [MedicineController::class, 'create']);

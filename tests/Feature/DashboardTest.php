@@ -96,4 +96,59 @@ class DashboardTest extends TestCase
 
         $response->assertRedirect(route('dashboard'));
     }
+
+    public function test_dashboard_uses_crop_emoji_when_crop_not_in_plant_catalogs(): void
+    {
+        Crop::create([
+            'nama_tanaman' => 'Tomat',
+            'varietas' => 'Servo F1',
+            'tanggal_tanam' => Carbon::now()->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        $response = $this->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertSee('Tomat');
+        $response->assertSee('🍅');
+    }
+
+    public function test_plant_catalog_create_page_loads_with_prefilled_name(): void
+    {
+        $response = $this->get(route('tanaman-katalog.create', ['name' => 'Tomat']));
+
+        $response->assertStatus(200);
+        $response->assertSee('Tambah Panduan Tanaman');
+        $response->assertSee('value="Tomat"', false);
+        $response->assertSee('value="🍅"', false);
+        $response->assertDontSee('value="PUT"', false);
+    }
+
+    public function test_plant_catalog_store_creates_catalog_and_guides(): void
+    {
+        $response = $this->post(route('tanaman-katalog.store'), [
+            'name' => 'Tomat',
+            'key' => 'tomat',
+            'emoji' => '🍅',
+            'cycle' => '60 – 80 HST',
+            'theme' => 'rose',
+            'urutan' => 10,
+            'aktif' => '1',
+            'guides' => [
+                [
+                    'phase' => 'Pemupukan Awal',
+                    'hst' => '0 HST',
+                    'focus' => 'Pondasi akar',
+                    'nutrients' => "Kompos\nNPK 16-16-16",
+                    'dosis' => '10 gram per lubang',
+                    'metode' => 'Campur tanah lubang tanam',
+                    'tips' => 'Jaga kelembaban tanah',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect(route('dashboard'));
+        $this->assertDatabaseHas('plant_catalogs', ['key' => 'tomat', 'name' => 'Tomat']);
+        $this->assertDatabaseHas('plant_catalog_guides', ['phase' => 'Pemupukan Awal']);
+    }
 }

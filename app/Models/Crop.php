@@ -20,6 +20,11 @@ class Crop extends Model
         'catatan',
     ];
 
+    protected $appends = [
+        'current_hst',
+        'emoji',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -78,12 +83,12 @@ class Crop extends Model
     }
 
     /**
-     * Dapatkan emoji tanaman sesuai katalog atau nama komoditas.
+     * Dapatkan emoji tanaman sesuai katalog atau kamus komoditas umum.
      */
-    public function getEmojiAttribute(): string
+    public static function getEmojiForName(string $name, ?string $varietas = null): string
     {
-        $name = strtolower($this->nama_tanaman ?? '');
-        $varietas = strtolower($this->varietas ?? '');
+        $name = strtolower(trim($name));
+        $varietas = $varietas ? strtolower(trim($varietas)) : '';
 
         // 1. Cek dari PlantCatalog aktif (pencocokan nama & keywords persis seperti di Dashboard)
         try {
@@ -145,12 +150,20 @@ class Crop extends Model
         ];
 
         foreach ($map as $keyword => $emoji) {
-            if (str_contains($name, $keyword) || str_contains($varietas, $keyword)) {
+            if (str_contains($name, $keyword) || ($varietas && str_contains($varietas, $keyword))) {
                 return $emoji;
             }
         }
 
         return '🌱';
+    }
+
+    /**
+     * Dapatkan emoji tanaman sesuai katalog atau nama komoditas.
+     */
+    public function getEmojiAttribute(): string
+    {
+        return self::getEmojiForName($this->nama_tanaman ?? '', $this->varietas ?? null);
     }
 
     public function scopeActive(Builder $query): Builder

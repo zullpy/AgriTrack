@@ -8,8 +8,8 @@
 --}}
 
 @php
-    $isEdit  = isset($catalog);
-    $guides  = $isEdit ? $catalog->guides : collect();
+    $isEdit  = ($method ?? 'POST') === 'PUT';
+    $guides  = ($isEdit && isset($catalog)) ? $catalog->guides : collect();
 @endphp
 
 <form id="catalogForm" method="POST" action="{{ $action }}">
@@ -18,7 +18,7 @@
         @method('PUT')
     @endif
 
-    {{-- Section: Info Dasar (Hidden saat edit panduan) --}}
+    {{-- Section: Info Dasar --}}
     @if ($isEdit)
         <input type="hidden" name="name" value="{{ old('name', $catalog->name) }}">
         <input type="hidden" name="key" value="{{ old('key', $catalog->key) }}">
@@ -28,6 +28,48 @@
         <input type="hidden" name="urutan" value="{{ old('urutan', $catalog->urutan) }}">
         <input type="hidden" name="keywords" value="{{ old('keywords', $catalog->keywords) }}">
         <input type="hidden" name="aktif" value="{{ old('aktif', $catalog->aktif ? '1' : '0') }}">
+    @else
+        <div class="bg-surface rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+            <h2 class="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">Informasi Tanaman</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Nama Tanaman *</label>
+                    <input type="text" name="name" id="catalogNameInput"
+                           value="{{ old('name', $catalog->name ?? '') }}"
+                           placeholder="e.g. Tomat"
+                           required
+                           class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Emoji Tanaman *</label>
+                    <input type="text" name="emoji"
+                           value="{{ old('emoji', $catalog->emoji ?? '🌱') }}"
+                           placeholder="e.g. 🍅"
+                           required
+                           class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Estimasi Siklus Panen *</label>
+                    <input type="text" name="cycle"
+                           value="{{ old('cycle', $catalog->cycle ?? '60 – 80 HST') }}"
+                           placeholder="e.g. 60 – 80 HST"
+                           required
+                           class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Warna Tema *</label>
+                    <select name="theme" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary transition bg-white">
+                        @foreach(['rose' => 'Merah (Rose/Tomat/Cabe)', 'emerald' => 'Hijau Emerald (Timun)', 'amber' => 'Kuning Amber (Jagung)', 'teal' => 'Teal (Hijau Kebiruan)', 'lime' => 'Lime (Hijau Muda)', 'sky' => 'Sky (Biru Langit)'] as $val => $lbl)
+                            <option value="{{ $val }}" {{ old('theme', $catalog->theme ?? 'emerald') === $val ? 'selected' : '' }}>{{ $lbl }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <input type="hidden" name="key" id="catalogKeyInput" value="{{ old('key', $catalog->key ?: 'tanaman_' . time()) }}">
+            <input type="hidden" name="urutan" value="{{ old('urutan', $catalog->urutan ?? 99) }}">
+            <input type="hidden" name="keywords" value="{{ old('keywords', $catalog->keywords ?? '') }}">
+            <input type="hidden" name="aktif" value="1">
+        </div>
     @endif
 
     {{-- Section: Panduan Pemupukan (Guide Phases) --}}

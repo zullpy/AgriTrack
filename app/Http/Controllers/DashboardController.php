@@ -49,14 +49,23 @@ class DashboardController extends Controller
                 fn (Crop $c) => strtolower($c->nama_tanaman) === strtolower($name),
             );
 
-            $theme = $matched ? $matched->theme : $fallbackThemes[$idx % count($fallbackThemes)];
+            $cropEmoji = $activeCrop ? $activeCrop->emoji : Crop::getEmojiForName($name);
+            $emoji = ($matched && ! empty($matched->emoji) && $matched->emoji !== '🌱')
+                ? $matched->emoji
+                : $cropEmoji;
+
+            $theme = $matched
+                ? $matched->theme
+                : (str_contains(strtolower($name), 'tomat') ? 'rose' : $fallbackThemes[$idx % count($fallbackThemes)]);
+
+            $cycle = $matched?->cycle ?: ($activeCrop ? 'Tanaman Aktif' : 'Komoditas');
 
             return [
                 'catalog_id' => $matched?->id,
                 'key' => $matched ? $matched->key : \Str::slug($name, '_'),
                 'name' => $name,
-                'emoji' => $matched ? $matched->emoji : '🌱',
-                'cycle' => $matched ? $matched->cycle : '—',
+                'emoji' => $emoji,
+                'cycle' => $cycle,
                 'theme' => $theme,
                 'badge_color' => $matched ? $matched->badge_color : 'bg-gray-100 text-gray-700 border-gray-200',
                 'active_crop' => $activeCrop,

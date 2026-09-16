@@ -40,9 +40,15 @@
                 {{-- Top Card Header --}}
                 <div class="relative z-10 space-y-1.5">
                     <div class="flex items-center justify-between gap-1">
-                        <span class="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[11px] font-bold border whitespace-nowrap {{ $plant['badge_color'] }}">
-                            {{ $plant['cycle'] }}
-                        </span>
+                        @if(!empty($plant['cycle']) && $plant['cycle'] !== '—')
+                            <span class="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[11px] font-bold border whitespace-nowrap {{ $plant['badge_color'] }}">
+                                {{ $plant['cycle'] }}
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[11px] font-medium border border-gray-200 bg-gray-50 text-gray-600 whitespace-nowrap">
+                                {{ $plant['active_crop'] ? 'Tanaman Aktif' : 'Komoditas' }}
+                            </span>
+                        @endif
 
                         @if($plant['active_crop'])
                             <span class="inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-xl text-[9px] sm:text-[11px] font-bold {{ $t['active_bg'] }} text-white shadow-sm flex-shrink-0 whitespace-nowrap" title="Ada tanaman aktif di kebun">
@@ -180,7 +186,7 @@
                         Pedoman lengkap nutrisi N-P-K, dosis per fase (dasar, vegetatif, hingga pembungaan/buah), serta cara kocor & semprot.
                     </p>
                     <div class="mt-2.5 flex items-center text-xs font-semibold text-amber-700">
-                        <span>Lihat Panduan Pemupukan</span>
+                        <span id="fertilizerBtnText">Lihat Panduan Pemupukan</span>
                         <span class="ml-1 transition-transform group-hover:translate-x-1">→</span>
                     </div>
                 </div>
@@ -315,15 +321,19 @@
 
         if (titleEl)    titleEl.innerText    = plant.name;
         if (subtitleEl) subtitleEl.innerText = 'Pilih menu perawatan atau jadwal';
-        if (badgeEl)    badgeEl.innerText    = plant.cycle;
+        if (badgeEl)    badgeEl.innerText    = (plant.cycle && plant.cycle !== '—') ? plant.cycle : (plant.active_crop ? 'Tanaman Aktif' : 'Komoditas');
         if (iconEl)     iconEl.innerText     = plant.emoji;
 
-        // Kalender HST link
+        // Kalender HST link & status
+        const currentHst = (plant.active_crop && plant.active_crop.current_hst !== undefined)
+            ? plant.active_crop.current_hst
+            : (plant.active_crop ? 0 : null);
+
         if (plant.active_crop && plant.active_crop.id) {
             linkKalenderHst.href = '/kalender-hst/tanaman/' + plant.active_crop.id;
-            kalenderHstStatusTag.innerText = plant.active_crop.current_hst + ' HST (Aktif)';
+            kalenderHstStatusTag.innerText = currentHst + ' HST (Aktif)';
             kalenderHstStatusTag.className = 'inline-flex items-center text-[11px] font-bold text-white bg-primary px-2 py-0.5 rounded-md shadow-sm';
-            hstDescEl.innerText = 'Tanaman ' + plant.name + ' saat ini berada di ' + plant.active_crop.current_hst + ' HST. Buka jadwal perawatan spesifik tanaman ini.';
+            hstDescEl.innerText = 'Tanaman ' + plant.name + ' saat ini berada di ' + currentHst + ' HST. Buka jadwal perawatan spesifik tanaman ini.';
         } else {
             linkKalenderHst.href = '/kalender-hst';
             kalenderHstStatusTag.innerText = 'Buka Kalender';
@@ -331,28 +341,33 @@
             hstDescEl.innerText = 'Pantau umur tanaman, buat jadwal perawatan baru untuk ' + plant.name + ', dan catat panen.';
         }
 
-        if (fertDescEl) {
-            if (plant.guides && plant.guides.length > 0) {
-                fertDescEl.innerText = 'Pedoman dosis nutrisi N-P-K, metode kocor/semprot, dan fase tumbuh khusus tanaman ' + plant.name + '.';
-            } else {
-                fertDescEl.innerText = 'Panduan pemupukan untuk ' + plant.name + ' belum tersedia.';
-            }
-        }
+        // URL Tambah / Edit Panduan
+        const addGuideUrl = plant.catalog_id
+            ? '/tanaman-katalog/' + plant.catalog_id + '/edit'
+            : '/tanaman-katalog/create?name=' + encodeURIComponent(plant.name) + '&emoji=' + encodeURIComponent(plant.emoji || '🌱') + '&theme=' + encodeURIComponent(plant.theme || 'emerald');
 
         // Update tombol Panduan Pemupukan
         const fertBtn = document.getElementById('btnOpenFertilizer');
         const fertStatusTag = document.getElementById('fertilizerStatusTag');
+        const fertBtnText = document.getElementById('fertilizerBtnText');
+
         if (fertBtn && fertStatusTag) {
+            fertBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
             if (plant.guides && plant.guides.length > 0) {
-                fertBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 fertBtn.onclick = openFertilizerGuideForCurrentPlant;
                 fertStatusTag.innerText = plant.guides.length + ' Fase';
                 fertStatusTag.className = 'inline-flex items-center text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md';
+                if (fertDescEl) fertDescEl.innerText = 'Pedoman dosis nutrisi N-P-K, metode kocor/semprot, dan fase tumbuh khusus tanaman ' + plant.name + '.';
+                if (fertBtnText) fertBtnText.innerText = 'Lihat Panduan Pemupukan';
             } else {
-                fertBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                fertBtn.onclick = null;
-                fertStatusTag.innerText = 'Belum ada panduan';
-                fertStatusTag.className = 'inline-flex items-center text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md';
+                fertBtn.onclick = function() {
+                    window.location.href = addGuideUrl;
+                };
+                fertStatusTag.innerText = '+ Tambah Panduan';
+                fertStatusTag.className = 'inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-2.5 py-0.5 rounded-md hover:bg-emerald-200 transition-colors shadow-xs';
+                if (fertDescEl) fertDescEl.innerText = 'Panduan pemupukan untuk ' + plant.name + ' belum tersedia. Klik di sini untuk menyusun fase dan dosis pupuk.';
+                if (fertBtnText) fertBtnText.innerText = 'Tambah Panduan Pemupukan';
             }
         }
 
@@ -429,16 +444,27 @@
         document.getElementById('guideSubtitle').innerText = plant.cycle;
         document.getElementById('guidePlantIcon').innerText = plant.emoji;
 
-        // Update link tombol Edit (Desktop & Mobile)
+        // Update link tombol Edit/Tambah (Desktop & Mobile)
+        const addGuideUrl = plant.catalog_id
+            ? '/tanaman-katalog/' + plant.catalog_id + '/edit'
+            : '/tanaman-katalog/create?name=' + encodeURIComponent(plant.name) + '&emoji=' + encodeURIComponent(plant.emoji || '🌱') + '&theme=' + encodeURIComponent(plant.theme || 'emerald');
+
+        const hasGuides = plant.guides && plant.guides.length > 0;
+        const btnLabel = hasGuides ? 'Edit Panduan' : 'Tambah Panduan';
+        const btnIcon = hasGuides
+            ? '<svg class="w-3.5 h-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>'
+            : '<svg class="w-3.5 h-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>';
+
         const editBtn = document.getElementById('btnEditGuide');
         const editBtnMobile = document.getElementById('btnEditGuideMobile');
-        const editHref = plant.catalog_id ? '/tanaman-katalog/' + plant.catalog_id + '/edit' : '/tanaman-katalog/create';
         if (editBtn) {
-            editBtn.href = editHref;
+            editBtn.href = addGuideUrl;
+            editBtn.innerHTML = btnIcon + ' ' + btnLabel;
             editBtn.classList.remove('hidden');
         }
         if (editBtnMobile) {
-            editBtnMobile.href = editHref;
+            editBtnMobile.href = addGuideUrl;
+            editBtnMobile.innerHTML = btnIcon + ' ' + btnLabel;
             editBtnMobile.classList.remove('hidden');
         }
 
@@ -449,14 +475,20 @@
         contentContainer.innerHTML = '';
 
         // Empty state: belum ada panduan
-        if (!plant.guides || plant.guides.length === 0) {
+        if (!hasGuides) {
             contentContainer.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-14 text-center px-4">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-800 text-3xl flex items-center justify-center mb-4 shadow-inner">
+                        ${plant.emoji}
+                    </div>
                     <p class="text-base font-bold text-gray-800">Panduan Belum Tersedia</p>
-                    <p class="text-sm text-text-muted mt-1 mb-5">Belum ada panduan pemupukan untuk <strong>${plant.name}</strong>.<br>Tambahkan panduan melalui halaman Kelola Tanaman.</p>
-                    <a href="/tanaman-katalog"
-                       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shadow-sm">
-                        Tambahkan Panduan
+                    <p class="text-sm text-text-muted mt-1 mb-5">Belum ada panduan pemupukan untuk <strong>${plant.name}</strong>.<br>Susun panduan fase pemupukan (dasar, vegetatif, hingga panen) sekarang.</p>
+                    <a href="${addGuideUrl}"
+                       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all shadow-md active:scale-95">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Tambah Panduan Pemupukan
                     </a>
                 </div>
             `;
