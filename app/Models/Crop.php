@@ -17,12 +17,19 @@ class Crop extends Model
         'status',
         'tanggal_panen',
         'total_hst_panen',
+        'total_panen',
+        'harga_panen',
+        'total_harga_kotor',
         'catatan',
     ];
 
     protected $appends = [
         'current_hst',
         'emoji',
+        'next_harvest_number',
+        'harvest_count',
+        'total_pendapatan_kotor',
+        'formatted_total_pendapatan_kotor',
     ];
 
     protected function casts(): array
@@ -39,12 +46,41 @@ class Crop extends Model
         return $this->hasMany(CropActivity::class)->orderBy('target_hst');
     }
 
+    public function harvests(): HasMany
+    {
+        return $this->hasMany(CropHarvest::class)->orderBy('panen_ke');
+    }
+
+    public function getNextHarvestNumberAttribute(): int
+    {
+        return ($this->relationLoaded('harvests') ? $this->harvests->count() : $this->harvests()->count()) + 1;
+    }
+
+    public function getHarvestCountAttribute(): int
+    {
+        return $this->relationLoaded('harvests') ? $this->harvests->count() : $this->harvests()->count();
+    }
+
+    public function getTotalPendapatanKotorAttribute(): float
+    {
+        return (float) ($this->relationLoaded('harvests')
+            ? $this->harvests->sum(fn ($h) => $h->numeric_harga_kotor)
+            : $this->harvests()->get()->sum(fn ($h) => $h->numeric_harga_kotor));
+    }
+
+    public function getFormattedTotalPendapatanKotorAttribute(): string
+    {
+        $val = $this->total_pendapatan_kotor;
+
+        return $val > 0 ? 'Rp '.number_format($val, 0, ',', '.') : '—';
+    }
+
     /**
-     * Hitung HST berjalan hari ini (atau HST terkunci jika sudah dipanen).
+     * Hitung HST berjalan hari ini (atau HST terkunci jika sudah dipanen / diakhiri).
      */
     public function getCurrentHstAttribute(): int
     {
-        if ($this->status === 'Sudah Dipanen') {
+        if ($this->status !== 'Sedang Ditanam') {
             return (int) ($this->total_hst_panen ?? 0);
         }
 
@@ -71,8 +107,8 @@ class Crop extends Model
             return null;
         }
 
-        // Jika sudah dipanen dan tanggal cek melewati tanggal panen
-        if ($this->status === 'Sudah Dipanen' && $this->tanggal_panen) {
+        // Jika sudah dipanen / diakhiri dan tanggal cek melewati tanggal panen / akhir
+        if ($this->status !== 'Sedang Ditanam' && $this->tanggal_panen) {
             $harvestDate = Carbon::parse($this->tanggal_panen)->startOfDay();
             if ($targetDate->gt($harvestDate)) {
                 return null;
@@ -173,6 +209,6 @@ class Crop extends Model
 
     public function scopeHarvested(Builder $query): Builder
     {
-        return $query->where('status', 'Sudah Dipanen');
+        return $query->whereIn('status', ['Sudah Dipanen', 'Diakhiri']);
     }
 }

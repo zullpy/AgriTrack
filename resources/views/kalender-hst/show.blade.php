@@ -8,7 +8,7 @@
     {{-- ── Breadcrumbs & Action Header ── --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-2 text-xs sm:text-sm text-text-muted">
-            <a href="/kalender-hst?tab={{ $crop->status === 'Sudah Dipanen' ? 'riwayat' : 'aktif' }}"
+            <a href="/kalender-hst?tab={{ $crop->status !== 'Sedang Ditanam' ? 'riwayat' : 'aktif' }}"
                class="inline-flex items-center gap-1 text-text-secondary hover:text-primary transition-colors font-medium">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
@@ -22,12 +22,21 @@
         <div class="flex flex-wrap items-center gap-2">
             @if ($crop->status === 'Sedang Ditanam')
                 <button type="button"
-                        onclick="openHarvestModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}')"
+                        onclick="openHarvestModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}', {{ $crop->next_harvest_number }})"
                         class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold transition-all shadow-xs">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Tandai Panen
+                    Panen ke-{{ $crop->next_harvest_number }}
+                </button>
+
+                <button type="button"
+                        onclick="openEndCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}')"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 bg-white hover:bg-amber-50 hover:border-amber-300 text-text-secondary hover:text-amber-800 text-xs font-semibold transition-all shadow-xs">
+                    <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                    </svg>
+                    Akhiri Tanaman
                 </button>
             @endif
 
@@ -99,11 +108,23 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold {{ $crop->status === 'Sedang Ditanam' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
+                <div class="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+                    @if ($crop->harvest_count > 0)
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            🌾 {{ $crop->harvest_count }}x Panen
+                        </span>
+                        @if ($crop->total_pendapatan_kotor > 0)
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-600 text-white shadow-xs">
+                                💰 Total Kotor: {{ $crop->formatted_total_pendapatan_kotor }}
+                            </span>
+                        @endif
+                    @endif
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold {{ $crop->status === 'Sedang Ditanam' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($crop->status === 'Diakhiri' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-blue-50 text-blue-700 border border-blue-200') }}">
                         @if ($crop->status === 'Sedang Ditanam')
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             HST {{ $currentHst }} • Sedang Ditanam
+                        @elseif ($crop->status === 'Diakhiri')
+                            Tanaman Diakhiri (HST {{ $crop->total_hst_panen ?? 0 }})
                         @else
                             Sudah Dipanen (HST {{ $crop->total_hst_panen ?? 0 }})
                         @endif
@@ -154,14 +175,20 @@
         {{-- ── Action Bar ── --}}
         <div class="p-3 sm:p-4 bg-gray-50/90 border-t border-gray-200 flex items-center justify-between gap-3 text-xs">
             <span class="font-bold text-gray-700 uppercase tracking-wider text-[11px]">Log Kegiatan Per HST</span>
-            <button type="button"
-                    onclick="openAddActivityModal({{ $currentHst }})"
-                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0">
-                <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-                </svg>
-                <span>Catat Kegiatan</span>
-            </button>
+            @if ($crop->status === 'Sedang Ditanam')
+                <button type="button"
+                        onclick="openAddActivityModal({{ $currentHst }})"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0">
+                    <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    <span>Catat Kegiatan</span>
+                </button>
+            @else
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-gray-100 border border-gray-200 text-text-secondary font-medium text-[11px]">
+                    🔒 Arsip Log HST (Riwayat)
+                </span>
+            @endif
         </div>
     </div>
 
@@ -227,6 +254,18 @@
                                         🌱 Hari Pertama Tanam
                                     </div>
                                 @endif
+                                @if (!empty($row['harvests']) && $row['harvests']->isNotEmpty())
+                                    <div class="mt-1 space-y-1">
+                                        @foreach ($row['harvests'] as $hrv)
+                                            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold">
+                                                <span>🌾 Panen ke-{{ $hrv->panen_ke }}</span>
+                                                @if ($hrv->total_panen)
+                                                    <span class="text-amber-800 font-medium">({{ $hrv->total_panen }})</span>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </td>
 
                             {{-- 3. Kolom KEGIATAN --}}
@@ -286,10 +325,41 @@
                                     <div class="text-emerald-800 font-bold flex items-center gap-1.5">
                                         <span>Menanam Bibit</span>
                                     </div>
-                                @else
+                                @endif
+
+                                @if (!empty($row['harvests']) && $row['harvests']->isNotEmpty())
+                                    <div class="space-y-1.5 {{ $hasAct || $isPlantingDay ? 'mt-2 pt-2 border-t border-gray-200' : '' }}">
+                                        @foreach ($row['harvests'] as $hrv)
+                                            <div class="p-2 rounded-lg bg-amber-50/90 border border-amber-200 text-xs text-amber-950">
+                                                <div class="font-bold flex items-center justify-between gap-2 flex-wrap">
+                                                    <span class="flex items-center gap-1">
+                                                        <span>🌾 Panen ke-{{ $hrv->panen_ke }}</span>
+                                                        @if ($hrv->total_panen)
+                                                            <span class="text-amber-800 font-semibold">: {{ $hrv->total_panen }}</span>
+                                                        @endif
+                                                    </span>
+                                                    <div class="flex items-center gap-1.5 text-[11px]">
+                                                        @if ($hrv->numeric_harga_kotor > 0)
+                                                            <span class="text-emerald-800 font-extrabold bg-emerald-100/70 px-1.5 py-0.5 rounded border border-emerald-300">
+                                                                Kotor: {{ $hrv->formatted_harga_kotor }}
+                                                            </span>
+                                                        @elseif ($hrv->harga_panen)
+                                                            <span class="text-emerald-700 font-semibold">{{ str_starts_with($hrv->harga_panen, 'Rp') ? $hrv->harga_panen : 'Rp ' . $hrv->harga_panen }}</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                @if ($hrv->catatan)
+                                                    <p class="text-[11px] text-amber-800 mt-0.5 italic">{{ $hrv->catatan }}</p>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                @if ($crop->status === 'Sedang Ditanam' && ! $hasAct && ! $isPlantingDay)
                                     <button type="button"
                                             onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
-                                            class="{{ $isToday ? 'inline-flex font-bold text-emerald-800 bg-white/90 px-2.5 py-1 rounded-md border border-emerald-300 shadow-xs' : 'opacity-0 group-hover:opacity-100 focus:opacity-100 inline-flex' }} items-center gap-1 text-xs text-primary font-semibold hover:underline transition-opacity">
+                                            class="{{ $isToday ? 'inline-flex font-bold text-emerald-800 bg-white/90 px-2.5 py-1 rounded-md border border-emerald-300 shadow-xs' : 'opacity-0 group-hover:opacity-100 focus:opacity-100 inline-flex' }} items-center gap-1 text-xs text-primary font-semibold hover:underline transition-opacity {{ !empty($row['harvests']) && $row['harvests']->isNotEmpty() ? 'mt-2' : '' }}">
                                         <span>+ Catat</span>
                                     </button>
                                 @endif
@@ -372,18 +442,33 @@
         {{-- ── Footer Bar / Load More HST ── --}}
         <div class="p-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div class="text-text-muted">
-                Menampilkan baris HST 0 sampai besok (HST {{ $maxRowHst }}).
+                @if ($crop->status === 'Sedang Ditanam' && $maxRowHst > $currentHst + 1)
+                    Menampilkan baris HST 0 sampai HST {{ $maxRowHst }} <span class="text-gray-400 font-normal">(Hari ini: HST {{ $currentHst }}, Besok: HST {{ $currentHst + 1 }})</span>.
+                @elseif ($crop->status === 'Sedang Ditanam')
+                    Menampilkan baris HST 0 sampai besok (HST {{ $maxRowHst }}).
+                @else
+                    Menampilkan baris HST 0 sampai panen (HST {{ $maxRowHst }}).
+                @endif
             </div>
 
-            <div class="flex items-center gap-2">
-                <a href="/kalender-hst/tanaman/{{ $crop->id }}?limit_hst={{ $maxRowHst + 15 }}"
-                   class="px-3.5 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-semibold text-gray-800 transition-colors shadow-xs">
-                    + Tambah 15 Baris HST
-                </a>
-                <a href="/kalender-hst/tanaman/{{ $crop->id }}?limit_hst=120"
-                   class="px-3.5 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-semibold text-gray-800 transition-colors shadow-xs">
-                    Tampilkan 120 HST (1 Musim Penuh)
-                </a>
+            <div class="flex items-center gap-2 flex-wrap">
+                @if ($crop->status === 'Sedang Ditanam')
+                    @if ($maxRowHst > $currentHst + 1)
+                        <a href="/kalender-hst/tanaman/{{ $crop->id }}?limit_hst=reset"
+                           class="px-3.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 font-semibold text-amber-800 transition-colors shadow-xs"
+                           title="Kembalikan batas tampilan kalender ke besok (HST {{ $currentHst + 1 }})">
+                            ↺ Reset ke Besok (HST {{ $currentHst + 1 }})
+                        </a>
+                    @endif
+                    <a href="/kalender-hst/tanaman/{{ $crop->id }}?limit_hst={{ $maxRowHst + 15 }}#hst-row-{{ $maxRowHst }}"
+                       class="px-3.5 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-semibold text-gray-800 transition-colors shadow-xs">
+                        + Tambah 15 Baris HST
+                    </a>
+                    <a href="/kalender-hst/tanaman/{{ $crop->id }}?limit_hst=120#hst-row-{{ $maxRowHst }}"
+                       class="px-3.5 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-semibold text-gray-800 transition-colors shadow-xs">
+                        Tampilkan 120 HST (1 Musim Penuh)
+                    </a>
+                @endif
             </div>
         </div>
     </div>
@@ -460,14 +545,6 @@
                            required
                            class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
                 </div>
-                {{-- Quick chips --}}
-                <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
-                    <span class="text-[11px] text-text-muted">Cepat:</span>
-                    <button type="button" onclick="setQuickKegiatan('add', 'Nyemprot')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-800">+ Nyemprot</button>
-                    <button type="button" onclick="setQuickKegiatan('add', 'Pemupukan')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-800">+ Pemupukan</button>
-                    <button type="button" onclick="setQuickKegiatan('add', 'Kocor')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-800">+ Kocor</button>
-                    <button type="button" onclick="setQuickKegiatan('add', 'Penyiangan')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-800">+ Penyiangan</button>
-                </div>
             </div>
 
             {{-- Aplikasi Obat --}}
@@ -477,7 +554,7 @@
                         Aplikasi Obat (Opsional)
                     </label>
                     @if ($medicines->isNotEmpty())
-                        <div class="relative">
+                        <!-- <div class="relative">
                             <select onchange="insertMedicineToTextarea('add', this)"
                                     class="text-[11px] py-0.5 px-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 font-medium">
                                 <option value="">+ Sisipkan dari Data Obat...</option>
@@ -490,7 +567,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                        </div>
+                        </div> -->
                     @endif
                 </div>
                 <textarea id="add-aplikasi-obat"
@@ -763,10 +840,10 @@
 {{-- MODAL: TANDAI SUDAH DIPANEN                                  --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="modal-harvest" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100">
             <div>
-                <h3 class="text-base font-bold text-gray-900">Tandai Tanaman Selesai Dipanen</h3>
+                <h3 id="harvest-modal-heading" class="text-base font-bold text-gray-900">Catat Panen ke-{{ $crop->next_harvest_number }}</h3>
                 <p class="text-xs text-text-muted mt-0.5">{{ $crop->nama_tanaman }}</p>
             </div>
             <button type="button" onclick="closeModal('modal-harvest')" class="text-gray-400 hover:text-gray-600">
@@ -789,19 +866,69 @@
                        required
                        class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
                 <p class="text-[11px] text-text-muted mt-1">
-                    HST final akan dikunci berdasarkan selisih tanggal panen dengan tanggal tanam.
+                    Catatan panen/petikan akan dicatat pada HST ini. Tanaman tetap aktif hingga Anda memilih 'Akhiri Tanaman'.
                 </p>
+            </div>
+
+            {{-- Total Panen, Harga Satuan, & Total Harga Kotor --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="harvest-total" class="block text-xs font-semibold text-gray-900 mb-1">
+                        Total Panen <span class="text-text-muted font-normal">(opsional)</span>
+                    </label>
+                    <input type="text"
+                           id="harvest-total"
+                           name="total_panen"
+                           placeholder="Contoh: 100 kg"
+                           class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
+                </div>
+                <div>
+                    <label for="harvest-price" class="block text-xs font-semibold text-gray-900 mb-1">
+                        Harga Satuan Hari Ini <span class="text-text-muted font-normal">(opsional)</span>
+                    </label>
+                    <div class="flex items-center rounded-xl border border-gray-300 bg-white overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+                        <span class="px-3 py-2 text-xs font-bold text-gray-500 bg-gray-50 border-r border-gray-200 select-none shrink-0">
+                            Rp
+                        </span>
+                        <input type="text"
+                               id="harvest-price"
+                               name="harga_panen"
+                               placeholder="3.000"
+                               inputmode="numeric"
+                               class="w-full px-3 py-2 text-sm border-0 focus:outline-none focus:ring-0 text-gray-900 font-semibold bg-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label for="harvest-total-kotor" class="block text-xs font-semibold text-gray-900">
+                        Total Harga Kotor <span class="text-text-muted font-normal">(opsional)</span>
+                    </label>
+                    <span class="text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-md">Otomatis dihitung (Total Panen × Harga)</span>
+                </div>
+                <div class="flex items-center rounded-xl border border-emerald-300 bg-emerald-50/25 overflow-hidden focus-within:border-emerald-600 focus-within:ring-1 focus-within:ring-emerald-600 transition-all">
+                    <span class="px-3.5 py-2 text-xs font-bold text-emerald-800 bg-emerald-100/70 border-r border-emerald-200 select-none shrink-0">
+                        Rp
+                    </span>
+                    <input type="text"
+                           id="harvest-total-kotor"
+                           name="total_harga_kotor"
+                           placeholder="300.000"
+                           inputmode="numeric"
+                           class="w-full px-3.5 py-2 text-sm border-0 focus:outline-none focus:ring-0 text-emerald-950 font-bold bg-transparent">
+                </div>
             </div>
 
             <div>
                 <label for="harvest-notes" class="block text-xs font-semibold text-gray-900 mb-1">
-                    Catatan Hasil Panen (Opsional)
+                    Keterangan / Catatan Panen <span class="text-text-muted font-normal">(opsional)</span>
                 </label>
                 <textarea id="harvest-notes"
                           name="catatan"
                           rows="2"
-                          placeholder="Misal: Hasil 4.5 Ton, kualitas gabah sangat bagus..."
-                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary"></textarea>
+                          placeholder="Misal: Kualitas buah grade A, dijual langsung ke pedagang..."
+                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary resize-none"></textarea>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
@@ -811,8 +938,83 @@
                     Batal
                 </button>
                 <button type="submit"
+                        id="harvest-modal-submit-btn"
                         class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm">
-                    Kunci HST & Arsipkan
+                    Simpan Panen ke-{{ $crop->next_harvest_number }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- MODAL: AKHIRI TANAMAN INI                                      --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="modal-end-crop" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div>
+                <h3 class="text-base font-bold text-gray-900">Akhiri Tanaman Ini</h3>
+                <p class="text-xs text-amber-700 font-semibold mt-0.5">{{ $crop->nama_tanaman }}</p>
+            </div>
+            <button type="button" onclick="closeModal('modal-end-crop')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="form-end-crop" method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/akhiri" class="mt-4 space-y-4">
+            @csrf
+            <div>
+                <label for="end-date" class="block text-xs font-semibold text-gray-900 mb-1">
+                    Tanggal Diakhiri <span class="text-red-500">*</span>
+                </label>
+                <input type="date"
+                       id="end-date"
+                       name="tanggal_akhir"
+                       value="{{ now()->toDateString() }}"
+                       required
+                       class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
+                <p class="text-[11px] text-text-muted mt-1">
+                    HST akan dikunci pada tanggal ini dan tanaman dipindahkan ke Riwayat Tanam.
+                </p>
+            </div>
+
+            <div>
+                <label for="end-reason" class="block text-xs font-semibold text-gray-900 mb-1">
+                    Alasan Diakhiri <span class="text-text-muted font-normal">(opsional)</span>
+                </label>
+                <select id="end-reason" name="alasan" class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
+                    <option value="">-- Pilih Alasan (Opsional) --</option>
+                    <option value="Gagal Panen (Hama / Penyakit)">Gagal Panen (Hama / Penyakit)</option>
+                    <option value="Gagal Panen (Cuaca / Bencana)">Gagal Panen (Cuaca / Bencana)</option>
+                    <option value="Dibongkar / Ganti Tanaman">Dibongkar / Ganti Tanaman</option>
+                    <option value="Masa Produktif Selesai">Masa Produktif Selesai</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="end-notes" class="block text-xs font-semibold text-gray-900 mb-1">
+                    Keterangan Tambahan <span class="text-text-muted font-normal">(opsional)</span>
+                </label>
+                <textarea id="end-notes"
+                          name="catatan"
+                          rows="2"
+                          placeholder="Tuliskan catatan kondisi akhir tanaman..."
+                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary resize-none"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                <button type="button"
+                        onclick="closeModal('modal-end-crop')"
+                        class="px-4 py-2 rounded-xl border border-gray-200 text-text-secondary hover:bg-gray-50 text-xs font-semibold">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-sm">
+                    Ya, Akhiri Tanaman
                 </button>
             </div>
         </form>
@@ -946,8 +1148,32 @@
         openModal('modal-edit-activity');
     }
 
-    function openHarvestModal(cropId, cropName, plantDate) {
+    function openHarvestModal(cropId, cropName, plantDate, nextNumber) {
+        const heading = document.getElementById('harvest-modal-heading');
+        if (heading && nextNumber) {
+            heading.textContent = `Catat Panen ke-${nextNumber}`;
+        }
+        const submitBtn = document.getElementById('harvest-modal-submit-btn');
+        if (submitBtn && nextNumber) {
+            submitBtn.textContent = `Simpan Panen ke-${nextNumber}`;
+        }
+        const totalInput = document.getElementById('harvest-total');
+        if (totalInput) totalInput.value = '';
+        const priceInput = document.getElementById('harvest-price');
+        if (priceInput) priceInput.value = '';
+        const kotorInput = document.getElementById('harvest-total-kotor');
+        if (kotorInput) kotorInput.value = '';
+        const notesInput = document.getElementById('harvest-notes');
+        if (notesInput) notesInput.value = '';
         openModal('modal-harvest');
+    }
+
+    function openEndCropModal(cropId, cropName, plantDate) {
+        const reasonInput = document.getElementById('end-reason');
+        if (reasonInput) reasonInput.value = '';
+        const notesInput = document.getElementById('end-notes');
+        if (notesInput) notesInput.value = '';
+        openModal('modal-end-crop');
     }
 
     function openEditCropModal(cropId, nama, varietas, populasi, tanggalTanam, catatan) {
@@ -1019,8 +1245,74 @@
                 targetRow.classList.remove('bg-amber-100/80', 'ring-2', 'ring-amber-400');
             }, 2500);
         } else {
-            alert(`Baris HST ${hstVal} belum masuk dalam rentang tampilan. Klik "+ Tambah 15 Baris HST" di bawah.`);
+            if (confirm(`Baris HST ${hstVal} belum masuk dalam rentang tampilan (saat ini sampai HST {{ $maxRowHst }}).\n\nMuat tabel sampai HST ${hstVal + 5}?`)) {
+                window.location.href = `/kalender-hst/tanaman/{{ $crop->id }}?limit_hst=${hstVal + 5}#hst-row-${hstVal}`;
+            }
         }
     }
+
+    function bindPriceAutoDot(inputEl) {
+        if (!inputEl) return;
+        const formatNumberDot = (val) => {
+            if (!val) return '';
+            const digits = val.toString().replace(/[^0-9]/g, '');
+            if (!digits) return '';
+            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        };
+
+        if (inputEl.value) {
+            inputEl.value = formatNumberDot(inputEl.value);
+        }
+
+        inputEl.addEventListener('input', () => {
+            const cursorPosition = inputEl.selectionStart;
+            const prevVal = inputEl.value;
+            const digitsBeforeCursor = prevVal.slice(0, cursorPosition).replace(/\D/g, '').length;
+
+            const formatted = formatNumberDot(prevVal);
+            inputEl.value = formatted;
+
+            let newCursorPos = 0;
+            let digitCount = 0;
+            for (let i = 0; i < formatted.length; i++) {
+                if (/\d/.test(formatted[i])) digitCount++;
+                if (digitCount === digitsBeforeCursor) {
+                    newCursorPos = i + 1;
+                    break;
+                }
+            }
+            if (digitCount < digitsBeforeCursor) newCursorPos = formatted.length;
+            inputEl.setSelectionRange(newCursorPos, newCursorPos);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const totalInput = document.getElementById('harvest-total');
+        const priceInput = document.getElementById('harvest-price');
+        const kotorInput = document.getElementById('harvest-total-kotor');
+
+        bindPriceAutoDot(priceInput);
+        bindPriceAutoDot(kotorInput);
+
+        const autoCalcGross = () => {
+            if (!totalInput || !priceInput || !kotorInput) return;
+            const totalVal = totalInput.value.trim().replace(',', '.');
+            const match = totalVal.match(/[0-9]+(?:\.[0-9]+)?/);
+            const qty = match ? parseFloat(match[0]) : 0;
+
+            const priceDigits = priceInput.value.replace(/[^0-9]/g, '');
+            const unitPrice = priceDigits ? parseFloat(priceDigits) : 0;
+
+            if (qty > 0 && unitPrice > 0) {
+                const gross = Math.round(qty * unitPrice);
+                kotorInput.value = gross.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            }
+        };
+
+        if (totalInput && priceInput) {
+            totalInput.addEventListener('input', autoCalcGross);
+            priceInput.addEventListener('input', autoCalcGross);
+        }
+    });
 </script>
 @endsection

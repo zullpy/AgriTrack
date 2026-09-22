@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Crop;
 use App\Models\CropActivity;
+use App\Models\CropHarvest;
 use App\Models\Medicine;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\View\View;
 
 class KalenderHstController extends Controller
@@ -36,12 +38,22 @@ class KalenderHstController extends Controller
         $calendarStart = $startOfMonth->copy()->startOfWeek(Carbon::MONDAY);
         $calendarEnd = $endOfMonth->copy()->endOfWeek(Carbon::SUNDAY);
 
-        // Ambil tanaman aktif beserta kegiatannya
-        $activeCrops = Crop::active()->with('activities')->get();
+        // Ambil tanaman aktif beserta kegiatannya dan riwayat panen
+        $activeCrops = Crop::active()->with(['activities', 'harvests'])->get();
 
-        // Ambil riwayat tanaman sudah dipanen
+        // Ambil tanaman yang memiliki riwayat panen (dipisah per tanaman)
+        $cropsWithHarvests = Crop::whereHas('harvests')
+            ->with(['harvests' => function ($query) {
+                $query->orderBy('panen_ke');
+            }])
+            ->latest('updated_at')
+            ->get();
+
+        $totalHarvestCount = CropHarvest::count();
+
+        // Ambil riwayat tanaman sudah dipanen / diakhiri
         $harvestedCrops = Crop::harvested()
-            ->with('activities')
+            ->with(['activities', 'harvests'])
             ->latest('tanggal_panen')
             ->paginate(10, ['*'], 'history_page')
             ->withQueryString();
@@ -117,6 +129,8 @@ class KalenderHstController extends Controller
             'prevMonth',
             'nextMonth',
             'activeCrops',
+            'cropsWithHarvests',
+            'totalHarvestCount',
             'harvestedCrops',
             'dueThisWeekCount'
         ));
@@ -166,28 +180,121 @@ class KalenderHstController extends Controller
     {
         $validated = $request->validate([
             'tanggal_panen' => 'required|date|after_or_equal:'.$crop->tanggal_tanam->toDateString(),
+            'total_panen' => 'nullable|string|max:255',
+            'harga_panen' => 'nullable|string|max:255',
+            'total_harga_kotor' => 'nullable|string|max:255',
             'catatan' => 'nullable|string|max:1000',
         ]);
 
         $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
         $harvestDate = Carbon::parse($validated['tanggal_panen'])->startOfDay();
-        $totalHst = (int) $plantDate->diffInDays($harvestDate);
+        $hstSaatPanen = max(0, (int) $plantDate->diffInDays($harvestDate));
+        $panenKe = $crop->harvests()->count() + 1;
 
-        $crop->update([
-            'status' => 'Sudah Dipanen',
+        $totalHargaKotor = $validated['total_harga_kotor'] ?? null;
+        if (empty($totalHargaKotor) && ! empty($validated['total_panen']) && ! empty($validated['harga_panen'])) {
+            $totalStr = str_replace(',', '.', (string) $validated['total_panen']);
+            if (preg_match('/[0-9]+(?:\.[0-9]+)?/', $totalStr, $matches)) {
+                $qty = (float) $matches[0];
+                $unitPrice = (float) preg_replace('/[^0-9]/', '', (string) $validated['harga_panen']);
+                if ($qty > 0 && $unitPrice > 0) {
+                    $totalHargaKotor = number_format($qty * $unitPrice, 0, ',', '.');
+                }
+            }
+        }
+
+        $crop->harvests()->create([
+            'panen_ke' => $panenKe,
             'tanggal_panen' => $validated['tanggal_panen'],
-            'total_hst_panen' => $totalHst,
-            'catatan' => $validated['catatan'] ? ($crop->catatan."\n[Panen]: ".$validated['catatan']) : $crop->catatan,
+            'hst_saat_panen' => $hstSaatPanen,
+            'total_panen' => $validated['total_panen'] ?? null,
+            'harga_panen' => $validated['harga_panen'] ?? null,
+            'total_harga_kotor' => $totalHargaKotor,
+            'catatan' => $validated['catatan'] ?? null,
         ]);
 
-        return redirect('/kalender-hst?tab=riwayat')->with('success', "Tanaman {$crop->nama_tanaman} telah ditandai sudah dipanen (HST {$totalHst}).");
+        $panenNotes = [];
+        if (! empty($validated['total_panen'])) {
+            $panenNotes[] = 'Total: '.$validated['total_panen'];
+        }
+        if (! empty($validated['harga_panen'])) {
+            $panenNotes[] = 'Harga: '.$validated['harga_panen'];
+        }
+        if (! empty($totalHargaKotor)) {
+            $panenNotes[] = 'Kotor: '.(str_starts_with($totalHargaKotor, 'Rp') ? $totalHargaKotor : 'Rp '.$totalHargaKotor);
+        }
+        if (! empty($validated['catatan'])) {
+            $panenNotes[] = $validated['catatan'];
+        }
+        $panenCatatanStr = ! empty($panenNotes) ? implode(' • ', $panenNotes) : null;
+
+        $newCatatan = $crop->catatan;
+        if ($panenCatatanStr) {
+            $newCatatan = $newCatatan ? ($newCatatan."\n[Panen ke-{$panenKe} - HST {$hstSaatPanen}]: ".$panenCatatanStr) : "[Panen ke-{$panenKe} - HST {$hstSaatPanen}]: ".$panenCatatanStr;
+        }
+
+        $crop->update([
+            'total_panen' => $validated['total_panen'] ?? $crop->total_panen,
+            'harga_panen' => $validated['harga_panen'] ?? $crop->harga_panen,
+            'total_harga_kotor' => $totalHargaKotor ?? $crop->total_harga_kotor,
+            'catatan' => $newCatatan,
+        ]);
+
+        $successMsg = "Panen ke-{$panenKe} untuk tanaman {$crop->nama_tanaman} berhasil dicatat (HST {$hstSaatPanen}).";
+
+        if ($request->header('referer') && str_contains($request->header('referer'), '/kalender-hst/tanaman/')) {
+            return redirect()->back()->with('success', $successMsg);
+        }
+
+        return redirect('/kalender-hst?tab=panen')->with('success', $successMsg.' Data telah dimasukkan ke Riwayat Panen.');
+    }
+
+    public function endCrop(Request $request, Crop $crop): RedirectResponse
+    {
+        $validated = $request->validate([
+            'tanggal_akhir' => 'required|date|after_or_equal:'.$crop->tanggal_tanam->toDateString(),
+            'alasan' => 'nullable|string|max:255',
+            'catatan' => 'nullable|string|max:1000',
+        ]);
+
+        $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
+        $endDate = Carbon::parse($validated['tanggal_akhir'])->startOfDay();
+        $totalHst = (int) $plantDate->diffInDays($endDate);
+
+        $endNotes = [];
+        if (! empty($validated['alasan'])) {
+            $endNotes[] = 'Alasan: '.$validated['alasan'];
+        }
+        if (! empty($validated['catatan'])) {
+            $endNotes[] = $validated['catatan'];
+        }
+        $endCatatanStr = ! empty($endNotes) ? implode(' • ', $endNotes) : 'Diakhiri';
+
+        $newCatatan = $crop->catatan;
+        $newCatatan = $newCatatan ? ($newCatatan."\n[Diakhiri]: ".$endCatatanStr) : '[Diakhiri]: '.$endCatatanStr;
+
+        $finalStatus = $crop->harvests()->count() > 0 ? 'Sudah Dipanen' : 'Diakhiri';
+
+        $crop->update([
+            'status' => $finalStatus,
+            'tanggal_panen' => $validated['tanggal_akhir'],
+            'total_hst_panen' => $totalHst,
+            'catatan' => $newCatatan,
+        ]);
+
+        return redirect('/kalender-hst?tab=riwayat')->with('success', "Tanaman {$crop->nama_tanaman} telah diakhiri pada HST {$totalHst} dan masuk ke Riwayat Tanaman. Seluruh kalender HST dan log perawatannya tetap tersimpan.");
     }
 
     public function showCrop(Request $request, Crop $crop): View
     {
-        $crop->load(['activities' => function ($query) {
-            $query->orderBy('target_hst')->orderBy('id');
-        }]);
+        $crop->load([
+            'activities' => function ($query) {
+                $query->orderBy('target_hst')->orderBy('id');
+            },
+            'harvests' => function ($query) {
+                $query->orderBy('panen_ke');
+            },
+        ]);
 
         $currentHst = $crop->current_hst;
         $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
@@ -196,19 +303,46 @@ class KalenderHstController extends Controller
         $medicines = Medicine::orderBy('nama')->get(['id', 'nama', 'jenis', 'dosis_anjuran', 'sasaran_obat']);
 
         $activitiesByHst = $crop->activities->groupBy('target_hst');
+        $harvestsByHst = $crop->harvests->groupBy('hst_saat_panen');
         $maxActivityHst = (int) ($crop->activities->max('target_hst') ?? 0);
+        $maxHarvestHst = (int) ($crop->harvests->max('hst_saat_panen') ?? 0);
+
+        $sessionKey = "crop_{$crop->id}_limit_hst";
+        $cookieKey = "crop_{$crop->id}_limit_hst";
 
         // Tentukan batas atas HST yang ditampilkan dalam tabel
-        if ($crop->status === 'Sudah Dipanen') {
+        if ($crop->status !== 'Sedang Ditanam') {
             $harvestHst = (int) ($crop->total_hst_panen ?? 0);
-            $maxRowHst = max($harvestHst, $maxActivityHst);
+            $maxRowHst = max($harvestHst, $maxActivityHst, $maxHarvestHst);
         } else {
-            $requestedLimit = $request->input('limit_hst');
-            if ($requestedLimit !== null && is_numeric($requestedLimit)) {
-                $maxRowHst = max(0, (int) $requestedLimit);
+            if ($request->has('limit_hst')) {
+                $requestedLimit = $request->input('limit_hst');
+                if ($requestedLimit === 'reset' || $requestedLimit === 'besok') {
+                    $maxRowHst = $currentHst + 1;
+                    session()->forget($sessionKey);
+                    Cookie::queue(Cookie::forget($cookieKey));
+                } elseif (is_numeric($requestedLimit)) {
+                    $maxRowHst = max(0, (int) $requestedLimit);
+                    session([$sessionKey => $maxRowHst]);
+                    Cookie::queue($cookieKey, (string) $maxRowHst, 60 * 24 * 30);
+                } else {
+                    $maxRowHst = $currentHst + 1;
+                }
             } else {
-                // Sesuai instruksi: Tampilkan baris HST hanya sampai besok
-                $maxRowHst = $currentHst + 1;
+                $savedLimit = session($sessionKey, $request->cookie($cookieKey));
+                if ($savedLimit !== null && is_numeric($savedLimit)) {
+                    $maxRowHst = max((int) $savedLimit, $currentHst + 1);
+                } else {
+                    $maxRowHst = $currentHst + 1;
+                }
+            }
+
+            // Pastikan baris kegiatan & panen terjadwal tetap terlihat dalam rentang tabel
+            if ($maxActivityHst > $maxRowHst) {
+                $maxRowHst = $maxActivityHst;
+            }
+            if ($maxHarvestHst > $maxRowHst) {
+                $maxRowHst = $maxHarvestHst;
             }
         }
 
@@ -217,7 +351,7 @@ class KalenderHstController extends Controller
             $dayDate = $plantDate->copy()->addDays($hst);
             $isToday = $crop->status === 'Sedang Ditanam' && $dayDate->isToday();
             $isTomorrow = $crop->status === 'Sedang Ditanam' && $dayDate->isTomorrow();
-            $isHarvestDay = ($crop->status === 'Sudah Dipanen' && $hst === (int) $crop->total_hst_panen);
+            $isHarvestDay = ($crop->status !== 'Sedang Ditanam' && $hst === (int) $crop->total_hst_panen);
             $isPast = $crop->status === 'Sedang Ditanam' ? ($dayDate->lt(now()->startOfDay())) : true;
 
             $tableRows[] = [
@@ -229,6 +363,7 @@ class KalenderHstController extends Controller
                 'is_harvest' => $isHarvestDay,
                 'is_planting_day' => ($hst === 0),
                 'activities' => $activitiesByHst->get($hst, collect()),
+                'harvests' => $harvestsByHst->get($hst, collect()),
             ];
         }
 

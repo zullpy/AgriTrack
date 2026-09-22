@@ -161,10 +161,6 @@
            class="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold transition-colors">
             Batal
         </a>
-        <button type="submit"
-                class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors shadow-sm">
-            {{ $isEdit ? 'Simpan Perubahan' : 'Tambah Tanaman' }}
-        </button>
     </div>
 </form>
 

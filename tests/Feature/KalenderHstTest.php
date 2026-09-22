@@ -108,26 +108,104 @@ class KalenderHstTest extends TestCase
         $this->assertNull($activity->fresh()->tanggal_selesai);
     }
 
-    public function test_can_mark_crop_as_harvested(): void
+    public function test_can_record_repeated_harvests_and_end_crop(): void
     {
         $crop = Crop::create([
-            'nama_tanaman' => 'Padi IR64',
-            'tanggal_tanam' => Carbon::now()->subDays(105)->toDateString(),
+            'nama_tanaman' => 'Cabai Rawit Kaliber',
+            'tanggal_tanam' => Carbon::now()->subDays(80)->toDateString(),
             'status' => 'Sedang Ditanam',
         ]);
 
-        $harvestDate = Carbon::now()->toDateString();
-        $response = $this->post("/kalender-hst/tanaman/{$crop->id}/panen", [
-            'tanggal_panen' => $harvestDate,
-            'catatan' => 'Hasil sangat memuaskan',
+        // 1. Panen pertama (ke-1)
+        $firstHarvestDate = Carbon::now()->subDays(5)->toDateString();
+        $response1 = $this->post("/kalender-hst/tanaman/{$crop->id}/panen", [
+            'tanggal_panen' => $firstHarvestDate,
+            'total_panen' => '45 kg',
+            'harga_panen' => 'Rp 30.000 / kg',
+            'catatan' => 'Petikan perdana',
         ]);
 
-        $response->assertRedirect('/kalender-hst?tab=riwayat');
+        $response1->assertRedirect();
+        $crop->refresh();
 
+        // Tanaman tetap Sedang Ditanam
+        $this->assertEquals('Sedang Ditanam', $crop->status);
+        $this->assertEquals(1, $crop->harvest_count);
+        $this->assertEquals(2, $crop->next_harvest_number);
+        $this->assertDatabaseHas('crop_harvests', [
+            'crop_id' => $crop->id,
+            'panen_ke' => 1,
+            'total_panen' => '45 kg',
+        ]);
+
+        // Verifikasi view menampilkan tombol Panen ke-2
+        $showResponse1 = $this->get("/kalender-hst/tanaman/{$crop->id}");
+        $showResponse1->assertStatus(200);
+        $showResponse1->assertSee('Panen ke-2');
+        $showResponse1->assertSee('🌾 1x Panen');
+
+        // 2. Panen kedua (ke-2)
+        $secondHarvestDate = Carbon::now()->toDateString();
+        $response2 = $this->post("/kalender-hst/tanaman/{$crop->id}/panen", [
+            'tanggal_panen' => $secondHarvestDate,
+            'total_panen' => '60 kg',
+            'harga_panen' => 'Rp 32.000 / kg',
+            'catatan' => 'Petikan kedua makin lebat',
+        ]);
+
+        $response2->assertRedirect();
+        $crop->refresh();
+
+        $this->assertEquals('Sedang Ditanam', $crop->status);
+        $this->assertEquals(2, $crop->harvest_count);
+        $this->assertEquals(3, $crop->next_harvest_number);
+        $this->assertDatabaseHas('crop_harvests', [
+            'crop_id' => $crop->id,
+            'panen_ke' => 2,
+            'total_panen' => '60 kg',
+        ]);
+
+        // Verifikasi view menampilkan tombol Panen ke-3
+        $showResponse2 = $this->get("/kalender-hst/tanaman/{$crop->id}");
+        $showResponse2->assertStatus(200);
+        $showResponse2->assertSee('Panen ke-3');
+        $showResponse2->assertSee('🌾 2x Panen');
+
+        // 3. Akhiri Tanaman Ini
+        $endResponse = $this->post("/kalender-hst/tanaman/{$crop->id}/akhiri", [
+            'tanggal_akhir' => Carbon::now()->toDateString(),
+            'alasan' => 'Siklus panen selesai',
+        ]);
+
+        $endResponse->assertRedirect('/kalender-hst?tab=riwayat');
         $crop->refresh();
         $this->assertEquals('Sudah Dipanen', $crop->status);
-        $this->assertEquals($harvestDate, $crop->tanggal_panen->toDateString());
-        $this->assertEquals(105, $crop->total_hst_panen);
+        $this->assertEquals(80, $crop->total_hst_panen);
+
+        // 4. Verifikasi tab Riwayat Panen (dipisah per tanaman)
+        $panenTabResponse = $this->get('/kalender-hst?tab=panen');
+        $panenTabResponse->assertStatus(200);
+        $panenTabResponse->assertSee('Cabai Rawit Kaliber');
+        $panenTabResponse->assertSee('Panen ke-1');
+        $panenTabResponse->assertSee('45 kg');
+        $panenTabResponse->assertSee('Panen ke-2');
+        $panenTabResponse->assertSee('60 kg');
+
+        // 5. Verifikasi tab Riwayat Tanaman (masih ada link kalender HST-nya)
+        $riwayatTabResponse = $this->get('/kalender-hst?tab=riwayat');
+        $riwayatTabResponse->assertStatus(200);
+        $riwayatTabResponse->assertSee('Cabai Rawit Kaliber');
+        $riwayatTabResponse->assertSee("/kalender-hst/tanaman/{$crop->id}");
+        $riwayatTabResponse->assertSee('Buka Menu HST Tanaman (Log Harian');
+
+        // 6. Verifikasi kalender HST tanaman yang diakhiri masih ada & bisa diakses, tetapi tombol catat & tambah baris disembunyikan
+        $endedCropHstResponse = $this->get("/kalender-hst/tanaman/{$crop->id}");
+        $endedCropHstResponse->assertStatus(200);
+        $endedCropHstResponse->assertSee('Cabai Rawit Kaliber');
+        $endedCropHstResponse->assertSee('HST 80');
+        $endedCropHstResponse->assertSee('Sudah Dipanen');
+        $endedCropHstResponse->assertDontSee('Catat Kegiatan');
+        $endedCropHstResponse->assertDontSee('+ Tambah 15 Baris HST');
     }
 
     public function test_can_delete_crop(): void
@@ -352,5 +430,176 @@ class KalenderHstTest extends TestCase
             'keterangan' => 'Aplikasi pagi pukul 06:30',
             'target_hst' => 3,
         ]);
+    }
+
+    public function test_limit_hst_persists_on_reload(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Cabai Rawit',
+            'tanggal_tanam' => Carbon::today()->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        // Secara default hanya sampai besok (HST 1)
+        $defaultResponse = $this->get("/kalender-hst/tanaman/{$crop->id}");
+        $defaultResponse->assertStatus(200);
+        $defaultResponse->assertSee('id="hst-row-1"', false);
+        $defaultResponse->assertDontSee('id="hst-row-16"', false);
+
+        // Tambah 15 baris (menjadi HST 16)
+        $expandedResponse = $this->get("/kalender-hst/tanaman/{$crop->id}?limit_hst=16");
+        $expandedResponse->assertStatus(200);
+        $expandedResponse->assertSessionHas("crop_{$crop->id}_limit_hst", 16);
+        $expandedResponse->assertSee('id="hst-row-16"', false);
+
+        // Simulasi reload halaman tanpa query parameter limit_hst
+        $reloadResponse = $this->get("/kalender-hst/tanaman/{$crop->id}");
+        $reloadResponse->assertStatus(200);
+        // Baris HST 16 harus masih ada (tidak kembali ke limit besok)
+        $reloadResponse->assertSee('id="hst-row-16"', false);
+        $reloadResponse->assertSee('Menampilkan baris HST 0 sampai HST 16');
+        $reloadResponse->assertSee('Reset ke Besok');
+    }
+
+    public function test_can_reset_limit_hst(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Tomat',
+            'tanggal_tanam' => Carbon::today()->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        // Set limit ke 25
+        $this->withSession(["crop_{$crop->id}_limit_hst" => 25])
+            ->get("/kalender-hst/tanaman/{$crop->id}")
+            ->assertSee('id="hst-row-25"', false);
+
+        // Reset limit
+        $resetResponse = $this->get("/kalender-hst/tanaman/{$crop->id}?limit_hst=reset");
+        $resetResponse->assertStatus(200);
+        $resetResponse->assertSessionMissing("crop_{$crop->id}_limit_hst");
+        $resetResponse->assertSee('id="hst-row-1"', false);
+        $resetResponse->assertDontSee('id="hst-row-25"', false);
+    }
+
+    public function test_can_mark_crop_as_harvested_with_yield_and_price(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Cabai Rawit Merah',
+            'tanggal_tanam' => Carbon::now()->subDays(80)->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        $harvestDate = Carbon::now()->toDateString();
+        $response = $this->post("/kalender-hst/tanaman/{$crop->id}/panen", [
+            'tanggal_panen' => $harvestDate,
+            'total_panen' => '100 kg',
+            'harga_panen' => 'Rp 35.000 / kg',
+            'catatan' => 'Kualitas super grade A',
+        ]);
+
+        $response->assertRedirect();
+
+        $crop->refresh();
+        $this->assertEquals('Sedang Ditanam', $crop->status);
+        $this->assertEquals('100 kg', $crop->total_panen);
+        $this->assertEquals('Rp 35.000 / kg', $crop->harga_panen);
+        $this->assertEquals(1, $crop->harvest_count);
+
+        // Setelah tanaman diakhiri, masuk ke riwayat sebagai Sudah Dipanen
+        $endResponse = $this->post("/kalender-hst/tanaman/{$crop->id}/akhiri", [
+            'tanggal_akhir' => $harvestDate,
+            'alasan' => 'Siklus panen selesai',
+        ]);
+        $endResponse->assertRedirect('/kalender-hst?tab=riwayat');
+
+        $crop->refresh();
+        $this->assertEquals('Sudah Dipanen', $crop->status);
+        $this->assertEquals(80, $crop->total_hst_panen);
+
+        // Cek di halaman riwayat
+        $historyResponse = $this->get('/kalender-hst?tab=riwayat');
+        $historyResponse->assertSee('100 kg');
+        $historyResponse->assertSee('Rp 35.000 / kg');
+    }
+
+    public function test_can_end_crop(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Tomat Servvo',
+            'tanggal_tanam' => Carbon::now()->subDays(30)->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        $endDate = Carbon::now()->toDateString();
+        $response = $this->post("/kalender-hst/tanaman/{$crop->id}/akhiri", [
+            'tanggal_akhir' => $endDate,
+            'alasan' => 'Gagal Panen (Hama / Penyakit)',
+            'catatan' => 'Terserang virus kuning gemini',
+        ]);
+
+        $response->assertRedirect('/kalender-hst?tab=riwayat');
+
+        $crop->refresh();
+        $this->assertEquals('Diakhiri', $crop->status);
+        $this->assertEquals(30, $crop->total_hst_panen);
+        $this->assertStringContainsString('Gagal Panen (Hama / Penyakit)', $crop->catatan);
+
+        // Pastikan masuk di riwayat dan berstatus Diakhiri
+        $historyResponse = $this->get('/kalender-hst?tab=riwayat');
+        $historyResponse->assertSee('Tomat Servvo');
+        $historyResponse->assertSee('Tanaman Diakhiri');
+    }
+
+    public function test_harvest_records_and_displays_total_harga_kotor(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Semangka Inul',
+            'tanggal_tanam' => Carbon::now()->subDays(60)->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        // 1. Panen dengan explicit total_harga_kotor
+        $res1 = $this->post("/kalender-hst/tanaman/{$crop->id}/panen", [
+            'tanggal_panen' => Carbon::now()->subDays(2)->toDateString(),
+            'total_panen' => '100 kg',
+            'harga_panen' => '3.000',
+            'total_harga_kotor' => '300.000',
+        ]);
+        $res1->assertRedirect();
+
+        $crop->refresh();
+        $this->assertEquals(1, $crop->harvest_count);
+        $this->assertDatabaseHas('crop_harvests', [
+            'crop_id' => $crop->id,
+            'panen_ke' => 1,
+            'total_harga_kotor' => '300.000',
+        ]);
+
+        // 2. Panen dengan auto-fallback calculation
+        $res2 = $this->post("/kalender-hst/tanaman/{$crop->id}/panen", [
+            'tanggal_panen' => Carbon::now()->toDateString(),
+            'total_panen' => '50 kg',
+            'harga_panen' => '4.000',
+        ]);
+        $res2->assertRedirect();
+
+        $crop->refresh();
+        $this->assertEquals(2, $crop->harvest_count);
+        $this->assertEquals(500000.0, $crop->total_pendapatan_kotor);
+        $this->assertEquals('Rp 500.000', $crop->formatted_total_pendapatan_kotor);
+
+        // 3. Verifikasi tampilan di tab Riwayat Panen
+        $panenResponse = $this->get('/kalender-hst?tab=panen');
+        $panenResponse->assertStatus(200);
+        $panenResponse->assertSee('Total Harga Kotor');
+        $panenResponse->assertSee('Rp 300.000');
+        $panenResponse->assertSee('Rp 200.000');
+        $panenResponse->assertSee('Rp 500.000');
+
+        // 4. Verifikasi tampilan di halaman detail show
+        $showResponse = $this->get("/kalender-hst/tanaman/{$crop->id}");
+        $showResponse->assertStatus(200);
+        $showResponse->assertSee('Total Kotor: Rp 500.000');
     }
 }
