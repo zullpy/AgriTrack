@@ -6,6 +6,7 @@ use App\Models\Crop;
 use App\Models\CropActivity;
 use App\Models\CropHarvest;
 use App\Models\Medicine;
+use App\Models\PlantCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -172,6 +173,17 @@ class KalenderHstController extends Controller
     {
         $nama = $crop->nama_tanaman;
         $crop->delete();
+
+        // Bersihkan catalog stub otomatis jika tidak memiliki panduan (0 guides) dan bukan katalog bawaan
+        if (! Crop::where('nama_tanaman', $nama)->exists()) {
+            $orphanCatalog = PlantCatalog::where('name', $nama)
+                ->orWhere('key', \Str::slug($nama, '_'))
+                ->first();
+
+            if ($orphanCatalog && $orphanCatalog->guides()->count() === 0 && ! in_array($orphanCatalog->key, ['timun', 'cabe', 'jagung'])) {
+                $orphanCatalog->delete();
+            }
+        }
 
         return redirect('/kalender-hst')->with('success', "Tanaman {$nama} berhasil dihapus.");
     }

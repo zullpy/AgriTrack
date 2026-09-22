@@ -56,8 +56,8 @@
                                 {{ $plant['active_crop']->current_hst }} HST
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-medium bg-gray-100 text-gray-600 flex-shrink-0 whitespace-nowrap">
-                                Aktif
+                            <span class="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-medium bg-gray-100 text-gray-500 flex-shrink-0 whitespace-nowrap" title="Panduan katalog budidaya">
+                                Katalog
                             </span>
                         @endif
                     </div>
@@ -84,12 +84,20 @@
             </div>
 
         @empty
-            <div class="col-span-2 md:col-span-3 text-center py-16 text-text-muted">
-                <p class="font-semibold text-gray-700">Belum ada tanaman yang ditanam.</p>
-                <p class="text-xs text-text-muted mt-1 mb-3">Tambahkan tanaman pertama kamu melalui Kalender HST.</p>
+            <div class="col-span-2 md:col-span-3 bg-surface border-2 border-dashed border-gray-200 rounded-3xl p-8 sm:p-14 text-center shadow-xs">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl sm:text-4xl mb-4 shadow-inner">
+                    🌱
+                </div>
+                <h3 class="text-base sm:text-xl font-bold text-gray-900">Belum Ada Tanaman Aktif</h3>
+                <p class="text-xs sm:text-sm text-text-muted max-w-md mx-auto mt-1.5 mb-6 leading-relaxed">
+                    Saat ini tidak ada tanaman yang sedang ditanam di kebun. Tambahkan tanaman baru melalui Kalender HST untuk memantau perawatan harian dan siklus panen.
+                </p>
                 <a href="{{ route('kalender-hst.index') }}"
-                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shadow-sm">
-                    Buka Kalender HST
+                   class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition-all shadow-sm hover:shadow active:scale-95">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Mulai Tanam di Kalender HST</span>
                 </a>
             </div>
         @endforelse

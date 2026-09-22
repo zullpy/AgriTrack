@@ -11,15 +11,14 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        // Ambil semua tanaman yang pernah ditanam (aktif maupun sudah panen)
-        $allCrops = Crop::all();
-        $activeCrops = $allCrops->where('status', 'Sedang Ditanam');
+        // Ambil HANYA tanaman yang saat ini aktif ditanam
+        $activeCrops = Crop::where('status', 'Sedang Ditanam')->get();
 
         // Semua catalog untuk lookup emoji/tema/panduan
         $catalogsAll = PlantCatalog::with('guides')->get()->keyBy('key');
 
-        // Daftar nama_tanaman unik dari tabel crops
-        $uniqueNames = $allCrops
+        // Daftar nama_tanaman unik dari tanaman aktif
+        $uniqueNames = $activeCrops
             ->pluck('nama_tanaman')
             ->unique()
             ->filter()
@@ -83,33 +82,6 @@ class DashboardController extends Controller
                     : [],
             ];
         })->values();
-
-        // Jika belum ada crop sama sekali, tampilkan catalog default (timun, cabe, jagung)
-        if ($plantsCatalog->isEmpty()) {
-            $plantsCatalog = PlantCatalog::aktif()
-                ->with('guides')
-                ->get()
-                ->map(fn (PlantCatalog $plant) => [
-                    'catalog_id' => $plant->id,
-                    'key' => $plant->key,
-                    'name' => $plant->name,
-                    'emoji' => $plant->emoji,
-                    'cycle' => $plant->cycle,
-                    'theme' => $plant->theme,
-                    'badge_color' => $plant->badge_color,
-                    'active_crop' => null,
-                    'guides' => $plant->guides->map(fn (PlantCatalogGuide $g) => [
-                        'id' => "guide-{$plant->key}-{$g->id}",
-                        'phase' => $g->phase,
-                        'hst' => $g->hst,
-                        'focus' => $g->focus,
-                        'nutrients' => $g->nutrients ?? [],
-                        'dosis' => $g->dosis,
-                        'metode' => $g->metode,
-                        'tips' => $g->tips,
-                    ])->values()->all(),
-                ]);
-        }
 
         return view('dashboard.index', compact('plantsCatalog', 'activeCrops'));
     }

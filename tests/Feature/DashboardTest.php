@@ -151,4 +151,70 @@ class DashboardTest extends TestCase
         $this->assertDatabaseHas('plant_catalogs', ['key' => 'tomat', 'name' => 'Tomat']);
         $this->assertDatabaseHas('plant_catalog_guides', ['phase' => 'Pemupukan Awal']);
     }
+
+    public function test_plant_catalog_can_be_deleted(): void
+    {
+        $catalog = PlantCatalog::create([
+            'name' => 'Semangka',
+            'key' => 'semangka',
+            'emoji' => '🍉',
+            'cycle' => '65 – 75 HST',
+            'theme' => 'rose',
+            'urutan' => 5,
+            'aktif' => true,
+        ]);
+
+        $response = $this->delete(route('tanaman-katalog.destroy', $catalog));
+
+        $response->assertRedirect(route('dashboard'));
+        $this->assertDatabaseMissing('plant_catalogs', ['id' => $catalog->id]);
+    }
+
+    public function test_ended_or_harvested_crops_do_not_appear_on_dashboard(): void
+    {
+        Crop::create([
+            'nama_tanaman' => 'Tomat Lawas',
+            'varietas' => 'Servo',
+            'tanggal_tanam' => Carbon::now()->subDays(60)->toDateString(),
+            'status' => 'Diakhiri',
+        ]);
+
+        Crop::create([
+            'nama_tanaman' => 'Cabai Panen',
+            'varietas' => 'Rawit',
+            'tanggal_tanam' => Carbon::now()->subDays(80)->toDateString(),
+            'status' => 'Sudah Dipanen',
+        ]);
+
+        Crop::create([
+            'nama_tanaman' => 'Melon Aktif',
+            'varietas' => 'Action 434',
+            'tanggal_tanam' => Carbon::now()->subDays(10)->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        $response = $this->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertSee('Melon Aktif');
+        $response->assertDontSee('Tomat Lawas');
+        $response->assertDontSee('Cabai Panen');
+    }
+
+    public function test_dashboard_displays_empty_state_when_no_active_crops(): void
+    {
+        Crop::create([
+            'nama_tanaman' => 'Bawang Merah Selesai',
+            'varietas' => 'Tajuk',
+            'tanggal_tanam' => Carbon::now()->subDays(70)->toDateString(),
+            'status' => 'Diakhiri',
+        ]);
+
+        $response = $this->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertSee('Belum Ada Tanaman Aktif');
+        $response->assertSee('Mulai Tanam di Kalender HST');
+        $response->assertDontSee('Bawang Merah Selesai');
+    }
 }

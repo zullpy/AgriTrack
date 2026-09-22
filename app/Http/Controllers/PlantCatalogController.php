@@ -153,6 +153,16 @@ class PlantCatalogController extends Controller
             ->with('success', "Tanaman {$tanamanKatalog->name} berhasil diperbarui.");
     }
 
+    public function destroy(PlantCatalog $tanamanKatalog): RedirectResponse
+    {
+        $nama = $tanamanKatalog->name;
+        $tanamanKatalog->guides()->delete();
+        $tanamanKatalog->delete();
+
+        return redirect()->route('dashboard')
+            ->with('success', "Tanaman {$nama} berhasil dihapus dari katalog.");
+    }
+
     /**
      * Hapus semua guides lama lalu buat ulang dari input form.
      *
