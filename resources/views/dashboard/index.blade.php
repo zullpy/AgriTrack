@@ -155,7 +155,7 @@
             <a id="linkKalenderHst"
                href="/kalender-hst"
                class="group flex items-start gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-100 hover:border-primary bg-emerald-50/40 hover:bg-emerald-50/90 transition-all duration-200 shadow-sm hover:shadow-md">
-                <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
                     <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
                     </svg>
@@ -180,7 +180,7 @@
                     id="btnOpenFertilizer"
                     onclick="openFertilizerGuideForCurrentPlant()"
                     class="w-full text-left group flex items-start gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border-2 border-amber-100 hover:border-amber-400 bg-amber-50/40 hover:bg-amber-50/90 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer">
-                <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
                     <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.309 48.309 0 01-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
                     </svg>
@@ -220,7 +220,7 @@
         <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto my-2.5 sm:hidden flex-shrink-0"></div>
 
         {{-- Header --}}
-        <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 bg-gradient-to-r from-amber-500/10 via-emerald-500/5 to-transparent flex-shrink-0">
+        <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 bg-gray-50 flex-shrink-0">
             <div class="flex items-start justify-between gap-2.5">
                 <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                     <div id="guidePlantIcon" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-amber-500/20 flex-shrink-0">
@@ -526,7 +526,7 @@
             ).join('');
 
             panel.innerHTML = `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-gray-50 to-white border border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 sm:p-4 rounded-2xl bg-gray-50 border border-gray-200">
                     <div>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${plant.badge_color}">
                             ${item.phase}

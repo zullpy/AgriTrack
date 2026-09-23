@@ -392,9 +392,9 @@
     @else
         <div class="space-y-6">
             @foreach ($cropsWithHarvests as $crop)
-                <div class="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden">
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                     {{-- Header Tanaman --}}
-                    <div class="p-4 sm:p-5 bg-gradient-to-r from-gray-50/90 via-white to-amber-50/30 border-b border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="p-4 sm:p-5 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div class="flex items-center gap-3.5">
                             <div class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/90 text-2xl flex items-center justify-center shrink-0 select-none shadow-xs">
                                 {{ $crop->emoji }}

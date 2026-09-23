@@ -289,20 +289,56 @@
                     @endif
                 </a>
 
-                <a href="/steps"
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
-                          {{ (request()->is('steps*')) ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
-                    <span class="w-8 h-8 rounded-lg {{ (request()->is('steps*')) ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
+                {{-- 3. Tahapan (with submenus) --}}
+                @php
+                    $isStepsActive = request()->is('steps*');
+                    $isPengolahanTanah = request()->is('steps/pengolahan-tanah*');
+                    $isPenanamanBibit = request()->is('steps/penanaman-bibit*');
+                @endphp
+                <div class="space-y-1" id="tahapan-menu-wrapper">
+                    <button type="button"
+                            onclick="toggleTahapanSubmenu()"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                                   {{ $isStepsActive ? 'nav-active text-primary-dark font-semibold' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-lg {{ $isStepsActive ? 'bg-emerald-100 text-primary-dark' : 'bg-gray-100 text-gray-500' }} flex items-center justify-center transition-colors">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
+                                </svg>
+                            </span>
+                            <span>Tahapan</span>
+                        </div>
+                        <svg id="tahapan-chevron" class="w-4 h-4 text-gray-400 transition-transform duration-200 {{ $isStepsActive ? 'rotate-180 text-primary' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
-                    </span>
-                    <span>Tahapan</span>
-                    @if(request()->is('steps*'))
-                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
-                    @endif
-                </a>
+                    </button>
 
+                    <div id="tahapan-submenu" class="pl-11 pr-2 space-y-1 {{ $isStepsActive ? 'block' : 'hidden' }}">
+                        <a href="/steps/pengolahan-tanah"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isPengolahanTanah ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isPengolahanTanah ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Tahapan Pengolahan Tanah</span>
+                        </a>
+
+                        <a href="/steps/penanaman-bibit"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isPenanamanBibit ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isPenanamanBibit ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Tahapan Penanaman Bibit</span>
+                        </a>
+
+                        <a href="/steps"
+                           class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-text-muted hover:text-text transition-colors">
+                            <span>Ikhtisar Tahapan</span>
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                {{-- 4. Kalender HST --}}
                 <a href="/kalender-hst"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
                           {{ request()->is('kalender-hst*') ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
@@ -313,6 +349,21 @@
                     </span>
                     <span>Kalender HST</span>
                     @if(request()->is('kalender-hst*'))
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    @endif
+                </a>
+
+                {{-- 5. Keuangan --}}
+                <a href="/keuangan"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                          {{ request()->is('keuangan*') ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
+                    <span class="w-8 h-8 rounded-lg {{ request()->is('keuangan*') ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                    <span>Keuangan</span>
+                    @if(request()->is('keuangan*'))
                         <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
                     @endif
                 </a>
@@ -353,19 +404,19 @@
 
     {{-- ── Mobile bottom navigation ── --}}
     <nav class="lg:hidden fixed bottom-0 inset-x-0 w-full z-30 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]" style="width: 100%; left: 0; right: 0;">
-        <div class="flex items-center justify-around w-full px-2 pt-1.5 pb-2" style="width: 100%; display: flex;">
+        <div class="flex items-center justify-around w-full px-1.5 pt-1.5 pb-2" style="width: 100%; display: flex;">
             {{-- 1. Dashboard --}}
             @php $isDashboard = request()->is('dashboard*') || request()->is('/'); @endphp
             <a href="/dashboard"
                class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
                style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-4 py-1 rounded-full flex items-center justify-center transition-all"
+                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
                      style="{{ $isDashboard ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDashboard ? '2' : '1.8' }}">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0c0-3.866 3.134-7 7-7-1.5 4-4 7-7 7zm0 0c0-3.866-3.134-7-7-7 1.5 4 4 7 7 7z"/>
                     </svg>
                 </div>
-                <span class="text-[11px] font-medium mt-1 {{ $isDashboard ? 'font-semibold' : '' }}"
+                <span class="text-[10px] font-medium mt-0.5 {{ $isDashboard ? 'font-semibold' : '' }}"
                       style="{{ $isDashboard ? 'color: #16a34a;' : 'color: #6b7280;' }}">Dashboard</span>
             </a>
 
@@ -374,14 +425,14 @@
             <a href="/data-obat"
                class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
                style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-4 py-1 rounded-full flex items-center justify-center transition-all"
+                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
                      style="{{ $isDataObat ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDataObat ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
                     </svg>
                 </div>
-                <span class="text-[11px] font-medium mt-1 {{ $isDataObat ? 'font-semibold' : '' }}"
-                      style="{{ $isDataObat ? 'color: #16a34a;' : 'color: #6b7280;' }}">Data Obat</span>
+                <span class="text-[10px] font-medium mt-0.5 {{ $isDataObat ? 'font-semibold' : '' }}"
+                      style="{{ $isDataObat ? 'color: #16a34a;' : 'color: #6b7280;' }}">Obat</span>
             </a>
 
             {{-- 3. Tahapan --}}
@@ -389,29 +440,44 @@
             <a href="/steps"
                class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
                style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-4 py-1 rounded-full flex items-center justify-center transition-all"
+                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
                      style="{{ $isTahapan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isTahapan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
                     </svg>
                 </div>
-                <span class="text-[11px] font-medium mt-1 {{ $isTahapan ? 'font-semibold' : '' }}"
+                <span class="text-[10px] font-medium mt-0.5 {{ $isTahapan ? 'font-semibold' : '' }}"
                       style="{{ $isTahapan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tahapan</span>
             </a>
 
-            <!-- 4. kalender hst -->
+            <!-- 4. Kalender HST -->
             @php $isKalenderHst = request()->is('kalender-hst*'); @endphp
             <a href="/kalender-hst"
                class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
                style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-4 py-1 rounded-full flex items-center justify-center transition-all"
+                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
                      style="{{ $isKalenderHst ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKalenderHst ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
                     </svg>
                 </div>
-                <span class="text-[11px] font-medium mt-1 {{ $isKalenderHst ? 'font-semibold' : '' }}"
-                      style="{{ $isKalenderHst ? 'color: #16a34a;' : 'color: #6b7280;' }}">Kalender HST</span>
+                <span class="text-[10px] font-medium mt-0.5 {{ $isKalenderHst ? 'font-semibold' : '' }}"
+                      style="{{ $isKalenderHst ? 'color: #16a34a;' : 'color: #6b7280;' }}">HST</span>
+            </a>
+
+            <!-- 5. Keuangan -->
+            @php $isKeuangan = request()->is('keuangan*'); @endphp
+            <a href="/keuangan"
+               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isKeuangan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKeuangan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <span class="text-[10px] font-medium mt-0.5 {{ $isKeuangan ? 'font-semibold' : '' }}"
+                      style="{{ $isKeuangan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Keuangan</span>
             </a>
         </div>
     </nav>
@@ -523,6 +589,19 @@
                 }
             });
         @endif
+
+        // Toggle Tahapan Submenu in Desktop Sidebar
+        window.toggleTahapanSubmenu = function() {
+            const submenu = document.getElementById('tahapan-submenu');
+            const chevron = document.getElementById('tahapan-chevron');
+            if (submenu) {
+                submenu.classList.toggle('hidden');
+                if (chevron) {
+                    chevron.classList.toggle('rotate-180');
+                    chevron.classList.toggle('text-primary');
+                }
+            }
+        };
     </script>
 
     @stack('scripts')
