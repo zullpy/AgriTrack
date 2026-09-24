@@ -279,24 +279,10 @@
                                                 $isDone = $act->status === 'Selesai';
                                             @endphp
                                             <div class="flex items-start justify-between gap-2 p-1.5 rounded-lg {{ $isToday ? 'bg-white/90 border border-emerald-300 shadow-xs' : ($isDone ? 'bg-gray-100/80 text-text-muted' : 'bg-white border border-gray-200') }}">
-                                                <div class="flex items-start gap-2 min-w-0 flex-1">
-                                                    {{-- Checkbox Selesai --}}
-                                                    <form method="POST" action="/kalender-hst/kegiatan/{{ $act->id }}/toggle" class="shrink-0 mt-0.5">
-                                                        @csrf
-                                                        <button type="submit"
-                                                                title="{{ $isDone ? 'Tandai Belum Selesai' : 'Tandai Selesai' }}"
-                                                                class="w-4 h-4 rounded border flex items-center justify-center transition-colors {{ $isDone ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-400 hover:border-primary text-transparent' }}">
-                                                            <svg class="w-3 h-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
-                                                            </svg>
-                                                        </button>
-                                                    </form>
-
-                                                    <div class="min-w-0 flex-1">
-                                                        <span class="font-semibold text-xs sm:text-sm {{ $isDone ? 'line-through text-gray-400' : 'text-gray-900' }} break-words">
-                                                            {{ $act->nama_kegiatan }}
-                                                        </span>
-                                                    </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <span class="font-semibold text-xs sm:text-sm {{ $isDone ? 'line-through text-gray-400' : 'text-gray-900' }} break-words">
+                                                        {{ $act->nama_kegiatan }}
+                                                    </span>
                                                 </div>
 
                                                 {{-- Tombol Edit / Hapus Kegiatan --}}
@@ -2299,6 +2285,31 @@
                     }
                 }
             });
+        }
+
+        // Pre-cache otomatis foto Cloudinary tanaman ini di latar belakang saat masih online
+        @php
+            $existingPhotoUrls = [];
+            foreach ($tableRows as $r) {
+                if ($r['activities']->isNotEmpty()) {
+                    foreach ($r['activities'] as $a) {
+                        if (!empty($a->foto_urls)) {
+                            foreach ($a->foto_urls as $u) {
+                                $existingPhotoUrls[] = $u;
+                            }
+                        }
+                    }
+                }
+            }
+        @endphp
+        if (navigator.onLine && 'caches' in window) {
+            const serverPhotos = @json($existingPhotoUrls);
+            if (Array.isArray(serverPhotos) && serverPhotos.length > 0) {
+                serverPhotos.forEach(url => {
+                    const preloadImg = new Image();
+                    preloadImg.src = url;
+                });
+            }
         }
     });
 </script>

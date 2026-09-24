@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agritrack-v2';
+const CACHE_NAME = 'agritrack-v3';
 const PRECACHE_ASSETS = [
     '/',
     '/dashboard',
@@ -30,7 +30,7 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch: Network-first for HTML pages with cache fallback; Stale-while-revalidate for assets
+// Fetch: Network-first for HTML pages with cache fallback; Cache-first for images & assets
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
@@ -70,22 +70,25 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Static assets (CSS, JS, Fonts, Images)
+    // Static assets & Images (including cross-origin Cloudinary images)
     event.respondWith(
         caches.match(request).then((cachedResponse) => {
-            const fetchPromise = fetch(request)
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+
+            return fetch(request)
                 .then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
+                    // Cache standard 200 and opaque (cross-origin Cloudinary) image responses
+                    if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
                         const clone = networkResponse.clone();
                         caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
                     }
                     return networkResponse;
                 })
                 .catch(() => {
-                    // Network failed, nothing extra needed if cachedResponse is returned below
+                    return cachedResponse || new Response('', { status: 408, statusText: 'Offline' });
                 });
-
-            return cachedResponse || fetchPromise;
         })
     );
 });
