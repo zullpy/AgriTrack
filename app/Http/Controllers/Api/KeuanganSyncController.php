@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FinancialCategory;
 use App\Models\FinancialTransaction;
 use App\Services\CloudinaryService;
+use Database\Seeders\FinancialCategorySeeder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,9 @@ class KeuanganSyncController extends Controller
     public function index(): JsonResponse
     {
         $transactions = FinancialTransaction::with('crop')->latest('tanggal')->get();
+        if (FinancialCategory::count() === 0) {
+            (new FinancialCategorySeeder)->run();
+        }
         $categories = FinancialCategory::parents()->with('subcategories')->get();
 
         $transaksiList = $transactions->map(function (FinancialTransaction $m): array {

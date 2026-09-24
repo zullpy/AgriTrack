@@ -99,6 +99,7 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
             .then((reg) => {
                 console.log('AgriTrack Service Worker registered:', reg.scope);
+                reg.update();
             })
             .catch((err) => {
                 console.warn('Service Worker registration failed:', err);

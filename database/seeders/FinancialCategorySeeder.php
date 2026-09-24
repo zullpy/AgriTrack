@@ -10,9 +10,15 @@ class FinancialCategorySeeder extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    public function run(bool $force = false): void
     {
-        FinancialCategory::query()->delete();
+        if (! $force && FinancialCategory::count() > 0) {
+            return;
+        }
+
+        if ($force) {
+            FinancialCategory::query()->delete();
+        }
 
         $categories = [
             [

@@ -7,6 +7,7 @@ use App\Models\FinancialCategory;
 use App\Models\FinancialTransaction;
 use App\Services\CloudinaryService;
 use Carbon\Carbon;
+use Database\Seeders\FinancialCategorySeeder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -64,6 +65,9 @@ class KeuanganController extends Controller
         })->values();
 
         $crops = Crop::orderBy('nama_tanaman')->get();
+        if (FinancialCategory::count() === 0) {
+            (new FinancialCategorySeeder)->run();
+        }
         $categories = FinancialCategory::parents()->with('subcategories')->get();
 
         if ($request->expectsJson() || $request->ajax()) {

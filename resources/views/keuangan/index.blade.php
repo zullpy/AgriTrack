@@ -240,7 +240,7 @@
                             <th class="px-5 py-3">Tanggal</th>
                             <th class="px-5 py-3">Tipe</th>
                             <th class="px-5 py-3">Transaksi</th>
-                            <th class="px-5 py-3">Kategori & Sub-Kategori</th>
+                            <th class="px-5 py-3">Sub-Kategori</th>
                             <th class="px-5 py-3">Keterangan / Terkait</th>
                             <th class="px-5 py-3 text-right">Nominal</th>
                             <th class="px-5 py-3 text-center">Aksi</th>
@@ -248,39 +248,101 @@
                     </thead>
                     <tbody id="transaksi-table-body" class="divide-y divide-gray-100">
                         @php
+                            $catOrderMap = [];
+                            $subOrderMap = [];
+                            if (isset($categories)) {
+                                foreach ($categories as $cIdx => $catModel) {
+                                    $catOrderMap[$catModel->nama] = $catModel->urutan ?? ($cIdx + 1);
+                                    $subOrderMap[$catModel->nama] = [];
+                                    if ($catModel->subcategories) {
+                                        foreach ($catModel->subcategories as $sIdx => $subModel) {
+                                            $subOrderMap[$catModel->nama][strtolower(trim($subModel->nama))] = $subModel->urutan ?? ($sIdx + 1);
+                                        }
+                                    }
+                                }
+                            }
+
                             $groupedTransaksi = $transaksiList->groupBy(function($item) {
                                 return $item['kategori'] ?: 'Lainnya';
+                            })->sortBy(function($items, $catName) use ($catOrderMap) {
+                                return $catOrderMap[$catName] ?? 9999;
                             });
                         @endphp
                         @foreach($groupedTransaksi as $catName => $items)
                             @php
                                 $catPengeluaran = $items->where('tipe', 'pengeluaran')->sum('nominal');
                                 $catPemasukan = $items->where('tipe', 'pemasukan')->sum('nominal');
+
+                                $subGroups = $items->groupBy(function($item) {
+                                    $raw = trim($item['sub_kategori'] ?? '');
+                                    if (!$raw) return 'Umum';
+                                    $p = explode(' › ', $raw);
+                                    return trim($p[0]) ?: 'Umum';
+                                })->sortBy(function($subItems, $subName) use ($subOrderMap, $catName) {
+                                    // Finishing selalu diletakkan paling bawah di sub-kategori
+                                    if (stripos($subName, 'finishing') !== false) {
+                                        return 999999;
+                                    }
+                                    $subKey = strtolower(trim($subName));
+                                    return $subOrderMap[$catName][$subKey] ?? 1000;
+                                });
                             @endphp
-                            <tr class="category-header-row bg-gray-50/90 border-y border-gray-200/80" data-category="{{ $catName }}">
-                                <td colspan="7" class="px-5 py-2.5">
+                            {{-- Header Kategori Utama (Kontras Tinggi & Pemisah Jelas) --}}
+                            <tr class="category-header-row bg-emerald-900 text-white border-t-2 border-emerald-950" data-category="{{ $catName }}">
+                                <td colspan="7" class="px-5 py-3">
                                     <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                                            <span class="font-bold text-gray-800 text-xs uppercase tracking-wide">{{ $catName }}</span>
-                                            <span class="text-[11px] text-gray-500 font-medium">({{ $items->count() }} transaksi)</span>
+                                        <div class="flex items-center gap-2.5">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-300/40"></span>
+                                            <span class="font-extrabold text-white text-xs sm:text-sm uppercase tracking-wider">{{ $catName }}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-800 text-emerald-200">({{ $items->count() }} transaksi)</span>
                                         </div>
                                         <div class="flex items-center gap-3 text-xs font-semibold">
                                             @if($catPengeluaran > 0)
-                                                <span class="text-rose-600">Pengeluaran: -Rp {{ number_format($catPengeluaran, 0, ',', '.') }}</span>
+                                                <span class="text-rose-300">Pengeluaran: -Rp {{ number_format($catPengeluaran, 0, ',', '.') }}</span>
                                             @endif
                                             @if($catPengeluaran > 0 && $catPemasukan > 0)
-                                                <span class="text-gray-300">|</span>
+                                                <span class="text-emerald-600">|</span>
                                             @endif
                                             @if($catPemasukan > 0)
-                                                <span class="text-emerald-700">Pemasukan: +Rp {{ number_format($catPemasukan, 0, ',', '.') }}</span>
+                                                <span class="text-emerald-300">Pemasukan: +Rp {{ number_format($catPemasukan, 0, ',', '.') }}</span>
                                             @endif
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                            @foreach($items as $t)
-                                <tr class="hover:bg-gray-50 transition-colors transaction-row" data-type="{{ $t['tipe'] }}" data-category="{{ $catName }}">
+                            {{-- Header Sub-Kategori & Baris Transaksi --}}
+                            @foreach($subGroups as $subName => $subItems)
+                                @php
+                                    $subPengeluaran = $subItems->where('tipe', 'pengeluaran')->sum('nominal');
+                                    $subPemasukan = $subItems->where('tipe', 'pemasukan')->sum('nominal');
+                                @endphp
+                                <tr class="subcategory-header-row bg-slate-100/90 border-y border-slate-200/90" data-category="{{ $catName }}" data-subcategory="{{ $subName }}">
+                                    <td colspan="7" class="pl-8 pr-5 py-2">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-slate-400 font-bold text-xs select-none">↳</span>
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-sky-100/90 text-sky-900 border border-sky-200">
+                                                    <svg class="w-3.5 h-3.5 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                                    {{ $subName }}
+                                                </span>
+                                                <span class="text-[11px] text-slate-500 font-medium">({{ $subItems->count() }} transaksi)</span>
+                                            </div>
+                                            <div class="flex items-center gap-2.5 text-xs font-semibold">
+                                                @if($subPengeluaran > 0)
+                                                    <span class="text-rose-600">Subtotal: -Rp {{ number_format($subPengeluaran, 0, ',', '.') }}</span>
+                                                @endif
+                                                @if($subPengeluaran > 0 && $subPemasukan > 0)
+                                                    <span class="text-slate-300">|</span>
+                                                @endif
+                                                @if($subPemasukan > 0)
+                                                    <span class="text-emerald-700">Subtotal: +Rp {{ number_format($subPemasukan, 0, ',', '.') }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @foreach($subItems as $t)
+                                <tr class="hover:bg-gray-50 transition-colors transaction-row" data-type="{{ $t['tipe'] }}" data-category="{{ $catName }}" data-subcategory="{{ $subName }}">
                                     <td class="px-5 py-3.5 whitespace-nowrap text-gray-600 font-medium">
                                         {{ $t['tanggal'] ? $t['tanggal']->format('d M Y') : '—' }}
                                     </td>
@@ -313,31 +375,16 @@
                                     <td class="px-5 py-3.5">
                                         @php
                                             $subParts = !empty($t['sub_kategori']) ? explode(' › ', $t['sub_kategori']) : [];
-                                            $subName = $subParts[0] ?? null;
-                                            $subSubName = $subParts[1] ?? null;
+                                            $leafSubName = count($subParts) > 1 ? end($subParts) : (!empty($subParts) ? $subParts[0] : null);
                                         @endphp
-                                        <div class="space-y-1">
-                                            <span class="font-bold text-gray-800 text-[11px] block">{{ $t['kategori'] }}</span>
-                                            @if($subName)
-                                                <div class="flex items-center gap-1 flex-wrap">
-                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-sky-50 text-sky-800 border border-sky-200" title="Sub-Kategori">
-                                                        <svg class="w-3 h-3 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                                                        {{ $subName }}
-                                                    </span>
-                                                    @if($subSubName)
-                                                        <span class="text-gray-300 font-bold text-xs shrink-0">›</span>
-                                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs" title="Sub-Sub Kategori">
-                                                            <svg class="w-3 h-3 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                                            {{ $subSubName }}
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            @else
-                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 bg-gray-50 border border-gray-100 italic">
-                                                    Tanpa sub
-                                                </span>
-                                            @endif
-                                        </div>
+                                        @if($leafSubName)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200/90 shadow-2xs" title="{{ $t['sub_kategori'] }}">
+                                                <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                                {{ $leafSubName }}
+                                            </span>
+                                        @else
+                                            <span class="text-xs text-gray-400 italic">—</span>
+                                        @endif
                                     </td>
                                     <td class="px-5 py-3.5 text-gray-600 max-w-xs break-words">
                                         {{ $t['deskripsi'] ?: '—' }}
@@ -366,6 +413,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                @endforeach
                             @endforeach
                         @endforeach
                     </tbody>
@@ -378,93 +426,123 @@
                     @php
                         $catPengeluaran = $items->where('tipe', 'pengeluaran')->sum('nominal');
                         $catPemasukan = $items->where('tipe', 'pemasukan')->sum('nominal');
+
+                        $subGroups = $items->groupBy(function($item) {
+                            $raw = trim($item['sub_kategori'] ?? '');
+                            if (!$raw) return 'Umum';
+                            $p = explode(' › ', $raw);
+                            return trim($p[0]) ?: 'Umum';
+                        })->sortBy(function($subItems, $subName) use ($subOrderMap, $catName) {
+                            // Finishing selalu diletakkan paling bawah di sub-kategori
+                            if (stripos($subName, 'finishing') !== false) {
+                                return 999999;
+                            }
+                            $subKey = strtolower(trim($subName));
+                            return $subOrderMap[$catName][$subKey] ?? 1000;
+                        });
                     @endphp
-                    <div class="category-mobile-group border-b border-gray-200/70 last:border-b-0" data-category="{{ $catName }}">
-                        <div class="px-3.5 py-2 bg-gray-50/90 border-y border-gray-200/60 flex items-center justify-between">
+                    <div class="category-mobile-group border-b-2 border-emerald-950/20 last:border-b-0" data-category="{{ $catName }}">
+                        <div class="px-3.5 py-2.5 bg-emerald-900 text-white flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                                <span class="font-bold text-gray-800 text-xs">{{ $catName }}</span>
-                                <span class="text-[10px] text-gray-500">({{ $items->count() }})</span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-300/40"></span>
+                                <span class="font-extrabold text-xs uppercase tracking-wide text-white">{{ $catName }}</span>
+                                <span class="text-[10px] text-emerald-200 bg-emerald-800 px-1.5 py-0.2 rounded font-semibold">({{ $items->count() }})</span>
                             </div>
                             <div class="text-[11px] font-bold text-right">
                                 @if($catPengeluaran > 0)
-                                    <span class="text-rose-600 block">-Rp {{ number_format($catPengeluaran, 0, ',', '.') }}</span>
+                                    <span class="text-rose-300 block">-Rp {{ number_format($catPengeluaran, 0, ',', '.') }}</span>
                                 @endif
                                 @if($catPemasukan > 0)
-                                    <span class="text-emerald-700 block">+Rp {{ number_format($catPemasukan, 0, ',', '.') }}</span>
+                                    <span class="text-emerald-300 block">+Rp {{ number_format($catPemasukan, 0, ',', '.') }}</span>
                                 @endif
                             </div>
                         </div>
-                        <div class="divide-y divide-gray-100">
-                            @foreach($items as $t)
-                                <div class="p-3 sm:p-4 space-y-1.5 sm:space-y-2 transaction-row hover:bg-gray-50 transition-colors" data-type="{{ $t['tipe'] }}" data-category="{{ $catName }}">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <div>
-                                            <span class="text-[11px] font-semibold text-gray-500">
-                                                {{ $t['tanggal'] ? $t['tanggal']->format('d M Y') : '—' }}
-                                            </span>
-                                            <h3 class="text-sm font-bold text-gray-900 mt-0.5">{{ $t['judul'] }}</h3>
-                                        </div>
-                                        <span class="text-sm font-extrabold shrink-0 {{ $t['tipe'] === 'pemasukan' ? 'text-emerald-700' : 'text-rose-600' }}">
-                                            {{ $t['tipe'] === 'pemasukan' ? '+' : '-' }}{{ $t['formatted_nominal'] }}
+                        @foreach($subGroups as $subName => $subItems)
+                            @php
+                                $subPengeluaran = $subItems->where('tipe', 'pengeluaran')->sum('nominal');
+                                $subPemasukan = $subItems->where('tipe', 'pemasukan')->sum('nominal');
+                            @endphp
+                            <div class="subcategory-mobile-group border-b border-gray-200/80 last:border-b-0" data-category="{{ $catName }}" data-subcategory="{{ $subName }}">
+                                <div class="px-3 py-1.5 bg-slate-100 border-b border-slate-200/80 flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-slate-400 text-xs">↳</span>
+                                        <span class="font-bold text-sky-900 bg-sky-100 px-2 py-0.5 rounded text-[11px] border border-sky-200 flex items-center gap-1">
+                                            <svg class="w-3 h-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                            {{ $subName }}
                                         </span>
+                                        <span class="text-[10px] text-slate-500 font-medium">({{ $subItems->count() }})</span>
                                     </div>
-                                    <div class="space-y-1 pt-0.5">
-                                        @php
-                                            $subParts = !empty($t['sub_kategori']) ? explode(' › ', $t['sub_kategori']) : [];
-                                            $subName = $subParts[0] ?? null;
-                                            $subSubName = $subParts[1] ?? null;
-                                        @endphp
-                                        <div class="flex items-center gap-1.5 flex-wrap text-xs">
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold {{ $t['tipe'] === 'pemasukan' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">
-                                                {{ $t['tipe'] === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran' }}
-                                            </span>
-                                            <span class="font-bold text-gray-800 text-[11px]">{{ $t['kategori'] }}</span>
-                                            @if(!empty($subName))
-                                                <span class="text-gray-300 font-bold text-xs">›</span>
-                                                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
-                                                    <svg class="w-2.5 h-2.5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                                                    {{ $subName }}
-                                                </span>
-                                                @if(!empty($subSubName))
-                                                    <span class="text-gray-300 font-bold text-[10px]">›</span>
-                                                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-900 border border-amber-200">
-                                                        <svg class="w-2.5 h-2.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                                        {{ $subSubName }}
-                                                    </span>
-                                                @endif
-                                            @endif
-                                        </div>
-                                        @if($t['deskripsi'] && $t['deskripsi'] !== '—')
-                                            <p class="text-xs text-gray-500">{{ $t['deskripsi'] }}</p>
+                                    <div class="text-[10.5px] font-semibold text-right">
+                                        @if($subPengeluaran > 0)
+                                            <span class="text-rose-600">-Rp {{ number_format($subPengeluaran, 0, ',', '.') }}</span>
                                         @endif
-                                    </div>
-
-                                    {{-- Mobile Action Row --}}
-                                    <div class="flex items-center justify-end gap-2 pt-1 border-t border-gray-100">
-                                        @if($t['nota_url'])
-                                            <button type="button"
-                                                    onclick="previewNota('{{ $t['nota_url'] }}', '{{ addslashes($t['judul']) }}')"
-                                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100">
-                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                                                Nota
-                                            </button>
+                                        @if($subPemasukan > 0)
+                                            <span class="text-emerald-700">+Rp {{ number_format($subPemasukan, 0, ',', '.') }}</span>
                                         @endif
-
-                                        <button type="button"
-                                                onclick='openEditTransactionModal(@json($t))'
-                                                class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
-                                            Edit
-                                        </button>
-                                        <button type="button"
-                                                onclick="deleteTransaction({{ $t['raw_id'] }}, '{{ addslashes($t['judul']) }}')"
-                                                class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 hover:bg-rose-100">
-                                            Hapus
-                                        </button>
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
+                                <div class="divide-y divide-gray-100">
+                                    @foreach($subItems as $t)
+                                        @php
+                                            $subParts = !empty($t['sub_kategori']) ? explode(' › ', $t['sub_kategori']) : [];
+                                            $leafSubName = count($subParts) > 1 ? end($subParts) : (!empty($subParts) ? $subParts[0] : null);
+                                        @endphp
+                                        <div class="p-3 sm:p-4 space-y-1.5 sm:space-y-2 transaction-row hover:bg-gray-50 transition-colors" data-type="{{ $t['tipe'] }}" data-category="{{ $catName }}" data-subcategory="{{ $subName }}">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <span class="text-[11px] font-semibold text-gray-500">
+                                                        {{ $t['tanggal'] ? $t['tanggal']->format('d M Y') : '—' }}
+                                                    </span>
+                                                    <h3 class="text-sm font-bold text-gray-900 mt-0.5">{{ $t['judul'] }}</h3>
+                                                </div>
+                                                <span class="text-sm font-extrabold shrink-0 {{ $t['tipe'] === 'pemasukan' ? 'text-emerald-700' : 'text-rose-600' }}">
+                                                    {{ $t['tipe'] === 'pemasukan' ? '+' : '-' }}{{ $t['formatted_nominal'] }}
+                                                </span>
+                                            </div>
+                                            <div class="space-y-1 pt-0.5">
+                                                <div class="flex items-center gap-1.5 flex-wrap text-xs">
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold {{ $t['tipe'] === 'pemasukan' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">
+                                                        {{ $t['tipe'] === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran' }}
+                                                    </span>
+                                                    @if($leafSubName)
+                                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+                                                            <svg class="w-2.5 h-2.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                                            {{ $leafSubName }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                @if($t['deskripsi'] && $t['deskripsi'] !== '—')
+                                                    <p class="text-xs text-gray-500">{{ $t['deskripsi'] }}</p>
+                                                @endif
+                                            </div>
+
+                                            {{-- Mobile Action Row --}}
+                                            <div class="flex items-center justify-end gap-2 pt-1 border-t border-gray-100">
+                                                @if($t['nota_url'])
+                                                    <button type="button"
+                                                            onclick="previewNota('{{ $t['nota_url'] }}', '{{ addslashes($t['judul']) }}')"
+                                                            class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                                        Nota
+                                                    </button>
+                                                @endif
+
+                                                <button type="button"
+                                                        onclick='openEditTransactionModal(@json($t))'
+                                                        class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
+                                                    Edit
+                                                </button>
+                                                <button type="button"
+                                                        onclick="deleteTransaction({{ $t['raw_id'] }}, '{{ addslashes($t['judul']) }}')"
+                                                        class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 hover:bg-rose-100">
+                                                    Hapus
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 @endforeach
             </div>
@@ -1163,6 +1241,16 @@
             }
         });
 
+        // Hide/show subcategory header rows in desktop table
+        const subHeaderRows = document.querySelectorAll('.subcategory-header-row');
+        subHeaderRows.forEach(header => {
+            const catName = header.dataset.category;
+            const subName = header.dataset.subcategory;
+            const matchingRows = Array.from(document.querySelectorAll(`.transaction-row[data-category="${catName}"][data-subcategory="${subName}"]`))
+                .filter(r => r.style.display !== 'none');
+            header.style.display = matchingRows.length > 0 ? '' : 'none';
+        });
+
         // Hide/show category header rows in desktop table
         const catHeaderRows = document.querySelectorAll('.category-header-row');
         catHeaderRows.forEach(header => {
@@ -1172,10 +1260,17 @@
             header.style.display = matchingRows.length > 0 ? '' : 'none';
         });
 
+        // Hide/show mobile subcategory groups
+        const subMobileGroups = document.querySelectorAll('.subcategory-mobile-group');
+        subMobileGroups.forEach(group => {
+            const matchingRows = Array.from(group.querySelectorAll('.transaction-row'))
+                .filter(r => r.style.display !== 'none');
+            group.style.display = matchingRows.length > 0 ? '' : 'none';
+        });
+
         // Hide/show mobile category groups
         const catMobileGroups = document.querySelectorAll('.category-mobile-group');
         catMobileGroups.forEach(group => {
-            const catName = group.dataset.category;
             const matchingRows = Array.from(group.querySelectorAll('.transaction-row'))
                 .filter(r => r.style.display !== 'none');
             group.style.display = matchingRows.length > 0 ? '' : 'none';
@@ -1481,116 +1576,145 @@
         return 'Rp ' + Math.round(Number(num || 0)).toLocaleString('id-ID');
     }
 
-    // ── Helper: Kelompokkan Transaksi Berdasarkan Kategori ──
+    // ── Helper: Kelompokkan Transaksi Berdasarkan Kategori & Sub-Kategori ──
     function groupTransactionsByCategory(list) {
-        const groups = {};
-        const order = [];
+        const catGroups = {};
+        const catOrder = [];
 
-        if (window.appCategories && Array.isArray(window.appCategories)) {
-            window.appCategories.forEach(cat => {
-                if (cat && cat.nama && !order.includes(cat.nama)) {
-                    order.push(cat.nama);
-                }
-            });
-        }
+        const categoriesSource = (window.appCategories && Array.isArray(window.appCategories))
+            ? window.appCategories
+            : (typeof appCategories !== 'undefined' && Array.isArray(appCategories) ? appCategories : []);
+
+        categoriesSource.forEach(cat => {
+            if (cat && cat.nama && !catOrder.includes(cat.nama)) {
+                catOrder.push(cat.nama);
+            }
+        });
 
         list.forEach(t => {
             const cat = t.kategori || 'Lainnya';
-            if (!groups[cat]) {
-                groups[cat] = [];
-                if (!order.includes(cat)) {
-                    order.push(cat);
+            if (!catGroups[cat]) {
+                catGroups[cat] = [];
+                if (!catOrder.includes(cat)) {
+                    catOrder.push(cat);
                 }
             }
-            groups[cat].push(t);
+            catGroups[cat].push(t);
         });
 
-        return order
-            .filter(cat => groups[cat] && groups[cat].length > 0)
-            .map(cat => ({
-                name: cat,
-                transactions: groups[cat],
-                totalPengeluaran: groups[cat]
-                    .filter(t => t.tipe === 'pengeluaran')
-                    .reduce((sum, t) => sum + (parseFloat(t.nominal) || 0), 0),
-                totalPemasukan: groups[cat]
-                    .filter(t => t.tipe === 'pemasukan')
-                    .reduce((sum, t) => sum + (parseFloat(t.nominal) || 0), 0)
-            }));
+        return catOrder
+            .filter(cat => catGroups[cat] && catGroups[cat].length > 0)
+            .map(cat => {
+                const catTransactions = catGroups[cat];
+                const subGroups = {};
+                const subOrder = [];
+
+                // Ambil daftar urutan sub-kategori terdaftar untuk kategori ini
+                const currentCatObj = categoriesSource.find(c => c.nama === cat);
+                const definedSubOrder = {};
+                if (currentCatObj && Array.isArray(currentCatObj.subcategories)) {
+                    currentCatObj.subcategories.forEach((s, idx) => {
+                        if (s && s.nama) {
+                            definedSubOrder[s.nama.toLowerCase().trim()] = s.urutan !== undefined ? s.urutan : idx;
+                        }
+                    });
+                }
+
+                catTransactions.forEach(t => {
+                    const rawSub = (t.sub_kategori || '').trim();
+                    const parts = rawSub ? rawSub.split(' › ').map(s => s.trim()).filter(Boolean) : [];
+                    const subName = parts.length > 0 ? parts[0] : 'Umum';
+                    const leafName = parts.length > 1 ? parts[parts.length - 1] : (parts.length === 1 ? parts[0] : null);
+
+                    t._leafSub = leafName;
+                    t._parentSub = subName;
+
+                    if (!subGroups[subName]) {
+                        subGroups[subName] = [];
+                        subOrder.push(subName);
+                    }
+                    subGroups[subName].push(t);
+                });
+
+                // Finishing selalu diletakkan paling bawah di sub-kategori
+                subOrder.sort((a, b) => {
+                    const isFinishingA = a.toLowerCase().includes('finishing');
+                    const isFinishingB = b.toLowerCase().includes('finishing');
+                    if (isFinishingA && !isFinishingB) return 1;
+                    if (!isFinishingA && isFinishingB) return -1;
+
+                    const keyA = a.toLowerCase().trim();
+                    const keyB = b.toLowerCase().trim();
+                    const orderA = definedSubOrder[keyA] !== undefined ? definedSubOrder[keyA] : 1000;
+                    const orderB = definedSubOrder[keyB] !== undefined ? definedSubOrder[keyB] : 1000;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.localeCompare(b);
+                });
+
+                const subcategories = subOrder.map(subName => {
+                    const subItems = subGroups[subName];
+                    return {
+                        name: subName,
+                        transactions: subItems,
+                        totalPengeluaran: subItems
+                            .filter(t => t.tipe === 'pengeluaran')
+                            .reduce((sum, t) => sum + (parseFloat(t.nominal) || 0), 0),
+                        totalPemasukan: subItems
+                            .filter(t => t.tipe === 'pemasukan')
+                            .reduce((sum, t) => sum + (parseFloat(t.nominal) || 0), 0)
+                    };
+                });
+
+                return {
+                    name: cat,
+                    transactions: catTransactions,
+                    subcategories: subcategories,
+                    totalPengeluaran: catTransactions
+                        .filter(t => t.tipe === 'pengeluaran')
+                        .reduce((sum, t) => sum + (parseFloat(t.nominal) || 0), 0),
+                    totalPemasukan: catTransactions
+                        .filter(t => t.tipe === 'pemasukan')
+                        .reduce((sum, t) => sum + (parseFloat(t.nominal) || 0), 0)
+                };
+            });
     }
 
-    // ── Helper: Render Category & Sub-Category Badges (Hierarkis & Rapi) ──
-    function renderCategoryBadgesHtml(kategori, subKategori) {
+    // ── Helper: Render Smallest Sub Badge (Tampilan Paling Kecil / Daun Saja) ──
+    function renderSmallestSubBadgeHtml(subKategori) {
         if (!subKategori) {
-            return `
-                <div class="space-y-1">
-                    <span class="font-bold text-gray-800 text-[11px] block">${escapeHtml(kategori)}</span>
-                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 bg-gray-50 border border-gray-100 italic">
-                        Tanpa sub
-                    </span>
-                </div>
-            `;
+            return `<span class="text-xs text-gray-400 italic">—</span>`;
         }
 
-        const parts = subKategori.split(' › ');
-        const sub = parts[0] ? parts[0].trim() : '';
-        const subSub = parts[1] ? parts[1].trim() : '';
+        const parts = subKategori.split(' › ').map(s => s.trim()).filter(Boolean);
+        if (parts.length === 0) {
+            return `<span class="text-xs text-gray-400 italic">—</span>`;
+        }
 
-        const subBadge = sub ? `
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-sky-50 text-sky-800 border border-sky-200" title="Sub-Kategori">
-                <svg class="w-3 h-3 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                ${escapeHtml(sub)}
-            </span>
-        ` : '';
-
-        const subSubBadge = subSub ? `
-            <span class="text-gray-300 font-bold text-xs shrink-0">›</span>
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs" title="Sub-Sub Kategori">
-                <svg class="w-3 h-3 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                ${escapeHtml(subSub)}
-            </span>
-        ` : '';
+        const smallestSub = parts.length > 1 ? parts[parts.length - 1] : parts[0];
 
         return `
-            <div class="space-y-1">
-                <span class="font-bold text-gray-800 text-[11px] block">${escapeHtml(kategori)}</span>
-                <div class="flex items-center gap-1 flex-wrap">
-                    ${subBadge}
-                    ${subSubBadge}
-                </div>
-            </div>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200/90 shadow-2xs" title="${escapeHtml(subKategori)}">
+                <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                </svg>
+                ${escapeHtml(smallestSub)}
+            </span>
         `;
     }
 
-    function renderCategoryBadgesMobileHtml(kategori, subKategori) {
-        if (!subKategori) {
-            return `<span class="font-bold text-gray-800 text-[11px]">${escapeHtml(kategori)}</span>`;
-        }
+    function renderSmallestSubBadgeMobileHtml(subKategori) {
+        if (!subKategori) return '';
 
-        const parts = subKategori.split(' › ');
-        const sub = parts[0] ? parts[0].trim() : '';
-        const subSub = parts[1] ? parts[1].trim() : '';
+        const parts = subKategori.split(' › ').map(s => s.trim()).filter(Boolean);
+        if (parts.length === 0) return '';
 
-        const subBadge = sub ? `
-            <span class="text-gray-300 font-bold text-xs">›</span>
-            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
-                <svg class="w-2.5 h-2.5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                ${escapeHtml(sub)}
-            </span>
-        ` : '';
-
-        const subSubBadge = subSub ? `
-            <span class="text-gray-300 font-bold text-[10px]">›</span>
-            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-900 border border-amber-200">
-                <svg class="w-2.5 h-2.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                ${escapeHtml(subSub)}
-            </span>
-        ` : '';
+        const smallestSub = parts.length > 1 ? parts[parts.length - 1] : parts[0];
 
         return `
-            <span class="font-bold text-gray-800 text-[11px]">${escapeHtml(kategori)}</span>
-            ${subBadge}
-            ${subSubBadge}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+                <svg class="w-2.5 h-2.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                ${escapeHtml(smallestSub)}
+            </span>
         `;
     }
 
@@ -1619,21 +1743,21 @@
             tableBody.innerHTML = grouped.map(group => {
                 const subtotalParts = [];
                 if (group.totalPengeluaran > 0) {
-                    subtotalParts.push(`<span class="text-rose-600">Pengeluaran: -${formatRupiah(group.totalPengeluaran)}</span>`);
+                    subtotalParts.push(`<span class="text-rose-300">Pengeluaran: -${formatRupiah(group.totalPengeluaran)}</span>`);
                 }
                 if (group.totalPemasukan > 0) {
-                    subtotalParts.push(`<span class="text-emerald-700">Pemasukan: +${formatRupiah(group.totalPemasukan)}</span>`);
+                    subtotalParts.push(`<span class="text-emerald-300">Pemasukan: +${formatRupiah(group.totalPemasukan)}</span>`);
                 }
-                const subtotalHtml = subtotalParts.join('<span class="text-gray-300">|</span>');
+                const subtotalHtml = subtotalParts.join('<span class="text-emerald-600">|</span>');
 
-                const headerRow = `
-                    <tr class="category-header-row bg-gray-50/90 border-y border-gray-200/80" data-category="${escapeHtml(group.name)}">
-                        <td colspan="7" class="px-5 py-2.5">
+                const catHeaderRow = `
+                    <tr class="category-header-row bg-emerald-900 text-white border-t-2 border-emerald-950" data-category="${escapeHtml(group.name)}">
+                        <td colspan="7" class="px-5 py-3">
                             <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                                    <span class="font-bold text-gray-800 text-xs uppercase tracking-wide">${escapeHtml(group.name)}</span>
-                                    <span class="text-[11px] text-gray-500 font-medium">(${group.transactions.length} transaksi)</span>
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-300/40"></span>
+                                    <span class="font-extrabold text-white text-xs sm:text-sm uppercase tracking-wider">${escapeHtml(group.name)}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-800 text-emerald-200">(${group.transactions.length} transaksi)</span>
                                 </div>
                                 <div class="flex items-center gap-3 text-xs font-semibold">
                                     ${subtotalHtml}
@@ -1643,7 +1767,37 @@
                     </tr>
                 `;
 
-                const itemRows = group.transactions.map(t => {
+                const subRows = group.subcategories.map(sub => {
+                    const subtotalPartsSub = [];
+                    if (sub.totalPengeluaran > 0) {
+                        subtotalPartsSub.push(`<span class="text-rose-600">Subtotal: -${formatRupiah(sub.totalPengeluaran)}</span>`);
+                    }
+                    if (sub.totalPemasukan > 0) {
+                        subtotalPartsSub.push(`<span class="text-emerald-700">Subtotal: +${formatRupiah(sub.totalPemasukan)}</span>`);
+                    }
+                    const subtotalSubHtml = subtotalPartsSub.join('<span class="text-slate-300">|</span>');
+
+                    const subHeaderRow = `
+                        <tr class="subcategory-header-row bg-slate-100/90 border-y border-slate-200/90" data-category="${escapeHtml(group.name)}" data-subcategory="${escapeHtml(sub.name)}">
+                            <td colspan="7" class="pl-8 pr-5 py-2">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-slate-400 font-bold text-xs select-none">↳</span>
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-sky-100/90 text-sky-900 border border-sky-200">
+                                            <svg class="w-3.5 h-3.5 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                            ${escapeHtml(sub.name)}
+                                        </span>
+                                        <span class="text-[11px] text-slate-500 font-medium">(${sub.transactions.length} transaksi)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2.5 text-xs font-semibold">
+                                        ${subtotalSubHtml}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+
+                    const itemRows = sub.transactions.map(t => {
                     const isPemasukan = t.tipe === 'pemasukan';
                     const tipeBadge = isPemasukan
                         ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -1675,7 +1829,7 @@
                     const effectiveId = t.raw_id || t.id;
 
                     return `
-                        <tr class="hover:bg-gray-50 transition-colors transaction-row" data-type="${t.tipe}" data-category="${escapeHtml(group.name)}">
+                        <tr class="hover:bg-gray-50 transition-colors transaction-row" data-type="${t.tipe}" data-category="${escapeHtml(group.name)}" data-subcategory="${escapeHtml(sub.name)}">
                             <td class="px-5 py-3.5 whitespace-nowrap text-gray-600 font-medium">
                                 ${escapeHtml(t.formatted_tanggal || '—')}
                             </td>
@@ -1690,7 +1844,7 @@
                                 </div>
                             </td>
                             <td class="px-5 py-3.5">
-                                ${renderCategoryBadgesHtml(t.kategori, t.sub_kategori)}
+                                ${renderSmallestSubBadgeHtml(t.sub_kategori)}
                             </td>
                             <td class="px-5 py-3.5 text-gray-600 max-w-xs break-words">
                                 ${escapeHtml(t.deskripsi || '—')}
@@ -1722,7 +1876,10 @@
                     `;
                 }).join('');
 
-                return headerRow + itemRows;
+                    return subHeaderRow + itemRows;
+                }).join('');
+
+                return catHeaderRow + subRows;
             }).join('');
         }
 
@@ -1731,101 +1888,126 @@
             mobileBody.innerHTML = grouped.map(group => {
                 const subtotalMobile = [];
                 if (group.totalPengeluaran > 0) {
-                    subtotalMobile.push(`<span class="text-rose-600 block">-${formatRupiah(group.totalPengeluaran)}</span>`);
+                    subtotalMobile.push(`<span class="text-rose-300 block">-Rp ${Math.round(group.totalPengeluaran).toLocaleString('id-ID')}</span>`);
                 }
                 if (group.totalPemasukan > 0) {
-                    subtotalMobile.push(`<span class="text-emerald-700 block">+${formatRupiah(group.totalPemasukan)}</span>`);
+                    subtotalMobile.push(`<span class="text-emerald-300 block">+Rp ${Math.round(group.totalPemasukan).toLocaleString('id-ID')}</span>`);
                 }
 
-                const cards = group.transactions.map(t => {
-                    const isPemasukan = t.tipe === 'pemasukan';
-                    const tipeBadge = isPemasukan
-                        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            Pemasukan
-                           </span>`
-                        : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
-                            Pengeluaran
-                           </span>`;
+                const subBlocks = group.subcategories.map(sub => {
+                    const subSubtotal = [];
+                    if (sub.totalPengeluaran > 0) {
+                        subSubtotal.push(`<span class="text-rose-600 block">-Rp ${Math.round(sub.totalPengeluaran).toLocaleString('id-ID')}</span>`);
+                    }
+                    if (sub.totalPemasukan > 0) {
+                        subSubtotal.push(`<span class="text-emerald-700 block">+Rp ${Math.round(sub.totalPemasukan).toLocaleString('id-ID')}</span>`);
+                    }
 
-                    const nominalClass = isPemasukan ? 'text-emerald-700' : 'text-rose-600';
-                    const nominalSign = isPemasukan ? '+' : '-';
-                    const notaBtn = t.nota_url
-                        ? `<button type="button"
-                                   onclick="previewNota('${escapeHtml(t.nota_url)}', '${escapeHtml(t.judul)}')"
-                                   class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100">
-                               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                               Nota
-                           </button>`
-                        : '';
+                    const cards = sub.transactions.map(t => {
+                        const isPemasukan = t.tipe === 'pemasukan';
+                        const tipeBadge = isPemasukan
+                            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Pemasukan</span>`
+                            : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Pengeluaran</span>`;
 
-                    const offlineBadge = (t.is_offline || t.is_synced === false)
-                        ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                            <span class="w-1 h-1 rounded-full bg-amber-500"></span> Offline
-                           </span>`
-                        : '';
+                        const nominalClass = isPemasukan ? 'text-emerald-700' : 'text-rose-600';
+                        const nominalSign = isPemasukan ? '+' : '-';
+                        const notaBtn = t.nota_url
+                            ? `<button type="button"
+                                       onclick="previewNota('${escapeHtml(t.nota_url)}', '${escapeHtml(t.judul)}')"
+                                       class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                   Nota
+                               </button>`
+                            : '';
 
-                    const descP = (t.deskripsi && t.deskripsi !== '—')
-                        ? `<p class="text-xs text-gray-500">${escapeHtml(t.deskripsi)}</p>`
-                        : '';
+                        const offlineBadge = (t.is_offline || t.is_synced === false)
+                            ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                <span class="w-1 h-1 rounded-full bg-amber-500"></span> Offline
+                               </span>`
+                            : '';
 
-                    const effectiveId = t.raw_id || t.id;
+                        const descP = (t.deskripsi && t.deskripsi !== '—')
+                            ? `<p class="text-xs text-gray-500">${escapeHtml(t.deskripsi)}</p>`
+                            : '';
+
+                        const effectiveId = t.raw_id || t.id;
+
+                        return `
+                            <div class="p-3 sm:p-4 space-y-1.5 sm:space-y-2 transaction-row hover:bg-gray-50 transition-colors" data-type="${t.tipe}" data-category="${escapeHtml(group.name)}" data-subcategory="${escapeHtml(sub.name)}">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <span class="text-[11px] font-semibold text-gray-500">
+                                            ${escapeHtml(t.formatted_tanggal || '—')}
+                                        </span>
+                                        <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                            <h3 class="text-sm font-bold text-gray-900">${escapeHtml(t.judul)}</h3>
+                                            ${offlineBadge}
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-extrabold shrink-0 ${nominalClass}">
+                                        ${nominalSign}${escapeHtml(t.formatted_nominal)}
+                                    </span>
+                                </div>
+                                <div class="space-y-1 pt-0.5">
+                                    <div class="flex items-center gap-1.5 flex-wrap text-xs">
+                                        ${tipeBadge}
+                                        ${renderSmallestSubBadgeMobileHtml(t.sub_kategori)}
+                                    </div>
+                                    ${descP}
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 pt-1 border-t border-gray-100">
+                                    ${notaBtn}
+                                    <button type="button"
+                                            onclick='openEditTransactionModal(${JSON.stringify(t)})'
+                                            class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
+                                        Edit
+                                    </button>
+                                    <button type="button"
+                                            onclick="deleteTransaction('${effectiveId}', '${escapeHtml(t.judul)}')"
+                                            class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 hover:bg-rose-100">
+                                        Hapus
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
 
                     return `
-                        <div class="p-3 sm:p-4 space-y-1.5 sm:space-y-2 transaction-row hover:bg-gray-50 transition-colors" data-type="${t.tipe}" data-category="${escapeHtml(group.name)}">
-                            <div class="flex items-start justify-between gap-2">
-                                <div>
-                                    <span class="text-[11px] font-semibold text-gray-500">
-                                        ${escapeHtml(t.formatted_tanggal || '—')}
+                        <div class="subcategory-mobile-group border-b border-gray-200/80 last:border-b-0" data-category="${escapeHtml(group.name)}" data-subcategory="${escapeHtml(sub.name)}">
+                            <div class="px-3 py-1.5 bg-slate-100 border-b border-slate-200/80 flex items-center justify-between">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-slate-400 text-xs">↳</span>
+                                    <span class="font-bold text-sky-900 bg-sky-100 px-2 py-0.5 rounded text-[11px] border border-sky-200 flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                        ${escapeHtml(sub.name)}
                                     </span>
-                                    <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                                        <h3 class="text-sm font-bold text-gray-900">${escapeHtml(t.judul)}</h3>
-                                        ${offlineBadge}
-                                    </div>
+                                    <span class="text-[10px] text-slate-500 font-medium">(${sub.transactions.length})</span>
                                 </div>
-                                <span class="text-sm font-extrabold shrink-0 ${nominalClass}">
-                                    ${nominalSign}${escapeHtml(t.formatted_nominal)}
-                                </span>
-                            </div>
-                            <div class="space-y-1 pt-0.5">
-                                <div class="flex items-center gap-1.5 flex-wrap text-xs">
-                                    ${tipeBadge}
-                                    ${renderCategoryBadgesMobileHtml(t.kategori, t.sub_kategori)}
+                                <div class="text-[10.5px] font-semibold text-right">
+                                    ${subSubtotal.join('')}
                                 </div>
-                                ${descP}
                             </div>
-
-                            <div class="flex items-center justify-end gap-2 pt-1 border-t border-gray-100">
-                                ${notaBtn}
-                                <button type="button"
-                                        onclick='openEditTransactionModal(${JSON.stringify(t)})'
-                                        class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
-                                    Edit
-                                </button>
-                                <button type="button"
-                                        onclick="deleteTransaction('${effectiveId}', '${escapeHtml(t.judul)}')"
-                                        class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 hover:bg-rose-100">
-                                    Hapus
-                                </button>
+                            <div class="divide-y divide-gray-100">
+                                ${cards}
                             </div>
                         </div>
                     `;
                 }).join('');
 
                 return `
-                    <div class="category-mobile-group border-b border-gray-200/70 last:border-b-0" data-category="${escapeHtml(group.name)}">
-                        <div class="px-3.5 py-2 bg-gray-50/90 border-y border-gray-200/60 flex items-center justify-between">
+                    <div class="category-mobile-group border-b-2 border-emerald-950/20 last:border-b-0" data-category="${escapeHtml(group.name)}">
+                        <div class="px-3.5 py-2.5 bg-emerald-900 text-white flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                                <span class="font-bold text-gray-800 text-xs">${escapeHtml(group.name)}</span>
-                                <span class="text-[10px] text-gray-500">(${group.transactions.length})</span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-300/40"></span>
+                                <span class="font-extrabold text-xs uppercase tracking-wide text-white">${escapeHtml(group.name)}</span>
+                                <span class="text-[10px] text-emerald-200 bg-emerald-800 px-1.5 py-0.2 rounded font-semibold">(${group.transactions.length})</span>
                             </div>
                             <div class="text-[11px] font-bold text-right">
                                 ${subtotalMobile.join('')}
                             </div>
                         </div>
-                        <div class="divide-y divide-gray-100">
-                            ${cards}
-                        </div>
+                        ${subBlocks}
                     </div>
                 `;
             }).join('');
@@ -2169,6 +2351,11 @@
 
     // ── Form Submit Handlers (Online & Offline Support) ──
     document.addEventListener('DOMContentLoaded', function() {
+        // Jika sedang offline saat halaman dibuka, render data dari IndexedDB
+        if (!navigator.onLine) {
+            loadKeuanganData();
+        }
+
         // Auto-refresh when background sync completes
         window.addEventListener('agri:sync-success', () => {
             loadKeuanganData();
