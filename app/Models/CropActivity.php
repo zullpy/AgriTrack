@@ -18,6 +18,7 @@ class CropActivity extends Model
         'tanggal_selesai',
         'catatan',
         'keterangan',
+        'foto_kegiatan',
     ];
 
     protected function casts(): array
@@ -25,7 +26,58 @@ class CropActivity extends Model
         return [
             'target_hst' => 'integer',
             'tanggal_selesai' => 'date',
+            'foto_kegiatan' => 'array',
         ];
+    }
+
+    /**
+     * Ambil daftar URL foto yang siap ditampilkan di view.
+     *
+     * @return array<int, string>
+     */
+    public function getFotoUrlsAttribute(): array
+    {
+        $raw = $this->foto_kegiatan;
+        if (empty($raw)) {
+            return [];
+        }
+
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [$raw];
+        }
+
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $urls = [];
+        foreach ($raw as $item) {
+            $url = null;
+            if (is_array($item)) {
+                $url = $item['url'] ?? $item['secure_url'] ?? $item['path'] ?? null;
+            } elseif (is_string($item)) {
+                $url = trim($item);
+            }
+
+            if ($url) {
+                // Jika merupakan path lokal tanpa http
+                if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://') && ! str_starts_with($url, '/')) {
+                    $url = '/storage/'.ltrim($url, '/');
+                }
+                $urls[] = $url;
+            }
+        }
+
+        return array_values($urls);
+    }
+
+    /**
+     * Ambil jumlah foto kegiatan saat ini.
+     */
+    public function getFotoCountAttribute(): int
+    {
+        return count($this->foto_urls);
     }
 
     public function crop(): BelongsTo

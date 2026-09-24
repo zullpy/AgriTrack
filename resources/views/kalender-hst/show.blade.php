@@ -159,7 +159,7 @@
                 <div class="col-span-2 sm:col-span-1 p-3 rounded-xl bg-gray-50/80 border border-gray-100">
                     <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Tanggal Menanam</span>
                     <span class="text-xs sm:text-sm font-bold text-gray-900 mt-0.5 block">
-                        {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->locale('id')->isoFormat('dddd, DD MMMM YYYY') }}
+                        {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->locale('id')->isoFormat('dddd') }}, {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->format('d-m-Y') }}
                     </span>
                 </div>
             </div>
@@ -195,59 +195,61 @@
         {{-- ══════════════════════════════════════════════════════════════════════ --}}
         {{-- ── TABEL LOG HST PER TANAMAN (PERSIS SESUAI DESAIN GAMBAR)          ── --}}
         {{-- ══════════════════════════════════════════════════════════════════════ --}}
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse font-sans text-xs sm:text-sm">
-                {{-- Table Header --}}
-                <thead>
-                    <tr class="bg-gray-100 text-gray-900 border-b-2 border-gray-400 font-bold uppercase tracking-wider text-center">
-                        <th class="py-3 px-3 w-16 border-r border-gray-300 font-extrabold">HST</th>
-                        <th class="py-3 px-4 w-44 sm:w-56 border-r border-gray-300 font-extrabold text-left">KALENDER</th>
-                        <th class="py-3 px-4 w-40 sm:w-48 border-r border-gray-300 font-extrabold text-left">KEGIATAN</th>
-                        <th class="py-3 px-4 border-r border-gray-300 font-extrabold text-left">APLIKASI OBAT</th>
-                        <th class="py-3 px-4 w-36 sm:w-44 border-r border-gray-300 font-extrabold text-left">SASARAN</th>
-                        <th class="py-3 px-4 w-40 sm:w-52 font-extrabold text-left">KETERANGAN</th>
-                    </tr>
-                </thead>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-separate border-spacing-0 font-sans text-xs sm:text-sm">
+                    {{-- Table Header --}}
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-900 font-bold uppercase tracking-wider text-center">
+                            <th class="py-3 px-2 w-[76px] min-w-[76px] max-w-[76px] border-b-2 border-r border-gray-300 font-extrabold sticky left-0 z-30 bg-gray-100 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.14)]">HST</th>
+                            <th class="py-3 px-4 w-44 sm:w-56 border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">KALENDER</th>
+                            <th class="py-3 px-4 w-40 sm:w-48 border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">KEGIATAN</th>
+                            <th class="py-3 px-4 min-w-[220px] max-w-[320px] border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">APLIKASI OBAT</th>
+                            <th class="py-3 px-4 w-36 sm:w-44 border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">SASARAN</th>
+                            <th class="py-3 px-4 min-w-[180px] max-w-[260px] border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">KETERANGAN</th>
+                            <th class="py-3 px-3 w-28 sm:w-36 border-b-2 border-gray-300 font-extrabold text-center bg-gray-100">FOTO</th>
+                        </tr>
+                    </thead>
 
-                <tbody class="divide-y divide-gray-200">
-                    @foreach ($tableRows as $row)
-                        @php
-                            $hasAct = $row['activities']->isNotEmpty();
-                            $hasPending = $row['activities']->where('status', 'Belum')->isNotEmpty();
-                            $isToday = $row['is_today'];
-                            $isTomorrow = $row['is_tomorrow'];
-                            $isPlantingDay = $row['is_planting_day'];
-                        @endphp
-                        <tr id="hst-row-{{ $row['hst'] }}"
-                            data-hst="{{ $row['hst'] }}"
-                            data-has-activity="{{ $hasAct ? '1' : '0' }}"
-                            data-is-today="{{ $isToday ? '1' : '0' }}"
-                            data-is-tomorrow="{{ $isTomorrow ? '1' : '0' }}"
-                            data-has-pending="{{ $hasPending ? '1' : '0' }}"
-                            class="hst-table-row transition-colors group {{ $isToday ? 'bg-[#dcfce7] border-y-2 border-[#16a34a] text-emerald-950 font-medium' : ($isTomorrow ? 'bg-amber-50/40 hover:bg-amber-50/70' : ($isPlantingDay ? 'bg-green-50/40 hover:bg-green-50/70' : 'hover:bg-gray-50/80')) }}">
+                    <tbody>
+                        @foreach ($tableRows as $row)
+                            @php
+                                $hasAct = $row['activities']->isNotEmpty();
+                                $hasPending = $row['activities']->where('status', 'Belum')->isNotEmpty();
+                                $isToday = $row['is_today'];
+                                $isTomorrow = $row['is_tomorrow'];
+                                $isPlantingDay = $row['is_planting_day'];
+                            @endphp
+                            <tr id="hst-row-{{ $row['hst'] }}"
+                                data-hst="{{ $row['hst'] }}"
+                                data-has-activity="{{ $hasAct ? '1' : '0' }}"
+                                data-is-today="{{ $isToday ? '1' : '0' }}"
+                                data-is-tomorrow="{{ $isTomorrow ? '1' : '0' }}"
+                                data-has-pending="{{ $hasPending ? '1' : '0' }}"
+                                class="hst-table-row transition-colors group">
 
-                            {{-- 1. Kolom HST --}}
-                            <td class="py-3 px-3 text-center align-top font-mono font-bold whitespace-nowrap {{ $isToday ? 'bg-[#dcfce7] border-r border-emerald-300 text-emerald-950' : 'border-r border-gray-300' }}">
-                                <div class="flex flex-col items-center justify-center">
-                                    <span class="text-sm sm:text-base font-black {{ $isToday ? 'text-emerald-900' : 'text-gray-900' }}">
-                                        {{ $row['hst'] }}HST
-                                    </span>
-                                    @if ($isToday)
-                                        <span class="mt-0.5 px-2 py-0.5 rounded text-[9px] font-black bg-[#16a34a] text-white tracking-wider shadow-xs">
-                                            HARI INI
+                                {{-- 1. Kolom HST (Sticky di Mobile saat Scroll ke Samping, Solid 100% Opaque) --}}
+                                <td class="py-3 px-2 text-center align-top font-mono font-bold whitespace-nowrap sticky left-0 z-20 w-[76px] min-w-[76px] max-w-[76px] border-b border-r shadow-[3px_0_6px_-2px_rgba(0,0,0,0.14)] {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-500 text-emerald-950' : ($isTomorrow ? 'bg-[#fef3c7] border-b-[#fde68a] border-r-amber-400 text-gray-900' : ($isPlantingDay ? 'bg-[#ecfdf5] border-b-[#a7f3d0] border-r-emerald-400 text-gray-900' : 'bg-white group-hover:bg-gray-50 border-b-gray-200 border-r-gray-300 text-gray-900')) }}">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <span class="text-sm sm:text-base font-black {{ $isToday ? 'text-emerald-900' : 'text-gray-900' }}">
+                                            {{ $row['hst'] }}HST
                                         </span>
-                                    @elseif ($isTomorrow)
-                                        <span class="mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500 text-white tracking-wider">
-                                            BESOK
-                                        </span>
-                                    @endif
-                                </div>
-                            </td>
+                                        @if ($isToday)
+                                            <span class="mt-0.5 px-2 py-0.5 rounded text-[9px] font-black bg-[#16a34a] text-white tracking-wider shadow-xs">
+                                                HARI INI
+                                            </span>
+                                        @elseif ($isTomorrow)
+                                            <span class="mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500 text-white tracking-wider">
+                                                BESOK
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
 
-                            {{-- 2. Kolom KALENDER --}}
-                            <td class="py-3 px-4 align-top whitespace-nowrap {{ $isToday ? 'bg-[#dcfce7] border-r border-emerald-300 text-emerald-950 font-bold' : 'border-r border-gray-300' }}">
+                                {{-- 2. Kolom KALENDER --}}
+                                <td class="py-3 px-4 align-top whitespace-nowrap border-b border-r border-gray-300 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-300 text-emerald-950 font-bold' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a]' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0]' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200')) }}">
                                 <div class="{{ $isToday ? 'font-bold text-emerald-950 text-sm' : 'font-medium text-gray-800' }}">
-                                    {{ $row['date']->locale('id')->isoFormat('dddd, DD MMMM YYYY') }}
+                                    {{ $row['date']->locale('id')->isoFormat('dddd') }}, {{ $row['date']->format('d-m-Y') }}
                                 </div>
                                 @if ($isPlantingDay)
                                     <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">
@@ -269,7 +271,7 @@
                             </td>
 
                             {{-- 3. Kolom KEGIATAN --}}
-                            <td class="py-3 px-4 align-top {{ $isToday ? 'bg-[#dcfce7] border-r border-emerald-300 text-emerald-950' : 'border-r border-gray-300' }}">
+                            <td class="py-3 px-4 align-top border-b border-r border-gray-300 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-300 text-emerald-950' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a]' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0]' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200')) }}">
                                 @if ($hasAct)
                                     <div class="space-y-2">
                                         @foreach ($row['activities'] as $act)
@@ -290,15 +292,17 @@
                                                         </button>
                                                     </form>
 
-                                                    <span class="font-semibold text-xs sm:text-sm {{ $isDone ? 'line-through text-gray-400' : 'text-gray-900' }}">
-                                                        {{ $act->nama_kegiatan }}
-                                                    </span>
+                                                    <div class="min-w-0 flex-1">
+                                                        <span class="font-semibold text-xs sm:text-sm {{ $isDone ? 'line-through text-gray-400' : 'text-gray-900' }} break-words">
+                                                            {{ $act->nama_kegiatan }}
+                                                        </span>
+                                                    </div>
                                                 </div>
 
                                                 {{-- Tombol Edit / Hapus Kegiatan --}}
                                                 <div class="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
                                                     <button type="button"
-                                                            onclick="openEditActivityModal({{ $act->id }}, '{{ addslashes($act->nama_kegiatan) }}', {{ $act->target_hst }}, '{{ $row['date']->toDateString() }}', `{{ addslashes($act->aplikasi_obat ?? '') }}`, `{{ addslashes($act->sasaran ?? '') }}`, `{{ addslashes($act->keterangan ?? $act->catatan ?? '') }}`)"
+                                                            onclick="openEditActivityModal({{ $act->id }}, '{{ addslashes($act->nama_kegiatan) }}', {{ $act->target_hst }}, '{{ $row['date']->toDateString() }}', `{{ addslashes($act->aplikasi_obat ?? '') }}`, `{{ addslashes($act->sasaran ?? '') }}`, `{{ addslashes($act->keterangan ?? $act->catatan ?? '') }}`, {{ json_encode($act->foto_urls) }})"
                                                             title="Edit kegiatan"
                                                             class="p-1 rounded hover:bg-gray-200 text-text-secondary">
                                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -311,7 +315,7 @@
                                                           data-confirm-title="Hapus Kegiatan?">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" title="Hapus kegiatan" class="p-1 rounded hover:bg-red-100 text-red-500">
+                                                        <button type="submit" title="Hapus kegiatan dan file foto fisiknya" class="p-1 rounded hover:bg-red-100 text-red-500">
                                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                                                             </svg>
@@ -365,14 +369,39 @@
                                 @endif
                             </td>
 
-                            {{-- 4. Kolom APLIKASI OBAT --}}
-                            <td class="py-3 px-4 align-top leading-relaxed {{ $isToday ? 'bg-[#dcfce7] border-r border-emerald-300 text-emerald-950 font-medium' : 'border-r border-gray-300 text-gray-800' }}">
+                            {{-- 4. Kolom APLIKASI OBAT (Berstruktur & Rapi) --}}
+                            <td class="py-3 px-4 align-top leading-relaxed border-b border-r border-gray-300 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-300 text-emerald-950 font-medium' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a] text-gray-800' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0] text-gray-800' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200 text-gray-800')) }}">
                                 @if ($hasAct)
-                                    <div class="space-y-2">
+                                    <div class="space-y-2.5">
                                         @foreach ($row['activities'] as $act)
                                             <div>
                                                 @if ($act->aplikasi_obat)
-                                                    <span class="font-medium {{ $isToday ? 'text-emerald-950 font-bold' : 'text-gray-900' }}">{{ $act->aplikasi_obat }}</span>
+                                                    @php
+                                                        $rawObat = $act->aplikasi_obat;
+                                                        // Pecah berdasarkan koma jika ada multi-obat
+                                                        $obatItems = array_filter(array_map('trim', explode(',', $rawObat)));
+                                                    @endphp
+                                                    @if (count($obatItems) > 1)
+                                                        <div class="space-y-1 obat-group-container">
+                                                            @foreach ($obatItems as $oIdx => $oItem)
+                                                                <div class="text-xs leading-snug flex items-start gap-1.5 {{ $oIdx >= 2 ? 'obat-extra-item hidden' : '' }}">
+                                                                    <span class="text-emerald-600 font-bold shrink-0 mt-0.5">•</span>
+                                                                    <span class="font-medium {{ $isToday ? 'text-emerald-950 font-semibold' : 'text-gray-900' }} break-words">{{ $oItem }}</span>
+                                                                </div>
+                                                            @endforeach
+                                                            @if (count($obatItems) > 2)
+                                                                <button type="button"
+                                                                        onclick="toggleObatItems(this)"
+                                                                        class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold underline cursor-pointer mt-0.5 block">
+                                                                    + Lihat {{ count($obatItems) - 2 }} obat lainnya...
+                                                                </button>
+                                                            @endif
+                                                        </div>
+                                                    @else
+                                                        <div class="text-xs font-medium leading-relaxed {{ $isToday ? 'text-emerald-950 font-semibold' : 'text-gray-900' }} break-words">
+                                                            {{ $rawObat }}
+                                                        </div>
+                                                    @endif
                                                 @else
                                                     <span class="{{ $isToday ? 'text-emerald-500' : 'text-gray-300' }}">-</span>
                                                 @endif
@@ -385,13 +414,13 @@
                             </td>
 
                             {{-- 5. Kolom SASARAN --}}
-                            <td class="py-3 px-4 align-top {{ $isToday ? 'bg-[#dcfce7] border-r border-emerald-300 text-emerald-950' : 'border-r border-gray-300 text-gray-800' }}">
+                            <td class="py-3 px-4 align-top border-b border-r border-gray-300 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-300 text-emerald-950' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a] text-gray-800' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0] text-gray-800' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200 text-gray-800')) }}">
                                 @if ($hasAct)
                                     <div class="space-y-2">
                                         @foreach ($row['activities'] as $act)
                                             <div>
                                                 @if ($act->sasaran)
-                                                    <span class="inline-block px-2 py-0.5 rounded {{ $isToday ? 'bg-white/90 text-emerald-900 font-semibold border border-emerald-300' : 'bg-gray-100 text-gray-800 text-xs font-medium' }}">
+                                                    <span class="inline-block px-2 py-0.5 rounded {{ $isToday ? 'bg-white/90 text-emerald-900 font-semibold border border-emerald-300' : 'bg-gray-100 text-gray-800 text-xs font-medium' }} break-words max-w-[200px]">
                                                         {{ $act->sasaran }}
                                                     </span>
                                                 @else
@@ -405,17 +434,16 @@
                                 @endif
                             </td>
 
-                            {{-- 6. Kolom KETERANGAN --}}
-                            <td class="py-3 px-4 align-top {{ $isToday ? 'bg-[#dcfce7] text-emerald-950 font-medium' : 'text-gray-800' }}">
+                            {{-- 6. Kolom KETERANGAN (Expandable jika Panjang) --}}
+                            <td class="py-3 px-4 align-top border-b border-r border-gray-300 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-300 text-emerald-950 font-medium' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a] text-gray-800' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0] text-gray-800' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200 text-gray-800')) }}">
                                 @if ($isPlantingDay)
-                                    {{-- Sesuai instruksi: HST dari 0 tapi otomatis keterangannya hari menanam --}}
                                     <div class="font-bold text-emerald-800 flex items-center gap-1.5">
                                         <span class="px-2 py-0.5 rounded-md bg-emerald-100 border border-emerald-300 text-emerald-900">
                                             Hari Menanam
                                         </span>
                                     </div>
                                     @if ($crop->catatan)
-                                        <p class="text-xs text-text-muted mt-1 italic">{{ $crop->catatan }}</p>
+                                        <p class="text-xs text-text-muted mt-1 italic break-words">{{ $crop->catatan }}</p>
                                     @endif
                                 @elseif ($hasAct)
                                     <div class="space-y-2">
@@ -423,13 +451,74 @@
                                             @php
                                                 $ket = $act->keterangan ?? $act->catatan;
                                             @endphp
-                                            <div class="text-xs {{ $isToday ? 'text-emerald-950 font-medium' : 'text-gray-700' }}">
-                                                {{ $ket ?: '-' }}
-                                            </div>
+                                            @if ($ket)
+                                                <div class="text-xs leading-relaxed {{ $isToday ? 'text-emerald-950 font-medium' : 'text-gray-700' }}">
+                                                    <div class="{{ strlen($ket) > 80 ? 'line-clamp-2' : '' }} break-words transition-all">
+                                                        {{ $ket }}
+                                                    </div>
+                                                    @if (strlen($ket) > 80)
+                                                        <button type="button"
+                                                                onclick="toggleLineClamp(this)"
+                                                                class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold underline mt-0.5 block cursor-pointer">
+                                                            Selengkapnya...
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                            @else
+                                                <span class="{{ $isToday ? 'text-emerald-500' : 'text-gray-300' }}">-</span>
+                                            @endif
                                         @endforeach
                                     </div>
                                 @else
                                     <span class="{{ $isToday ? 'text-emerald-500' : 'text-gray-300' }}">-</span>
+                                @endif
+                            </td>
+
+                            {{-- 7. Kolom FOTO (Kolom Khusus Dokumentasi Foto) --}}
+                            <td class="py-3 px-3 align-top text-center border-b border-gray-200 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] text-emerald-950 font-medium' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a] text-gray-800' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0] text-gray-800' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200 text-gray-800')) }}">
+                                @php
+                                    $rowPhotos = [];
+                                    if ($hasAct) {
+                                        foreach ($row['activities'] as $aItem) {
+                                            if (!empty($aItem->foto_urls)) {
+                                                foreach ($aItem->foto_urls as $u) {
+                                                    $rowPhotos[] = [
+                                                        'url' => $u,
+                                                        'name' => $aItem->nama_kegiatan,
+                                                        'hst' => $aItem->target_hst,
+                                                        'all' => $aItem->foto_urls,
+                                                        'activity_id' => $aItem->id,
+                                                    ];
+                                                }
+                                            }
+                                        }
+                                    }
+                                @endphp
+                                @if (!empty($rowPhotos))
+                                    <div class="flex items-center justify-center">
+                                        @php
+                                            $firstPhoto = $rowPhotos[0];
+                                            $lightboxItems = array_map(function($p) {
+                                                return [
+                                                    'url' => $p['url'],
+                                                    'activityId' => $p['activity_id'],
+                                                    'name' => $p['name'] . ' (HST ' . $p['hst'] . ')',
+                                                ];
+                                            }, $rowPhotos);
+                                        @endphp
+                                        <button type="button"
+                                                onclick="openImageLightbox({{ json_encode($lightboxItems) }}, 0, '{{ addslashes($firstPhoto['name']) }} (HST {{ $firstPhoto['hst'] }})', {{ $firstPhoto['activity_id'] }})"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:scale-95 border border-emerald-300 text-emerald-800 text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer group whitespace-nowrap"
+                                                title="Klik untuk melihat {{ count($rowPhotos) }} foto dokumentasi">
+                                            <svg class="w-3.5 h-3.5 text-emerald-700 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                                            </svg>
+                                            <span>Lihat Foto ({{ count($rowPhotos) }})</span>
+                                        </button>
+                                    </div>
+                                @else
+                                    <span class="{{ $isToday ? 'text-emerald-500' : 'text-gray-300' }} text-center block">-</span>
                                 @endif
                             </td>
 
@@ -492,7 +581,7 @@
             </button>
         </div>
 
-        <form method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/kegiatan" class="mt-4 space-y-4">
+        <form method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/kegiatan" enctype="multipart/form-data" class="mt-4 space-y-4">
             @csrf
             <input type="hidden" name="redirect_to" value="show">
 
@@ -528,7 +617,7 @@
                     </div>
                 </div>
                 <p class="text-[11px] text-emerald-800">
-                    HST 0 = Tanggal Menanam ({{ $crop->tanggal_tanam->format('d/m/Y') }}). Mengubah tanggal atau HST akan sinkron otomatis.
+                    HST 0 = Tanggal Menanam ({{ $crop->tanggal_tanam->format('d-m-Y') }}). Mengubah tanggal atau HST akan sinkron otomatis.
                 </p>
             </div>
 
@@ -553,22 +642,6 @@
                     <label for="add-aplikasi-obat" class="block text-xs font-semibold text-gray-900">
                         Aplikasi Obat (Opsional)
                     </label>
-                    @if ($medicines->isNotEmpty())
-                        <!-- <div class="relative">
-                            <select onchange="insertMedicineToTextarea('add', this)"
-                                    class="text-[11px] py-0.5 px-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 font-medium">
-                                <option value="">+ Sisipkan dari Data Obat...</option>
-                                @foreach ($medicines as $med)
-                                    <option value="{{ $med->nama }}"
-                                            data-jenis="{{ $med->jenis ?? 'Obat' }}"
-                                            data-dosis="{{ $med->dosis_anjuran ?? '' }}"
-                                            data-sasaran="{{ $med->sasaran_obat ?? '' }}">
-                                        {{ $med->nama }} ({{ $med->jenis ?? '-' }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div> -->
-                    @endif
                 </div>
                 <textarea id="add-aplikasi-obat"
                           name="aplikasi_obat"
@@ -599,6 +672,42 @@
                           rows="2"
                           placeholder="Catatan teknis, takaran air, kondisi tanaman, dsb."
                           class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary"></textarea>
+            </div>
+
+            {{-- Upload Dokumentasi Foto (Maksimal 5 Foto) --}}
+            <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-semibold text-gray-900">
+                        Dokumentasi Foto Kegiatan <span class="text-text-muted font-normal">(Maks. 5 foto)</span>
+                    </label>
+                    <span id="add-photo-counter" class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        0/5 Foto
+                    </span>
+                </div>
+                <p class="text-[11px] text-text-muted">
+                    Format: JPG, PNG, WEBP. Foto otomatis dikompresi sebelum disimpan dan diunggah ke Cloudinary.
+                </p>
+
+                <div class="mt-2">
+                    <label for="add-foto-kegiatan"
+                           class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl cursor-pointer bg-white transition-colors">
+                        <svg class="w-6 h-6 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                        </svg>
+                        <span class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">+ Pilih / Jepret Foto (Maks. 5)</span>
+                        <input type="file"
+                               id="add-foto-kegiatan"
+                               name="foto_kegiatan[]"
+                               multiple
+                               accept="image/jpeg,image/png,image/jpg,image/webp"
+                               onchange="handleAddPhotoChange(event)"
+                               class="hidden">
+                    </label>
+                </div>
+
+                {{-- Container Pratinjau Foto --}}
+                <div id="add-photo-preview-grid" class="grid grid-cols-5 gap-2 pt-1 hidden"></div>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
@@ -633,7 +742,7 @@
             </button>
         </div>
 
-        <form id="form-edit-activity" method="POST" action="" class="mt-4 space-y-4">
+        <form id="form-edit-activity" method="POST" action="" enctype="multipart/form-data" class="mt-4 space-y-4">
             @csrf
             @method('PUT')
 
@@ -725,6 +834,46 @@
                           class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary"></textarea>
             </div>
 
+            {{-- Manajemen Foto Dokumentasi (Maks. 5 Foto) --}}
+            <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-semibold text-gray-900">
+                        Dokumentasi Foto Kegiatan <span class="text-text-muted font-normal">(Maks. 5 foto)</span>
+                    </label>
+                    <span id="edit-photo-quota-badge" class="text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-300">
+                        0/5 Foto
+                    </span>
+                </div>
+
+                {{-- Foto yang Sudah Ada --}}
+                <div id="edit-existing-photos-section" class="space-y-1.5 hidden">
+                    <span class="text-[11px] font-semibold text-gray-700 block">Foto Tersimpan:</span>
+                    <div id="edit-existing-photos-grid" class="grid grid-cols-5 gap-2"></div>
+                </div>
+
+                {{-- Input Foto Baru --}}
+                <div id="edit-upload-box" class="space-y-1">
+                    <label for="edit-foto-kegiatan"
+                           class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl cursor-pointer bg-white transition-colors">
+                        <svg class="w-6 h-6 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                        </svg>
+                        <span id="edit-upload-label-text" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">+ Tambah Foto Baru</span>
+                        <input type="file"
+                               id="edit-foto-kegiatan"
+                               name="foto_kegiatan[]"
+                               multiple
+                               accept="image/jpeg,image/png,image/jpg,image/webp"
+                               onchange="handleEditPhotoChange(event)"
+                               class="hidden">
+                    </label>
+                    <div id="edit-new-photo-preview-grid" class="grid grid-cols-5 gap-2 pt-1 hidden"></div>
+                </div>
+
+                {{-- Hidden input container untuk menandai foto yang dihapus saat submit form --}}
+                <div id="edit-deleted-photos-container"></div>
+            </div>
+
             <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
                 <button type="button"
                         onclick="closeModal('modal-edit-activity')"
@@ -737,6 +886,79 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- MODAL: LIGHTBOX PRATINJAU FOTO RESOLUSI PENUH                 --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="modal-image-lightbox"
+     class="fixed inset-0 z-60 hidden items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md select-none transition-all">
+    <div class="relative max-w-4xl w-full flex flex-col items-center">
+        <!-- Header Lightbox: Judul, Counter, Tombol Buka/Tutup -->
+        <div class="w-full flex items-center justify-between text-white pb-2.5 px-2">
+            <div>
+                <h4 id="lightbox-title" class="text-sm sm:text-base font-bold text-white drop-shadow"></h4>
+                <p id="lightbox-counter" class="text-xs text-gray-300 font-mono"></p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a id="lightbox-download-link"
+                   href="#"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors text-xs flex items-center gap-1.5"
+                   title="Buka Foto Asli Resolusi Penuh">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    <span class="hidden sm:inline">Buka Asli</span>
+                </a>
+                <button type="button"
+                        id="lightbox-btn-delete"
+                        onclick="deleteCurrentLightboxPhoto()"
+                        class="px-2.5 py-2 rounded-xl bg-red-600/85 hover:bg-red-600 active:scale-95 text-white transition-all text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                        title="Hapus foto ini (file fisik di Cloudinary/server langsung dihapus permanen)">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                    </svg>
+                    <span>Hapus Foto</span>
+                </button>
+                <button type="button"
+                        onclick="closeImageLightbox()"
+                        class="p-2 rounded-xl bg-white/10 hover:bg-white/25 text-white transition-colors"
+                        title="Tutup (Esc)">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Wadah Gambar Utama dengan Navigasi Sebelumnya / Berikutnya -->
+        <div class="relative w-full flex items-center justify-center max-h-[78vh] overflow-hidden rounded-2xl bg-black/40">
+            <button type="button"
+                    id="lightbox-btn-prev"
+                    onclick="prevLightboxImage()"
+                    class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/60 hover:bg-black/90 text-white transition-all z-10 hidden shadow-lg focus:outline-none">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+
+            <img id="lightbox-img"
+                 src=""
+                 alt="Dokumentasi HST"
+                 class="max-h-[78vh] w-auto max-w-full object-contain rounded-xl shadow-2xl transition-all duration-200">
+
+            <button type="button"
+                    id="lightbox-btn-next"
+                    onclick="nextLightboxImage()"
+                    class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/60 hover:bg-black/90 text-white transition-all z-10 hidden shadow-lg focus:outline-none">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -1107,6 +1329,62 @@
         selectEl.value = '';
     }
 
+    // ── Manajemen Upload Foto Tambah Kegiatan ──
+    let addSelectedFiles = [];
+
+    function handleAddPhotoChange(event) {
+        const files = Array.from(event.target.files);
+        if (addSelectedFiles.length + files.length > 5) {
+            alert(`Maksimal 5 foto per kegiatan. Anda telah memilih ${addSelectedFiles.length} foto.`);
+            return;
+        }
+        for (const f of files) {
+            if (addSelectedFiles.length < 5) {
+                addSelectedFiles.push(f);
+            }
+        }
+        syncAddFileInput();
+        renderAddPhotoPreviews();
+    }
+
+    function removeAddPhoto(index) {
+        addSelectedFiles.splice(index, 1);
+        syncAddFileInput();
+        renderAddPhotoPreviews();
+    }
+
+    function syncAddFileInput() {
+        const dt = new DataTransfer();
+        addSelectedFiles.forEach(f => dt.items.add(f));
+        const input = document.getElementById('add-foto-kegiatan');
+        if (input) input.files = dt.files;
+    }
+
+    function renderAddPhotoPreviews() {
+        const grid = document.getElementById('add-photo-preview-grid');
+        const counter = document.getElementById('add-photo-counter');
+        if (counter) counter.textContent = `${addSelectedFiles.length}/5 Foto`;
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (addSelectedFiles.length === 0) {
+            grid.classList.add('hidden');
+            return;
+        }
+        grid.classList.remove('hidden');
+        addSelectedFiles.forEach((file, idx) => {
+            const url = URL.createObjectURL(file);
+            const item = document.createElement('div');
+            item.className = 'relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-2xs';
+            item.innerHTML = `
+                <img src="${url}" class="w-full h-full object-cover">
+                <button type="button" onclick="removeAddPhoto(${idx})" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-xs shadow transition-transform hover:scale-110" title="Batal foto ini">
+                    &times;
+                </button>
+            `;
+            grid.appendChild(item);
+        });
+    }
+
     function openAddActivityModal(targetHst = null, targetDate = null) {
         const hstInput = document.getElementById('add-target-hst');
         const dateInput = document.getElementById('add-tanggal-kegiatan');
@@ -1119,6 +1397,11 @@
         if (obatInput) obatInput.value = '';
         if (sasaranInput) sasaranInput.value = '';
         if (ketInput) ketInput.value = '';
+
+        // Reset foto
+        addSelectedFiles = [];
+        syncAddFileInput();
+        renderAddPhotoPreviews();
 
         if (targetHst !== null) {
             hstInput.value = targetHst;
@@ -1134,7 +1417,16 @@
         openModal('modal-add-activity');
     }
 
-    function openEditActivityModal(id, nama, targetHst, targetDate, obat, sasaran, ket) {
+    // ── Manajemen Foto Modal Edit Kegiatan ──
+    let currentEditActivityId = null;
+    let editExistingPhotos = [];
+    let editNewFiles = [];
+
+    function openEditActivityModal(id, nama, targetHst, targetDate, obat, sasaran, ket, existingPhotos = []) {
+        currentEditActivityId = id;
+        editExistingPhotos = Array.isArray(existingPhotos) ? [...existingPhotos] : [];
+        editNewFiles = [];
+
         const form = document.getElementById('form-edit-activity');
         form.action = `/kalender-hst/kegiatan/${id}`;
 
@@ -1145,7 +1437,414 @@
         document.getElementById('edit-sasaran').value = sasaran || '';
         document.getElementById('edit-keterangan').value = ket || '';
 
+        const deletedContainer = document.getElementById('edit-deleted-photos-container');
+        if (deletedContainer) deletedContainer.innerHTML = '';
+
+        const fileInput = document.getElementById('edit-foto-kegiatan');
+        if (fileInput) fileInput.value = '';
+
+        renderEditPhotosState();
         openModal('modal-edit-activity');
+    }
+
+    function renderEditPhotosState() {
+        const existingSection = document.getElementById('edit-existing-photos-section');
+        const existingGrid = document.getElementById('edit-existing-photos-grid');
+        const quotaBadge = document.getElementById('edit-photo-quota-badge');
+        const uploadBox = document.getElementById('edit-upload-box');
+        const uploadText = document.getElementById('edit-upload-label-text');
+
+        const totalCurrent = editExistingPhotos.length + editNewFiles.length;
+        if (quotaBadge) {
+            quotaBadge.textContent = `${totalCurrent}/5 Foto`;
+        }
+
+        if (uploadText) {
+            const remaining = 5 - totalCurrent;
+            uploadText.textContent = remaining > 0 ? `+ Tambah Foto Baru (Sisa: ${remaining})` : 'Kuota foto penuh (Maks. 5)';
+        }
+
+        if (uploadBox) {
+            if (editExistingPhotos.length + editNewFiles.length >= 5) {
+                uploadBox.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                uploadBox.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        // Render foto yang sudah ada
+        if (existingGrid && existingSection) {
+            existingGrid.innerHTML = '';
+            if (editExistingPhotos.length > 0) {
+                existingSection.classList.remove('hidden');
+                editExistingPhotos.forEach((photoUrl, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-2xs';
+                    item.innerHTML = `
+                        <img src="${photoUrl}" class="w-full h-full object-cover">
+                        <button type="button"
+                                onclick="handleDeleteExistingPhoto('${encodeURIComponent(photoUrl)}', ${idx})"
+                                class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-xs shadow-md transition-all hover:scale-110"
+                                title="Hapus foto fisik ini secara permanen">
+                            <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    `;
+                    existingGrid.appendChild(item);
+                });
+            } else {
+                existingSection.classList.add('hidden');
+            }
+        }
+
+        renderEditNewPhotoPreviews();
+    }
+
+    function handleEditPhotoChange(event) {
+        const files = Array.from(event.target.files);
+        const totalAllowed = 5 - editExistingPhotos.length;
+        if (editNewFiles.length + files.length > totalAllowed) {
+            alert(`Maksimal 5 foto per kegiatan. Sisa slot yang dapat ditambahkan: ${totalAllowed - editNewFiles.length} foto.`);
+            return;
+        }
+        for (const f of files) {
+            if (editExistingPhotos.length + editNewFiles.length < 5) {
+                editNewFiles.push(f);
+            }
+        }
+        syncEditFileInput();
+        renderEditPhotosState();
+    }
+
+    function removeEditNewPhoto(index) {
+        editNewFiles.splice(index, 1);
+        syncEditFileInput();
+        renderEditPhotosState();
+    }
+
+    function syncEditFileInput() {
+        const dt = new DataTransfer();
+        editNewFiles.forEach(f => dt.items.add(f));
+        const input = document.getElementById('edit-foto-kegiatan');
+        if (input) input.files = dt.files;
+    }
+
+    function renderEditNewPhotoPreviews() {
+        const grid = document.getElementById('edit-new-photo-preview-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (editNewFiles.length === 0) {
+            grid.classList.add('hidden');
+            return;
+        }
+        grid.classList.remove('hidden');
+        editNewFiles.forEach((file, idx) => {
+            const url = URL.createObjectURL(file);
+            const item = document.createElement('div');
+            item.className = 'relative group aspect-square rounded-xl overflow-hidden border border-emerald-300 bg-gray-100 shadow-2xs';
+            item.innerHTML = `
+                <img src="${url}" class="w-full h-full object-cover">
+                <button type="button" onclick="removeEditNewPhoto(${idx})" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-xs shadow transition-transform hover:scale-110" title="Batal tambah foto">
+                    &times;
+                </button>
+            `;
+            grid.appendChild(item);
+        });
+    }
+
+    async function handleDeleteExistingPhoto(encodedUrl, index) {
+        const photoUrl = decodeURIComponent(encodedUrl);
+
+        const executeDelete = async () => {
+            try {
+                const csrfToken = document.querySelector('input[name="_token"]')?.value;
+                const res = await fetch(`/kalender-hst/kegiatan/${currentEditActivityId}/foto`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ target: photoUrl })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    editExistingPhotos.splice(index, 1);
+                    renderEditPhotosState();
+                    if (window.AgriSwal && typeof window.AgriSwal.toastSuccess === 'function') {
+                        window.AgriSwal.toastSuccess('Foto berhasil dihapus.');
+                    }
+                } else {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Menghapus',
+                            text: data.message || 'Gagal menghapus file foto fisik.',
+                            customClass: { popup: 'agri-swal-popup' },
+                            buttonsStyling: false,
+                            confirmButtonText: 'Tutup'
+                        });
+                    } else {
+                        alert(data.message || 'Gagal menghapus file foto fisik.');
+                    }
+                }
+            } catch (e) {
+                // Fallback: tandai di hidden input untuk dihapus saat form disubmit
+                const deletedContainer = document.getElementById('edit-deleted-photos-container');
+                if (deletedContainer) {
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'deleted_photos[]';
+                    hidden.value = photoUrl;
+                    deletedContainer.appendChild(hidden);
+                }
+                editExistingPhotos.splice(index, 1);
+                renderEditPhotosState();
+            }
+        };
+
+        if (window.AgriSwal && typeof window.AgriSwal.confirmDelete === 'function') {
+            window.AgriSwal.confirmDelete('Hapus Foto Dokumentasi?', 'Foto ini', executeDelete);
+        } else if (window.Swal) {
+            Swal.fire({
+                title: 'Hapus Foto Dokumentasi?',
+                html: `Apakah Anda yakin ingin menghapus foto ini?<br><span class="agri-swal-subtitle">File fisik di server / Cloudinary akan langsung dimusnahkan.</span>`,
+                icon: 'warning',
+                iconColor: '#E4574C',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'agri-swal-popup',
+                    title: 'agri-swal-title',
+                    htmlContainer: 'agri-swal-html',
+                    confirmButton: 'agri-swal-btn-danger',
+                    cancelButton: 'agri-swal-btn-cancel',
+                    actions: 'agri-swal-actions',
+                    icon: 'agri-swal-icon-warning'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeDelete();
+                }
+            });
+        } else {
+            if (confirm('Hapus foto ini? File fisik di server/Cloudinary juga akan langsung dihapus permanen.')) {
+                executeDelete();
+            }
+        }
+    }
+
+    // ── Fungsi Lightbox Viewer ──
+    let currentLightboxImages = [];
+    let currentLightboxIndex = 0;
+    let currentLightboxActivityId = null;
+
+    function openImageLightbox(urls, initialIndex = 0, title = 'Dokumentasi Kegiatan', activityId = null) {
+        if (!urls || urls.length === 0) return;
+        currentLightboxImages = urls;
+        currentLightboxIndex = initialIndex;
+        currentLightboxActivityId = activityId;
+
+        const modal = document.getElementById('modal-image-lightbox');
+        const titleEl = document.getElementById('lightbox-title');
+        const delBtn = document.getElementById('lightbox-btn-delete');
+        if (titleEl) titleEl.textContent = title;
+        if (delBtn) {
+            delBtn.style.display = activityId ? 'inline-flex' : 'none';
+        }
+
+        updateLightboxView();
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        document.addEventListener('keydown', handleLightboxKeydown);
+    }
+
+    function closeImageLightbox() {
+        const modal = document.getElementById('modal-image-lightbox');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        document.removeEventListener('keydown', handleLightboxKeydown);
+    }
+
+    function updateLightboxView() {
+        const imgEl = document.getElementById('lightbox-img');
+        const counterEl = document.getElementById('lightbox-counter');
+        const downloadLink = document.getElementById('lightbox-download-link');
+        const prevBtn = document.getElementById('lightbox-btn-prev');
+        const nextBtn = document.getElementById('lightbox-btn-next');
+
+        const currentItem = currentLightboxImages[currentLightboxIndex];
+        const currentUrl = (typeof currentItem === 'object' && currentItem !== null) ? currentItem.url : currentItem;
+        const currentTitle = (typeof currentItem === 'object' && currentItem !== null && currentItem.name) ? currentItem.name : null;
+
+        if (typeof currentItem === 'object' && currentItem !== null && currentItem.activityId) {
+            currentLightboxActivityId = currentItem.activityId;
+        }
+
+        if (currentTitle) {
+            const titleEl = document.getElementById('lightbox-title');
+            if (titleEl) titleEl.textContent = currentTitle;
+        }
+
+        if (imgEl) imgEl.src = currentUrl;
+        if (downloadLink) downloadLink.href = currentUrl;
+        if (counterEl) {
+            counterEl.textContent = `Foto ${currentLightboxIndex + 1} dari ${currentLightboxImages.length}`;
+        }
+
+        if (prevBtn) {
+            if (currentLightboxImages.length > 1) {
+                prevBtn.classList.remove('hidden');
+            } else {
+                prevBtn.classList.add('hidden');
+            }
+        }
+        if (nextBtn) {
+            if (currentLightboxImages.length > 1) {
+                nextBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.add('hidden');
+            }
+        }
+    }
+
+    function prevLightboxImage() {
+        if (currentLightboxImages.length <= 1) return;
+        currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxImages.length) % currentLightboxImages.length;
+        updateLightboxView();
+    }
+
+    function nextLightboxImage() {
+        if (currentLightboxImages.length <= 1) return;
+        currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
+        updateLightboxView();
+    }
+
+    async function deleteCurrentLightboxPhoto() {
+        if (!currentLightboxActivityId || currentLightboxImages.length === 0) return;
+        const currentItem = currentLightboxImages[currentLightboxIndex];
+        const currentUrl = (typeof currentItem === 'object' && currentItem !== null) ? currentItem.url : currentItem;
+
+        const executeDelete = async () => {
+            const deleteBtn = document.getElementById('lightbox-btn-delete');
+            const originalHtml = deleteBtn ? deleteBtn.innerHTML : '';
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = `
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Menghapus...</span>
+                `;
+            }
+
+            try {
+                const csrfToken = document.querySelector('input[name="_token"]')?.value;
+                const res = await fetch(`/kalender-hst/kegiatan/${currentLightboxActivityId}/foto`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ target: currentUrl })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    if (window.AgriSwal && typeof window.AgriSwal.toastSuccess === 'function') {
+                        window.AgriSwal.toastSuccess('Foto berhasil dihapus.');
+                    }
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 400);
+                } else {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Menghapus',
+                            text: data.message || 'Gagal menghapus file foto fisik.',
+                            customClass: { popup: 'agri-swal-popup' },
+                            buttonsStyling: false,
+                            confirmButtonText: 'Tutup'
+                        });
+                    } else {
+                        alert(data.message || 'Gagal menghapus file foto fisik.');
+                    }
+                    if (deleteBtn) {
+                        deleteBtn.disabled = false;
+                        deleteBtn.innerHTML = originalHtml;
+                    }
+                }
+            } catch (e) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Kesalahan',
+                        text: 'Terjadi kesalahan koneksi saat menghapus file foto.',
+                        customClass: { popup: 'agri-swal-popup' },
+                        buttonsStyling: false,
+                        confirmButtonText: 'Tutup'
+                    });
+                } else {
+                    alert('Terjadi kesalahan koneksi saat menghapus file foto.');
+                }
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = originalHtml;
+                }
+            }
+        };
+
+        if (window.AgriSwal && typeof window.AgriSwal.confirmDelete === 'function') {
+            window.AgriSwal.confirmDelete('Hapus Foto Dokumentasi?', 'Foto ini', executeDelete);
+        } else if (window.Swal) {
+            Swal.fire({
+                title: 'Hapus Foto Dokumentasi?',
+                html: `Apakah Anda yakin ingin menghapus foto ini?<br><span class="agri-swal-subtitle">File fisik di server / Cloudinary akan langsung dimusnahkan.</span>`,
+                icon: 'warning',
+                iconColor: '#E4574C',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'agri-swal-popup',
+                    title: 'agri-swal-title',
+                    htmlContainer: 'agri-swal-html',
+                    confirmButton: 'agri-swal-btn-danger',
+                    cancelButton: 'agri-swal-btn-cancel',
+                    actions: 'agri-swal-actions',
+                    icon: 'agri-swal-icon-warning'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeDelete();
+                }
+            });
+        } else {
+            if (confirm('Hapus foto ini? File fisik di server/Cloudinary akan langsung dihapus permanen.')) {
+                executeDelete();
+            }
+        }
+    }
+
+    function handleLightboxKeydown(e) {
+        if (e.key === 'Escape') closeImageLightbox();
+        if (e.key === 'ArrowLeft') prevLightboxImage();
+        if (e.key === 'ArrowRight') nextLightboxImage();
     }
 
     function openHarvestModal(cropId, cropName, plantDate, nextNumber) {
@@ -1314,5 +2013,33 @@
             priceInput.addEventListener('input', autoCalcGross);
         }
     });
+
+    // Toggle long list of obat items in table
+    function toggleObatItems(btn) {
+        const container = btn.previousElementSibling;
+        if (!container) return;
+        const isHidden = container.classList.contains('hidden');
+        const count = btn.getAttribute('data-count') || '';
+        if (isHidden) {
+            container.classList.remove('hidden');
+            btn.textContent = '▲ Sembunyikan sebagian';
+        } else {
+            container.classList.add('hidden');
+            btn.textContent = `+ Lihat ${count} obat lainnya...`;
+        }
+    }
+
+    // Toggle line-clamp for long descriptions in table
+    function toggleLineClamp(btn) {
+        const textEl = btn.previousElementSibling;
+        if (!textEl) return;
+        if (textEl.classList.contains('line-clamp-2')) {
+            textEl.classList.remove('line-clamp-2');
+            btn.textContent = 'Sembunyikan';
+        } else {
+            textEl.classList.add('line-clamp-2');
+            btn.textContent = 'Selengkapnya...';
+        }
+    }
 </script>
 @endsection

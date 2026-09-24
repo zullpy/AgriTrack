@@ -7,7 +7,10 @@ use App\Models\CropActivity;
 use App\Models\CropHarvest;
 use App\Models\Medicine;
 use App\Models\PlantCatalog;
+use App\Services\CloudinaryService;
+use App\Services\ImageCompressionService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -15,6 +18,11 @@ use Illuminate\View\View;
 
 class KalenderHstController extends Controller
 {
+    public function __construct(
+        protected ImageCompressionService $compressionService,
+        protected CloudinaryService $cloudinaryService
+    ) {}
+
     public function index(Request $request): View
     {
         // Parameter Bulan & Tahun
@@ -172,6 +180,14 @@ class KalenderHstController extends Controller
     public function destroyCrop(Crop $crop): RedirectResponse
     {
         $nama = $crop->nama_tanaman;
+
+        // Bersihkan seluruh file fisik foto kegiatan tanaman ini dari Cloudinary/lokal
+        foreach ($crop->activities as $act) {
+            foreach ($act->foto_urls as $url) {
+                $this->cloudinaryService->deleteImage($url);
+            }
+        }
+
         $crop->delete();
 
         // Bersihkan catalog stub otomatis jika tidak memiliki panduan (0 guides) dan bukan katalog bawaan
@@ -407,6 +423,8 @@ class KalenderHstController extends Controller
             'target_hst' => 'nullable|integer|min:0',
             'tanggal_kegiatan' => 'nullable|date',
             'catatan' => 'nullable|string|max:1000',
+            'foto_kegiatan' => 'nullable',
+            'foto_kegiatan.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
 
         $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
@@ -423,6 +441,39 @@ class KalenderHstController extends Controller
 
         $keteranganFinal = $validated['keterangan'] ?? $validated['catatan'] ?? null;
 
+        // Ambil dan validasi jumlah file foto (maksimal 5 foto)
+        $fotoFiles = [];
+        if ($request->hasFile('foto_kegiatan')) {
+            $rawFiles = $request->file('foto_kegiatan');
+            $fotoFiles = is_array($rawFiles) ? $rawFiles : [$rawFiles];
+        }
+
+        if (count($fotoFiles) > 5) {
+            return redirect()->back()
+                ->withErrors(['foto_kegiatan' => 'Maksimal 5 foto per kegiatan. Anda memilih '.count($fotoFiles).' foto.'])
+                ->withInput();
+        }
+
+        // Kompresi setiap foto dan upload ke Cloudinary (atau storage lokal sebagai fallback)
+        $uploadedPhotos = [];
+        foreach ($fotoFiles as $file) {
+            if ($file && $file->isValid()) {
+                $compressed = $this->compressionService->compress($file);
+                $uploaded = $this->cloudinaryService->upload($compressed['path']);
+
+                // Bersihkan file sementara hasil kompresi
+                if (file_exists($compressed['path'])) {
+                    @unlink($compressed['path']);
+                }
+
+                $uploadedPhotos[] = [
+                    'url' => $uploaded['url'],
+                    'public_id' => $uploaded['public_id'],
+                    'storage_type' => $uploaded['storage_type'],
+                ];
+            }
+        }
+
         $crop->activities()->create([
             'nama_kegiatan' => $validated['nama_kegiatan'],
             'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
@@ -431,6 +482,7 @@ class KalenderHstController extends Controller
             'status' => 'Belum',
             'keterangan' => $keteranganFinal,
             'catatan' => $keteranganFinal,
+            'foto_kegiatan' => ! empty($uploadedPhotos) ? $uploadedPhotos : null,
         ]);
 
         $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat pada HST {$targetHst}.";
@@ -451,9 +503,72 @@ class KalenderHstController extends Controller
             'keterangan' => 'nullable|string|max:1000',
             'target_hst' => 'required|integer|min:0',
             'catatan' => 'nullable|string|max:1000',
+            'foto_kegiatan' => 'nullable',
+            'foto_kegiatan.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'deleted_photos' => 'nullable|array',
+            'deleted_photos.*' => 'string',
         ]);
 
         $keteranganFinal = $validated['keterangan'] ?? $validated['catatan'] ?? null;
+
+        // Tangani foto yang ditandai untuk dihapus dan hapus file fisiknya
+        $existingPhotos = is_array($activity->foto_kegiatan) ? $activity->foto_kegiatan : [];
+        $deletedTargets = $request->input('deleted_photos', []);
+        if (! is_array($deletedTargets)) {
+            $deletedTargets = [];
+        }
+
+        $remainingPhotos = [];
+        foreach ($existingPhotos as $photoItem) {
+            $photoUrl = is_array($photoItem) ? ($photoItem['url'] ?? $photoItem['public_id'] ?? '') : (string) $photoItem;
+            $photoId = is_array($photoItem) ? ($photoItem['public_id'] ?? '') : '';
+
+            $isDeleted = false;
+            foreach ($deletedTargets as $target) {
+                if ($target && ($target === $photoUrl || $target === $photoId || str_contains($photoUrl, $target))) {
+                    $isDeleted = true;
+                    break;
+                }
+            }
+
+            if ($isDeleted) {
+                // Hapus file fisik (baik Cloudinary maupun disk lokal)
+                $this->cloudinaryService->deleteImage($photoUrl);
+            } else {
+                $remainingPhotos[] = $photoItem;
+            }
+        }
+
+        // Tangani file foto baru yang diunggah
+        $fotoFiles = [];
+        if ($request->hasFile('foto_kegiatan')) {
+            $rawFiles = $request->file('foto_kegiatan');
+            $fotoFiles = is_array($rawFiles) ? $rawFiles : [$rawFiles];
+        }
+
+        // Validasi total foto (tersisa + baru <= 5)
+        if (count($remainingPhotos) + count($fotoFiles) > 5) {
+            return redirect()->back()
+                ->withErrors(['foto_kegiatan' => 'Total foto tidak boleh lebih dari 5. Foto tersisa: '.count($remainingPhotos).', foto baru: '.count($fotoFiles).'.'])
+                ->withInput();
+        }
+
+        foreach ($fotoFiles as $file) {
+            if ($file && $file->isValid()) {
+                $compressed = $this->compressionService->compress($file);
+                $uploaded = $this->cloudinaryService->upload($compressed['path']);
+
+                if (file_exists($compressed['path'])) {
+                    @unlink($compressed['path']);
+                }
+
+                $remainingPhotos[] = [
+                    'url' => $uploaded['url'],
+                    'public_id' => $uploaded['public_id'],
+                    'storage_type' => $uploaded['storage_type'],
+                ];
+            }
+        }
 
         $activity->update([
             'nama_kegiatan' => $validated['nama_kegiatan'],
@@ -462,9 +577,49 @@ class KalenderHstController extends Controller
             'target_hst' => (int) $validated['target_hst'],
             'keterangan' => $keteranganFinal,
             'catatan' => $keteranganFinal,
+            'foto_kegiatan' => ! empty($remainingPhotos) ? array_values($remainingPhotos) : null,
         ]);
 
         return redirect()->back()->with('success', 'Data kegiatan perawatan berhasil diperbarui.');
+    }
+
+    /**
+     * Hapus 1 file foto spesifik dari kegiatan (file fisik dan database).
+     */
+    public function destroyPhoto(Request $request, CropActivity $activity): JsonResponse
+    {
+        $target = $request->input('target') ?? $request->input('url') ?? $request->input('path');
+        if (! $target) {
+            return response()->json(['success' => false, 'message' => 'Foto target tidak ditentukan.'], 400);
+        }
+
+        $existingPhotos = is_array($activity->foto_kegiatan) ? $activity->foto_kegiatan : [];
+        $remaining = [];
+        $found = false;
+
+        foreach ($existingPhotos as $item) {
+            $url = is_array($item) ? ($item['url'] ?? $item['public_id'] ?? '') : (string) $item;
+            $publicId = is_array($item) ? ($item['public_id'] ?? '') : '';
+
+            if (! $found && ($url === $target || $publicId === $target || str_contains($url, $target))) {
+                // Hapus file fisik dari Cloudinary / lokal
+                $this->cloudinaryService->deleteImage($url);
+                $found = true;
+            } else {
+                $remaining[] = $item;
+            }
+        }
+
+        $activity->update([
+            'foto_kegiatan' => ! empty($remaining) ? array_values($remaining) : null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto fisik dan data berhasil dihapus.',
+            'remaining_count' => count($remaining),
+            'foto_urls' => $activity->fresh()->foto_urls,
+        ]);
     }
 
     public function toggleActivityStatus(Request $request, CropActivity $activity)
@@ -488,8 +643,13 @@ class KalenderHstController extends Controller
 
     public function destroyActivity(CropActivity $activity): RedirectResponse
     {
+        // Bersihkan seluruh file fisik foto dari Cloudinary / lokal
+        foreach ($activity->foto_urls as $url) {
+            $this->cloudinaryService->deleteImage($url);
+        }
+
         $activity->delete();
 
-        return redirect()->back()->with('success', 'Kegiatan perawatan berhasil dihapus.');
+        return redirect()->back()->with('success', 'Kegiatan perawatan dan file foto fisiknya berhasil dihapus.');
     }
 }

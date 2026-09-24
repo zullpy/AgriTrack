@@ -209,7 +209,10 @@
                                     <div class="px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight truncate flex items-center gap-1 {{ $item['activity']->status === 'Selesai' ? 'bg-gray-100 text-gray-500 line-through' : 'bg-amber-50 text-amber-800 border border-amber-200' }}"
                                          title="{{ $item['activity']->nama_kegiatan }} ({{ $item['crop']->nama_tanaman }})">
                                         <span class="w-1.5 h-1.5 rounded-full {{ $item['activity']->status === 'Selesai' ? 'bg-gray-400' : 'bg-amber-500' }} shrink-0"></span>
-                                        <span class="truncate">{{ $item['activity']->nama_kegiatan }}</span>
+                                        <span class="truncate flex-1">{{ $item['activity']->nama_kegiatan }}</span>
+                                        @if ($item['activity']->foto_count > 0)
+                                            <span class="text-[9px] font-bold text-amber-700 bg-amber-100/90 px-1 py-0.2 rounded shrink-0">📷{{ $item['activity']->foto_count }}</span>
+                                        @endif
                                     </div>
                                 @endforeach
 
@@ -847,7 +850,7 @@
             </button>
         </div>
 
-        <form id="form-tambah-kegiatan" method="POST" action="" class="space-y-4">
+        <form id="form-tambah-kegiatan" method="POST" action="" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <div>
                 <label for="act-nama" class="block text-xs font-semibold text-text mb-1">Nama Kegiatan <span class="text-red-500">*</span></label>
@@ -869,6 +872,36 @@
                 <label for="act-catatan" class="block text-xs font-semibold text-text mb-1">Catatan / Dosis Bahan (Opsional)</label>
                 <textarea id="act-catatan" name="catatan" rows="2" placeholder="Contoh: Pupuk NPK 15-15-15 dosis 2 sendok per tanaman..."
                           class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm resize-none"></textarea>
+            </div>
+
+            {{-- Upload Dokumentasi Foto (Maksimal 5 Foto) --}}
+            <div class="p-3 rounded-xl border border-gray-200 bg-gray-50/70 space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-semibold text-text">
+                        Dokumentasi Foto <span class="text-text-muted font-normal">(Maks. 5 foto)</span>
+                    </label>
+                    <span id="act-photo-counter" class="text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200">
+                        0/5 Foto
+                    </span>
+                </div>
+                <div>
+                    <label for="act-foto-kegiatan"
+                           class="flex flex-col items-center justify-center p-2.5 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl cursor-pointer bg-white transition-colors">
+                        <svg class="w-5 h-5 text-gray-400 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                        </svg>
+                        <span class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">+ Tambah Foto (Maks. 5)</span>
+                        <input type="file"
+                               id="act-foto-kegiatan"
+                               name="foto_kegiatan[]"
+                               multiple
+                               accept="image/jpeg,image/png,image/jpg,image/webp"
+                               onchange="handleActPhotoChange(event)"
+                               class="hidden">
+                    </label>
+                </div>
+                <div id="act-photo-preview-grid" class="grid grid-cols-5 gap-2 pt-1 hidden"></div>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2">
@@ -1072,7 +1105,62 @@
         openModal('modal-edit-tanaman');
     }
 
-    // Add Activity Modal
+    // Add Activity Modal Photo Management
+    let actSelectedFiles = [];
+
+    function handleActPhotoChange(event) {
+        const files = Array.from(event.target.files);
+        if (actSelectedFiles.length + files.length > 5) {
+            alert(`Maksimal 5 foto per kegiatan. Anda telah memilih ${actSelectedFiles.length} foto.`);
+            return;
+        }
+        for (const f of files) {
+            if (actSelectedFiles.length < 5) {
+                actSelectedFiles.push(f);
+            }
+        }
+        syncActFileInput();
+        renderActPhotoPreviews();
+    }
+
+    function removeActPhoto(index) {
+        actSelectedFiles.splice(index, 1);
+        syncActFileInput();
+        renderActPhotoPreviews();
+    }
+
+    function syncActFileInput() {
+        const dt = new DataTransfer();
+        actSelectedFiles.forEach(f => dt.items.add(f));
+        const input = document.getElementById('act-foto-kegiatan');
+        if (input) input.files = dt.files;
+    }
+
+    function renderActPhotoPreviews() {
+        const grid = document.getElementById('act-photo-preview-grid');
+        const counter = document.getElementById('act-photo-counter');
+        if (counter) counter.textContent = `${actSelectedFiles.length}/5 Foto`;
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (actSelectedFiles.length === 0) {
+            grid.classList.add('hidden');
+            return;
+        }
+        grid.classList.remove('hidden');
+        actSelectedFiles.forEach((file, idx) => {
+            const url = URL.createObjectURL(file);
+            const item = document.createElement('div');
+            item.className = 'relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-2xs';
+            item.innerHTML = `
+                <img src="${url}" class="w-full h-full object-cover">
+                <button type="button" onclick="removeActPhoto(${idx})" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-xs shadow transition-transform hover:scale-110" title="Batal foto ini">
+                    &times;
+                </button>
+            `;
+            grid.appendChild(item);
+        });
+    }
+
     function openModalActivity(cropId, cropName) {
         const form = document.getElementById('form-tambah-kegiatan');
         form.action = '/kalender-hst/tanaman/' + cropId + '/kegiatan';
@@ -1080,6 +1168,12 @@
         document.getElementById('act-nama').value = '';
         document.getElementById('act-hst').value = '';
         document.getElementById('act-catatan').value = '';
+
+        // Reset foto
+        actSelectedFiles = [];
+        syncActFileInput();
+        renderActPhotoPreviews();
+
         openModal('modal-tambah-kegiatan');
     }
 
