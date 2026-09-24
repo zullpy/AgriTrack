@@ -164,6 +164,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setTimeout(() => window.location.reload(), 1200);
             } else if (window.location.pathname.startsWith('/kalender-hst/tanaman/')) {
                 setTimeout(() => window.location.reload(), 1200);
+            } else if (window.location.pathname.startsWith('/keuangan')) {
+                if (typeof window.loadKeuanganData === 'function') {
+                    window.loadKeuanganData();
+                }
             }
         }
     });

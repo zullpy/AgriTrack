@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\KalenderHstSyncController;
+use App\Http\Controllers\Api\KeuanganSyncController;
 use App\Http\Controllers\Api\MedicineSyncController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KalenderHstController;
@@ -32,6 +33,12 @@ Route::get('/steps/penanaman-bibit', [StepController::class, 'penanamanBibit'])-
 
 // Keuangan
 Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');
+Route::post('/keuangan', [KeuanganController::class, 'store'])->name('keuangan.store');
+Route::put('/keuangan/{transaction}', [KeuanganController::class, 'update'])->name('keuangan.update');
+Route::delete('/keuangan/{transaction}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
+Route::post('/keuangan/kategori', [KeuanganController::class, 'storeCategory'])->name('keuangan.category.store');
+Route::put('/keuangan/kategori/{category}', [KeuanganController::class, 'updateCategory'])->name('keuangan.category.update');
+Route::delete('/keuangan/kategori/{category}', [KeuanganController::class, 'destroyCategory'])->name('keuangan.category.destroy');
 
 // Kalender HST
 Route::get('/kalender-hst', [KalenderHstController::class, 'index'])->name('kalender-hst.index');
@@ -52,4 +59,6 @@ Route::prefix('api')->group(function () {
     Route::get('/medicines', [MedicineSyncController::class, 'index']);
     Route::post('/medicines/sync', [MedicineSyncController::class, 'sync']);
     Route::post('/kalender-hst/sync', [KalenderHstSyncController::class, 'sync']);
+    Route::get('/keuangan', [KeuanganSyncController::class, 'index']);
+    Route::post('/keuangan/sync', [KeuanganSyncController::class, 'sync']);
 });

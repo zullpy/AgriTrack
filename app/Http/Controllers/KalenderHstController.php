@@ -177,9 +177,10 @@ class KalenderHstController extends Controller
         return redirect()->back()->with('success', 'Informasi tanaman berhasil diperbarui.');
     }
 
-    public function destroyCrop(Crop $crop): RedirectResponse
+    public function destroyCrop(Request $request, Crop $crop): RedirectResponse
     {
         $nama = $crop->nama_tanaman;
+        $status = $crop->status;
 
         // Bersihkan seluruh file fisik foto kegiatan tanaman ini dari Cloudinary/lokal
         foreach ($crop->activities as $act) {
@@ -201,7 +202,9 @@ class KalenderHstController extends Controller
             }
         }
 
-        return redirect('/kalender-hst')->with('success', "Tanaman {$nama} berhasil dihapus.");
+        $tab = $request->input('redirect_tab') ?? $request->input('tab') ?? (in_array($status, ['Sudah Dipanen', 'Diakhiri']) ? 'riwayat' : 'aktif');
+
+        return redirect("/kalender-hst?tab={$tab}")->with('success', "Tanaman {$nama} berhasil dihapus.");
     }
 
     public function markAsHarvested(Request $request, Crop $crop): RedirectResponse

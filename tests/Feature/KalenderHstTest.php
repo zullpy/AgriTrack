@@ -217,7 +217,20 @@ class KalenderHstTest extends TestCase
         ]);
 
         $response = $this->delete("/kalender-hst/tanaman/{$crop->id}");
-        $response->assertRedirect('/kalender-hst');
+        $response->assertRedirect('/kalender-hst?tab=aktif');
+        $this->assertDatabaseMissing('crops', ['id' => $crop->id]);
+    }
+
+    public function test_can_delete_harvested_crop_redirects_to_riwayat(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Tomat Rampai',
+            'tanggal_tanam' => Carbon::today()->subDays(60)->toDateString(),
+            'status' => 'Sudah Dipanen',
+        ]);
+
+        $response = $this->delete("/kalender-hst/tanaman/{$crop->id}");
+        $response->assertRedirect('/kalender-hst?tab=riwayat');
         $this->assertDatabaseMissing('crops', ['id' => $crop->id]);
     }
 

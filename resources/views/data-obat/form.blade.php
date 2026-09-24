@@ -1044,13 +1044,21 @@ window.removeExistingFoto = async function(btn, path, medicineId) {
                 });
             }
         } else {
-            alert(res.message || 'Gagal menghapus file foto.');
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError(res.message || 'Gagal menghapus file foto.');
+            } else if (window.Swal) {
+                Swal.fire({ icon: 'error', title: 'Perhatian', text: res.message || 'Gagal menghapus file foto.' });
+            }
             btn.disabled = false;
             btn.innerHTML = origHtml;
         }
     } catch (err) {
         console.error('Error menghapus foto:', err);
-        alert('Terjadi kesalahan saat menghapus file foto dari server.');
+        if (window.AgriSwal) {
+            window.AgriSwal.toastError('Terjadi kesalahan saat menghapus file foto dari server.');
+        } else if (window.Swal) {
+            Swal.fire({ icon: 'error', title: 'Perhatian', text: 'Terjadi kesalahan saat menghapus file foto dari server.' });
+        }
         btn.disabled = false;
         btn.innerHTML = origHtml;
     }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agritrack-v3';
+const CACHE_NAME = 'agritrack-v5';
 const PRECACHE_ASSETS = [
     '/',
     '/dashboard',
@@ -6,6 +6,7 @@ const PRECACHE_ASSETS = [
     '/steps',
     '/data-obat',
     '/data-obat/tambah',
+    '/keuangan',
     '/images/icon.png',
     '/manifest.json'
 ];
@@ -45,6 +46,13 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // Skip AJAX/XHR requests — always go to network for JSON data fetches
+    const acceptHeader = request.headers.get('Accept') || '';
+    const xhrHeader = request.headers.get('X-Requested-With') || '';
+    if (acceptHeader.includes('application/json') || xhrHeader === 'XMLHttpRequest') {
+        return;
+    }
+
     // Navigation requests (HTML pages)
     if (request.mode === 'navigate') {
         event.respondWith(
@@ -64,7 +72,8 @@ self.addEventListener('fetch', (event) => {
                     }
                     return (await caches.match('/dashboard'))
                         || (await caches.match('/kalender-hst'))
-                        || (await caches.match('/data-obat'));
+                        || (await caches.match('/data-obat'))
+                        || (await caches.match('/keuangan'));
                 })
         );
         return;

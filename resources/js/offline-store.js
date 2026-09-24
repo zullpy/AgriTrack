@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'AgriTrackDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 class AgriOfflineStore {
     constructor() {
@@ -33,6 +33,18 @@ class AgriOfflineStore {
                     const actStore = db.createObjectStore('crop_activities', { keyPath: 'client_id' });
                     actStore.createIndex('crop_id', 'crop_id', { unique: false });
                     actStore.createIndex('is_synced', 'is_synced', { unique: false });
+                }
+
+                // Object store for keuangan transactions
+                if (!db.objectStoreNames.contains('keuangan_transactions')) {
+                    const trxStore = db.createObjectStore('keuangan_transactions', { keyPath: 'client_id' });
+                    trxStore.createIndex('raw_id', 'raw_id', { unique: false });
+                    trxStore.createIndex('is_synced', 'is_synced', { unique: false });
+                }
+
+                // Object store for keuangan categories
+                if (!db.objectStoreNames.contains('keuangan_categories')) {
+                    db.createObjectStore('keuangan_categories', { keyPath: 'client_id' });
                 }
 
                 // Object store for sync queue (mutations made while offline)
@@ -348,6 +360,7 @@ class AgriOfflineStore {
             // Group mutations by type
             const medicineMutations = mutations.filter(m => !m.type || m.type === 'medicine');
             const hstMutations = mutations.filter(m => m.type === 'crop_activity' || m.type === 'kalender_hst');
+            const keuanganMutations = mutations.filter(m => m.type === 'keuangan');
 
             let totalProcessed = 0;
 
@@ -396,6 +409,32 @@ class AgriOfflineStore {
                 }
             }
 
+            // Sync Keuangan transactions & categories if any
+            if (keuanganMutations.length > 0) {
+                const kRes = await fetch('/api/keuangan/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ mutations: keuanganMutations })
+                });
+
+                if (kRes.ok) {
+                    const kResult = await kRes.json();
+                    if (kResult.success) {
+                        totalProcessed += (kResult.processed_count || keuanganMutations.length);
+                        const kSnap = await fetch('/api/keuangan');
+                        if (kSnap.ok) {
+                            const kJson = await kSnap.json();
+                            if (kJson.success) {
+                                await this.cacheKeuanganData(kJson.transactions, kJson.categories);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Clear the sync queue
             const clearTx = await this.getTransaction('sync_queue', 'readwrite');
             clearTx.objectStore('sync_queue').clear();
@@ -414,6 +453,331 @@ class AgriOfflineStore {
             window.dispatchEvent(new CustomEvent('agri:sync-status', { detail: { status: 'error', error: err.message } }));
             return { synced: false, error: err.message };
         }
+    }
+
+    /**
+     * Cache Keuangan data snapshot in IndexedDB
+     */
+    async cacheKeuanganData(transactions = [], categories = []) {
+        try {
+            const tx = await this.getTransaction(['keuangan_transactions', 'keuangan_categories', 'sync_queue'], 'readwrite');
+            const trxStore = tx.objectStore('keuangan_transactions');
+            const catStore = tx.objectStore('keuangan_categories');
+            const queueStore = tx.objectStore('sync_queue');
+
+            const pendingQueueReq = queueStore.getAll();
+            return new Promise((resolve) => {
+                pendingQueueReq.onsuccess = () => {
+                    const pending = pendingQueueReq.result || [];
+                    const pendingTrxLocalIds = new Set(
+                        pending.filter(q => q.type === 'keuangan' && q.action === 'create_transaction').map(q => q.local_id)
+                    );
+                    const pendingCatLocalIds = new Set(
+                        pending.filter(q => q.type === 'keuangan' && q.action === 'create_category').map(q => q.local_id)
+                    );
+
+                    // Clear synced transactions & put fresh
+                    const clearTrxReq = trxStore.openCursor();
+                    clearTrxReq.onsuccess = (e) => {
+                        const cursor = e.target.result;
+                        if (cursor) {
+                            if (!pendingTrxLocalIds.has(cursor.value.client_id)) {
+                                cursor.delete();
+                            }
+                            cursor.continue();
+                        } else {
+                            transactions.forEach((t) => {
+                                trxStore.put({
+                                    ...t,
+                                    client_id: 'srv_' + (t.raw_id || t.id),
+                                    is_synced: true
+                                });
+                            });
+                        }
+                    };
+
+                    // Clear synced categories & put fresh
+                    const clearCatReq = catStore.openCursor();
+                    clearCatReq.onsuccess = (e) => {
+                        const cursor = e.target.result;
+                        if (cursor) {
+                            if (!pendingCatLocalIds.has(cursor.value.client_id)) {
+                                cursor.delete();
+                            }
+                            cursor.continue();
+                        } else {
+                            categories.forEach((c) => {
+                                catStore.put({
+                                    ...c,
+                                    client_id: 'srv_' + c.id,
+                                    is_synced: true
+                                });
+                            });
+                            resolve(true);
+                        }
+                    };
+                };
+                pendingQueueReq.onerror = () => resolve(false);
+            });
+        } catch (e) {
+            console.warn('cacheKeuanganData error:', e);
+            return false;
+        }
+    }
+
+    /**
+     * Read Keuangan data from offline IndexedDB
+     */
+    async getOfflineKeuanganData(periode = 'semua') {
+        try {
+            const tx = await this.getTransaction(['keuangan_transactions', 'keuangan_categories'], 'readonly');
+            const trxStore = tx.objectStore('keuangan_transactions');
+            const catStore = tx.objectStore('keuangan_categories');
+
+            const allTrx = await new Promise((res) => {
+                const req = trxStore.getAll();
+                req.onsuccess = () => res(req.result || []);
+                req.onerror = () => res([]);
+            });
+
+            const allCats = await new Promise((res) => {
+                const req = catStore.getAll();
+                req.onsuccess = () => res(req.result || []);
+                req.onerror = () => res([]);
+            });
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+
+            const filteredTrx = allTrx.filter(item => {
+                if (periode === 'semua') return true;
+                if (!item.tanggal && !item.tanggal_raw) return true;
+                const d = new Date(item.tanggal_raw || item.tanggal);
+                if (isNaN(d.getTime())) return true;
+
+                if (periode === 'tahun_ini') {
+                    return d.getFullYear() === currentYear;
+                }
+                if (periode === 'bulan_ini') {
+                    return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+                }
+                return true;
+            }).sort((a, b) => {
+                const da = new Date(a.tanggal_raw || a.tanggal || 0);
+                const db = new Date(b.tanggal_raw || b.tanggal || 0);
+                return db - da;
+            });
+
+            let totalPemasukan = 0;
+            let totalPengeluaran = 0;
+            let jumlahPemasukan = 0;
+            let jumlahPengeluaran = 0;
+
+            filteredTrx.forEach(t => {
+                const nom = parseFloat(t.nominal) || 0;
+                if (t.tipe === 'pemasukan') {
+                    totalPemasukan += nom;
+                    jumlahPemasukan++;
+                } else {
+                    totalPengeluaran += nom;
+                    jumlahPengeluaran++;
+                }
+            });
+
+            const saldoBersih = totalPemasukan - totalPengeluaran;
+            const formatRupiah = (num) => 'Rp ' + Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+            return {
+                success: true,
+                is_offline: true,
+                periode: periode,
+                totalPemasukan: totalPemasukan,
+                formatted_total_pemasukan: formatRupiah(totalPemasukan),
+                totalPengeluaran: totalPengeluaran,
+                formatted_total_pengeluaran: formatRupiah(totalPengeluaran),
+                saldoBersih: saldoBersih,
+                formatted_saldo_bersih: formatRupiah(saldoBersih),
+                transaksiList: filteredTrx,
+                totalTransaksi: filteredTrx.length,
+                jumlahPemasukan: jumlahPemasukan,
+                jumlahPengeluaran: jumlahPengeluaran,
+                categories: allCats
+            };
+        } catch (e) {
+            console.error('getOfflineKeuanganData error:', e);
+            return null;
+        }
+    }
+
+    async addKeuanganTransactionOffline(data) {
+        const tx = await this.getTransaction(['keuangan_transactions', 'sync_queue'], 'readwrite');
+        const trxStore = tx.objectStore('keuangan_transactions');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const localId = 'offline_trx_' + Date.now();
+        const nominal = parseInt((data.nominal || '0').toString().replace(/[^0-9]/g, ''), 10) || 0;
+        const formatRupiah = (num) => 'Rp ' + Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+        const record = {
+            id: localId,
+            raw_id: null,
+            client_id: localId,
+            source: 'manual',
+            tipe: data.tipe || 'pengeluaran',
+            kategori: data.kategori || 'Lainnya',
+            sub_kategori: data.sub_kategori || null,
+            kategori_label: data.sub_kategori ? `${data.kategori} › ${data.sub_kategori}` : (data.kategori || 'Lainnya'),
+            judul: data.judul || 'Transaksi Offline',
+            nominal: nominal,
+            formatted_nominal: formatRupiah(nominal),
+            tanggal: data.tanggal || new Date().toISOString().split('T')[0],
+            tanggal_raw: data.tanggal || new Date().toISOString().split('T')[0],
+            formatted_tanggal: data.tanggal || 'Hari ini',
+            crop_id: data.crop_id || null,
+            keterangan: data.keterangan || null,
+            deskripsi: data.keterangan || 'Offline (Belum Sinkron)',
+            nota_url: data.foto_nota_base64 || data.foto_base64 || null,
+            is_synced: false,
+            is_offline: true,
+            created_at: new Date().toISOString()
+        };
+
+        trxStore.put(record);
+        queueStore.add({
+            type: 'keuangan',
+            action: 'create_transaction',
+            local_id: localId,
+            data: data,
+            timestamp: Date.now()
+        });
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(record);
+            };
+        });
+    }
+
+    async updateKeuanganTransactionOffline(id, data) {
+        const tx = await this.getTransaction(['keuangan_transactions', 'sync_queue'], 'readwrite');
+        const trxStore = tx.objectStore('keuangan_transactions');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(id).startsWith('offline_trx_') ? id : ('srv_' + id);
+        const req = trxStore.get(targetKey);
+
+        return new Promise((resolve) => {
+            req.onsuccess = () => {
+                const current = req.result || { client_id: targetKey, id: id };
+                const nominal = data.nominal ? parseInt(data.nominal.toString().replace(/[^0-9]/g, ''), 10) : current.nominal;
+                const formatRupiah = (num) => 'Rp ' + Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+                const updated = {
+                    ...current,
+                    ...data,
+                    nominal: nominal,
+                    formatted_nominal: formatRupiah(nominal),
+                    is_synced: false
+                };
+                trxStore.put(updated);
+                queueStore.add({
+                    type: 'keuangan',
+                    action: 'update_transaction',
+                    data: { raw_id: current.raw_id || id, ...data },
+                    timestamp: Date.now()
+                });
+            };
+
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async deleteKeuanganTransactionOffline(id) {
+        const tx = await this.getTransaction(['keuangan_transactions', 'sync_queue'], 'readwrite');
+        const trxStore = tx.objectStore('keuangan_transactions');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(id).startsWith('offline_trx_') ? id : ('srv_' + id);
+        trxStore.delete(targetKey);
+
+        if (!String(id).startsWith('offline_trx_')) {
+            queueStore.add({
+                type: 'keuangan',
+                action: 'delete_transaction',
+                data: { raw_id: id },
+                timestamp: Date.now()
+            });
+        }
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async addKeuanganCategoryOffline(data) {
+        const tx = await this.getTransaction(['keuangan_categories', 'sync_queue'], 'readwrite');
+        const catStore = tx.objectStore('keuangan_categories');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const localId = 'offline_cat_' + Date.now();
+        const record = {
+            id: localId,
+            client_id: localId,
+            nama: data.nama,
+            tipe: data.tipe,
+            parent_id: data.parent_id || null,
+            subcategories: [],
+            is_synced: false
+        };
+
+        catStore.put(record);
+        queueStore.add({
+            type: 'keuangan',
+            action: 'create_category',
+            local_id: localId,
+            data: data,
+            timestamp: Date.now()
+        });
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(record);
+            };
+        });
+    }
+
+    async deleteKeuanganCategoryOffline(id) {
+        const tx = await this.getTransaction(['keuangan_categories', 'sync_queue'], 'readwrite');
+        const catStore = tx.objectStore('keuangan_categories');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(id).startsWith('offline_cat_') ? id : ('srv_' + id);
+        catStore.delete(targetKey);
+
+        if (!String(id).startsWith('offline_cat_')) {
+            queueStore.add({
+                type: 'keuangan',
+                action: 'delete_category',
+                data: { id: id },
+                timestamp: Date.now()
+            });
+        }
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
     }
 }
 

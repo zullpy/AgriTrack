@@ -58,6 +58,7 @@
                   class="inline">
                 @csrf
                 @method('DELETE')
+                <input type="hidden" name="redirect_tab" value="{{ in_array($crop->status, ['Sudah Dipanen', 'Diakhiri']) ? 'riwayat' : 'aktif' }}">
                 <button type="submit"
                         class="p-2 rounded-xl border border-gray-200 bg-white text-text-muted hover:text-red-500 hover:bg-red-50 transition-all shadow-xs"
                         title="Hapus Tanaman">
@@ -1308,7 +1309,12 @@
     function handleAddPhotoChange(event) {
         const files = Array.from(event.target.files);
         if (addSelectedFiles.length + files.length > 5) {
-            alert(`Maksimal 5 foto per kegiatan. Anda telah memilih ${addSelectedFiles.length} foto.`);
+            const msg = `Maksimal 5 foto per kegiatan. Anda telah memilih ${addSelectedFiles.length} foto.`;
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError(msg);
+            } else if (window.Swal) {
+                Swal.fire({ icon: 'warning', title: 'Perhatian', text: msg });
+            }
             return;
         }
         for (const f of files) {
@@ -1478,7 +1484,12 @@
         const files = Array.from(event.target.files);
         const totalAllowed = 5 - editExistingPhotos.length;
         if (editNewFiles.length + files.length > totalAllowed) {
-            alert(`Maksimal 5 foto per kegiatan. Sisa slot yang dapat ditambahkan: ${totalAllowed - editNewFiles.length} foto.`);
+            const msg = `Maksimal 5 foto per kegiatan. Sisa slot yang dapat ditambahkan: ${totalAllowed - editNewFiles.length} foto.`;
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError(msg);
+            } else if (window.Swal) {
+                Swal.fire({ icon: 'warning', title: 'Perhatian', text: msg });
+            }
             return;
         }
         for (const f of files) {
@@ -1548,8 +1559,9 @@
                     if (window.AgriSwal && typeof window.AgriSwal.toastSuccess === 'function') {
                         window.AgriSwal.toastSuccess('Foto berhasil dihapus.');
                     }
-                } else {
-                    if (window.Swal) {
+                    if (window.AgriSwal) {
+                        window.AgriSwal.toastError(data.message || 'Gagal menghapus file foto fisik.');
+                    } else if (window.Swal) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal Menghapus',
@@ -1558,8 +1570,6 @@
                             buttonsStyling: false,
                             confirmButtonText: 'Tutup'
                         });
-                    } else {
-                        alert(data.message || 'Gagal menghapus file foto fisik.');
                     }
                 }
             } catch (e) {
@@ -1768,7 +1778,9 @@
                         }, 400);
                     }
                 } else {
-                    if (window.Swal) {
+                    if (window.AgriSwal) {
+                        window.AgriSwal.toastError(data.message || 'Gagal menghapus file foto fisik.');
+                    } else if (window.Swal) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal Menghapus',
@@ -1777,8 +1789,6 @@
                             buttonsStyling: false,
                             confirmButtonText: 'Tutup'
                         });
-                    } else {
-                        alert(data.message || 'Gagal menghapus file foto fisik.');
                     }
                     if (deleteBtn) {
                         deleteBtn.disabled = false;
@@ -1786,7 +1796,9 @@
                     }
                 }
             } catch (e) {
-                if (window.Swal) {
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastError('Terjadi kesalahan koneksi saat menghapus file foto.');
+                } else if (window.Swal) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Kesalahan',
@@ -1795,8 +1807,6 @@
                         buttonsStyling: false,
                         confirmButtonText: 'Tutup'
                     });
-                } else {
-                    alert('Terjadi kesalahan koneksi saat menghapus file foto.');
                 }
                 if (deleteBtn) {
                     deleteBtn.disabled = false;
@@ -2233,7 +2243,11 @@
                         if (window.updateConnectionBadges) window.updateConnectionBadges('offline', pendingCount);
                     } catch (err) {
                         console.error('Offline save error:', err);
-                        alert('Gagal menyimpan draft offline: ' + err.message);
+                        if (window.AgriSwal) {
+                            AgriSwal.toastError('Gagal menyimpan draft offline: ' + err.message);
+                        } else if (window.Swal) {
+                            Swal.fire({ icon: 'error', title: 'Gagal Simpan', text: err.message });
+                        }
                     } finally {
                         if (submitBtn) {
                             submitBtn.disabled = false;
@@ -2281,7 +2295,11 @@
                         if (window.updateConnectionBadges) window.updateConnectionBadges('offline', pendingCount);
                     } catch (err) {
                         console.error('Harvest offline error:', err);
-                        alert('Gagal menyimpan panen offline: ' + err.message);
+                        if (window.AgriSwal) {
+                            AgriSwal.toastError('Gagal menyimpan panen offline: ' + err.message);
+                        } else if (window.Swal) {
+                            Swal.fire({ icon: 'error', title: 'Gagal Simpan Panen', text: err.message });
+                        }
                     }
                 }
             });
