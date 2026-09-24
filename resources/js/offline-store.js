@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'AgriTrackDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 class AgriOfflineStore {
     constructor() {
@@ -26,6 +26,13 @@ class AgriOfflineStore {
                     const medicineStore = db.createObjectStore('medicines', { keyPath: 'client_id' });
                     medicineStore.createIndex('id', 'id', { unique: false });
                     medicineStore.createIndex('is_synced', 'is_synced', { unique: false });
+                }
+
+                // Object store for crop activities cache & drafts
+                if (!db.objectStoreNames.contains('crop_activities')) {
+                    const actStore = db.createObjectStore('crop_activities', { keyPath: 'client_id' });
+                    actStore.createIndex('crop_id', 'crop_id', { unique: false });
+                    actStore.createIndex('is_synced', 'is_synced', { unique: false });
                 }
 
                 // Object store for sync queue (mutations made while offline)
@@ -66,7 +73,7 @@ class AgriOfflineStore {
             pendingQueueReq.onsuccess = () => {
                 const pending = pendingQueueReq.result || [];
                 const localIds = new Set(
-                    pending.filter(q => q.action === 'create').map(q => q.local_id)
+                    pending.filter(q => q.action === 'create' && (!q.type || q.type === 'medicine')).map(q => q.local_id)
                 );
 
                 // Clear synced medicines and rewrite with fresh server data
@@ -132,6 +139,7 @@ class AgriOfflineStore {
 
         medStore.put(record);
         queueStore.add({
+            type: 'medicine',
             action: 'create',
             local_id: localId,
             data: data,
@@ -154,7 +162,6 @@ class AgriOfflineStore {
         const medStore = tx.objectStore('medicines');
         const queueStore = tx.objectStore('sync_queue');
 
-        // Look up item
         const req = medStore.get('srv_' + id);
         return new Promise((resolve) => {
             req.onsuccess = () => {
@@ -162,6 +169,7 @@ class AgriOfflineStore {
                 const updated = { ...current, ...data, is_synced: false };
                 medStore.put(updated);
                 queueStore.add({
+                    type: 'medicine',
                     action: 'update',
                     data: { id, ...data },
                     timestamp: Date.now()
@@ -188,8 +196,95 @@ class AgriOfflineStore {
 
         if (id) {
             queueStore.add({
+                type: 'medicine',
                 action: 'delete',
                 data: { id },
+                timestamp: Date.now()
+            });
+        }
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    /**
+     * Add a crop activity while offline in Kalender HST
+     */
+    async addCropActivityOffline(cropId, data) {
+        const tx = await this.getTransaction(['crop_activities', 'sync_queue'], 'readwrite');
+        const actStore = tx.objectStore('crop_activities');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const localId = 'offline_act_' + Date.now();
+        const record = {
+            ...data,
+            id: null,
+            crop_id: parseInt(cropId, 10),
+            client_id: localId,
+            is_synced: false,
+            created_at: new Date().toISOString()
+        };
+
+        actStore.put(record);
+        queueStore.add({
+            type: 'crop_activity',
+            action: 'create',
+            local_id: localId,
+            crop_id: parseInt(cropId, 10),
+            data: data,
+            timestamp: Date.now()
+        });
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(record);
+            };
+        });
+    }
+
+    /**
+     * Get offline draft activities for a specific crop
+     */
+    async getOfflineCropActivities(cropId) {
+        try {
+            const tx = await this.getTransaction('crop_activities', 'readonly');
+            const store = tx.objectStore('crop_activities');
+            return new Promise((resolve) => {
+                const req = store.getAll();
+                req.onsuccess = () => {
+                    const list = (req.result || []).filter(item => item.crop_id === parseInt(cropId, 10));
+                    resolve(list);
+                };
+                req.onerror = () => resolve([]);
+            });
+        } catch (e) {
+            return [];
+        }
+    }
+
+    /**
+     * Delete an offline crop activity draft or queue deletion
+     */
+    async deleteCropActivityOffline(activityId, clientId) {
+        const tx = await this.getTransaction(['crop_activities', 'sync_queue'], 'readwrite');
+        const actStore = tx.objectStore('crop_activities');
+        const queueStore = tx.objectStore('sync_queue');
+
+        if (clientId) {
+            actStore.delete(clientId);
+        }
+
+        if (activityId) {
+            queueStore.add({
+                type: 'crop_activity',
+                action: 'delete',
+                crop_id: null,
+                data: { id: activityId },
                 timestamp: Date.now()
             });
         }
@@ -237,7 +332,7 @@ class AgriOfflineStore {
             });
 
             if (mutations.length === 0) {
-                // No pending mutations, fetch fresh server snapshot
+                // No pending mutations, fetch fresh server snapshot for medicines
                 const res = await fetch('/api/medicines');
                 if (res.ok) {
                     const json = await res.json();
@@ -250,42 +345,69 @@ class AgriOfflineStore {
                 return { synced: true, count: 0 };
             }
 
-            // Send mutations to server sync endpoint
-            const response = await fetch('/api/medicines/sync', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ mutations })
-            });
+            // Group mutations by type
+            const medicineMutations = mutations.filter(m => !m.type || m.type === 'medicine');
+            const hstMutations = mutations.filter(m => m.type === 'crop_activity' || m.type === 'kalender_hst');
 
-            if (!response.ok) {
-                throw new Error('Sync endpoint responded with status ' + response.status);
-            }
+            let totalProcessed = 0;
 
-            const result = await response.json();
+            // Sync medicines if any
+            if (medicineMutations.length > 0) {
+                const medRes = await fetch('/api/medicines/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ mutations: medicineMutations })
+                });
 
-            if (result.success) {
-                // Clear the sync queue and update local cache with fresh server medicines
-                const clearTx = await this.getTransaction('sync_queue', 'readwrite');
-                clearTx.objectStore('sync_queue').clear();
-                await new Promise((r) => { clearTx.oncomplete = r; });
-
-                if (result.medicines) {
-                    await this.cacheServerMedicines(result.medicines);
+                if (medRes.ok) {
+                    const medResult = await medRes.json();
+                    if (medResult.success) {
+                        totalProcessed += (medResult.processed_count || medicineMutations.length);
+                        if (medResult.medicines) {
+                            await this.cacheServerMedicines(medResult.medicines);
+                        }
+                    }
                 }
-
-                this.isSyncing = false;
-                window.dispatchEvent(new CustomEvent('agri:sync-status', { detail: { status: 'online', pending: 0 } }));
-                window.dispatchEvent(new CustomEvent('agri:sync-success', {
-                    detail: { count: result.processed_count || mutations.length }
-                }));
-
-                return { synced: true, count: result.processed_count || mutations.length };
-            } else {
-                throw new Error(result.message || 'Gagal sinkronisasi');
             }
+
+            // Sync Kalender HST activities if any
+            if (hstMutations.length > 0) {
+                const hstRes = await fetch('/api/kalender-hst/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ mutations: hstMutations })
+                });
+
+                if (hstRes.ok) {
+                    const hstResult = await hstRes.json();
+                    if (hstResult.success) {
+                        totalProcessed += (hstResult.processed_count || hstMutations.length);
+                        // Clear draft crop_activities store
+                        const actTx = await this.getTransaction('crop_activities', 'readwrite');
+                        actTx.objectStore('crop_activities').clear();
+                        await new Promise((r) => { actTx.oncomplete = r; });
+                    }
+                }
+            }
+
+            // Clear the sync queue
+            const clearTx = await this.getTransaction('sync_queue', 'readwrite');
+            clearTx.objectStore('sync_queue').clear();
+            await new Promise((r) => { clearTx.oncomplete = r; });
+
+            this.isSyncing = false;
+            window.dispatchEvent(new CustomEvent('agri:sync-status', { detail: { status: 'online', pending: 0 } }));
+            window.dispatchEvent(new CustomEvent('agri:sync-success', {
+                detail: { count: totalProcessed || mutations.length }
+            }));
+
+            return { synced: true, count: totalProcessed || mutations.length };
         } catch (err) {
             console.warn('Sync failed, will retry later:', err);
             this.isSyncing = false;

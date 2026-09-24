@@ -581,7 +581,7 @@
             </button>
         </div>
 
-        <form method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/kegiatan" enctype="multipart/form-data" class="mt-4 space-y-4">
+        <form id="form-add-activity" method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/kegiatan" enctype="multipart/form-data" class="mt-4 space-y-4">
             @csrf
             <input type="hidden" name="redirect_to" value="show">
 
@@ -792,21 +792,7 @@
                 <div class="flex items-center justify-between mb-1">
                     <label for="edit-aplikasi-obat" class="block text-xs font-semibold text-gray-900">
                         Aplikasi Obat
-                    </label>
-                    @if ($medicines->isNotEmpty())
-                        <select onchange="insertMedicineToTextarea('edit', this)"
-                                class="text-[11px] py-0.5 px-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 font-medium">
-                            <option value="">+ Sisipkan dari Data Obat...</option>
-                            @foreach ($medicines as $med)
-                                <option value="{{ $med->nama }}"
-                                        data-jenis="{{ $med->jenis ?? 'Obat' }}"
-                                        data-dosis="{{ $med->dosis_anjuran ?? '' }}"
-                                        data-sasaran="{{ $med->sasaran_obat ?? '' }}">
-                                    {{ $med->nama }} ({{ $med->jenis ?? '-' }})
-                                </option>
-                            @endforeach
-                        </select>
-                    @endif
+                    </label>    
                 </div>
                 <textarea id="edit-aplikasi-obat"
                           name="aplikasi_obat"
@@ -893,6 +879,7 @@
 {{-- MODAL: LIGHTBOX PRATINJAU FOTO RESOLUSI PENUH                 --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="modal-image-lightbox"
+     onclick="if(event.target === this) closeImageLightbox()"
      class="fixed inset-0 z-60 hidden items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md select-none transition-all">
     <div class="relative max-w-4xl w-full flex flex-col items-center">
         <!-- Header Lightbox: Judul, Counter, Tombol Buka/Tutup -->
@@ -1643,12 +1630,14 @@
     let currentLightboxImages = [];
     let currentLightboxIndex = 0;
     let currentLightboxActivityId = null;
+    let hasPhotosChangedInLightbox = false;
 
     function openImageLightbox(urls, initialIndex = 0, title = 'Dokumentasi Kegiatan', activityId = null) {
         if (!urls || urls.length === 0) return;
-        currentLightboxImages = urls;
+        currentLightboxImages = Array.isArray(urls) ? [...urls] : [urls];
         currentLightboxIndex = initialIndex;
         currentLightboxActivityId = activityId;
+        hasPhotosChangedInLightbox = false;
 
         const modal = document.getElementById('modal-image-lightbox');
         const titleEl = document.getElementById('lightbox-title');
@@ -1673,6 +1662,10 @@
             modal.classList.remove('flex');
         }
         document.removeEventListener('keydown', handleLightboxKeydown);
+
+        if (hasPhotosChangedInLightbox) {
+            window.location.reload();
+        }
     }
 
     function updateLightboxView() {
@@ -1765,9 +1758,29 @@
                     if (window.AgriSwal && typeof window.AgriSwal.toastSuccess === 'function') {
                         window.AgriSwal.toastSuccess('Foto berhasil dihapus.');
                     }
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 400);
+                    hasPhotosChangedInLightbox = true;
+
+                    // Hapus foto yang dihapus dari array preview lightbox
+                    currentLightboxImages.splice(currentLightboxIndex, 1);
+
+                    // Jika masih ada foto tersisa (awalnya lebih dari 1 foto): tetap di preview
+                    if (currentLightboxImages.length > 0) {
+                        if (currentLightboxIndex >= currentLightboxImages.length) {
+                            currentLightboxIndex = currentLightboxImages.length - 1;
+                        }
+                        updateLightboxView();
+
+                        if (deleteBtn) {
+                            deleteBtn.disabled = false;
+                            deleteBtn.innerHTML = originalHtml;
+                        }
+                    } else {
+                        // Jika foto habis (tadi hanya 1 foto lalu dihapus): kembali ke tabel
+                        closeImageLightbox();
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 400);
+                    }
                 } else {
                     if (window.Swal) {
                         Swal.fire({
@@ -2041,5 +2054,252 @@
             btn.textContent = 'Selengkapnya...';
         }
     }
+
+    // ── Dukungan Offline Kalender HST (IndexedDB & Drafts) ──
+    async function fileToBase64(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderDraftActivityInRow(act) {
+        const row = document.getElementById('hst-row-' + act.target_hst);
+        if (!row) return;
+
+        // Cegah render ganda jika sudah ada
+        if (document.getElementById('draft-act-' + act.client_id)) return;
+
+        // Kolom 3: KEGIATAN
+        const colKegiatan = row.children[2];
+        if (colKegiatan) {
+            const draftCard = document.createElement('div');
+            draftCard.id = 'draft-act-' + act.client_id;
+            draftCard.className = 'mt-2 p-2 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-950 shadow-2xs';
+            draftCard.innerHTML = `
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-300">
+                        ⚡ Draft Offline
+                    </span>
+                    <button type="button"
+                            onclick="deleteOfflineActivityDraft('${act.client_id}', '${escapeHtml(act.nama_kegiatan)}')"
+                            class="text-amber-700 hover:text-red-600 p-0.5 text-xs font-bold leading-none cursor-pointer"
+                            title="Hapus Draft Offline">
+                        ✕
+                    </button>
+                </div>
+                <div class="font-bold text-xs sm:text-sm text-gray-900 break-words">${escapeHtml(act.nama_kegiatan)}</div>
+            `;
+            colKegiatan.appendChild(draftCard);
+        }
+
+        // Kolom 4: APLIKASI OBAT
+        if (act.aplikasi_obat) {
+            const colObat = row.children[3];
+            if (colObat) {
+                const draftObat = document.createElement('div');
+                draftObat.id = 'draft-obat-' + act.client_id;
+                draftObat.className = 'mt-2 p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-xs font-mono text-amber-900';
+                draftObat.innerHTML = `<span class="font-bold text-[10px] uppercase text-amber-800 block">⚡ Draft Obat:</span>${escapeHtml(act.aplikasi_obat)}`;
+                colObat.appendChild(draftObat);
+            }
+        }
+
+        // Kolom 5: SASARAN
+        if (act.sasaran) {
+            const colSasaran = row.children[4];
+            if (colSasaran) {
+                const draftSasaran = document.createElement('div');
+                draftSasaran.id = 'draft-sasaran-' + act.client_id;
+                draftSasaran.className = 'mt-2 text-xs font-medium text-amber-900';
+                draftSasaran.innerHTML = `<span class="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 text-[11px]">⚡ ${escapeHtml(act.sasaran)}</span>`;
+                colSasaran.appendChild(draftSasaran);
+            }
+        }
+
+        // Kolom 6: KETERANGAN
+        if (act.keterangan) {
+            const colKet = row.children[5];
+            if (colKet) {
+                const draftKet = document.createElement('div');
+                draftKet.id = 'draft-ket-' + act.client_id;
+                draftKet.className = 'mt-2 text-xs text-amber-900 italic bg-amber-50/70 p-1.5 rounded-lg border border-amber-200';
+                draftKet.innerHTML = escapeHtml(act.keterangan);
+                colKet.appendChild(draftKet);
+            }
+        }
+
+        // Kolom 7: FOTO
+        if (act.photos_base64 && act.photos_base64.length > 0) {
+            const colFoto = row.children[6];
+            if (colFoto) {
+                const draftFotoContainer = document.createElement('div');
+                draftFotoContainer.id = 'draft-foto-' + act.client_id;
+                draftFotoContainer.className = 'mt-1.5 flex items-center justify-center';
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-bold transition-all shadow-2xs cursor-pointer whitespace-nowrap';
+                btn.title = `Lihat ${act.photos_base64.length} foto draft offline`;
+                btn.innerHTML = `
+                    <svg class="w-3.5 h-3.5 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                    </svg>
+                    <span>Foto Draft (${act.photos_base64.length})</span>
+                `;
+                const lightboxItems = act.photos_base64.map(b => ({
+                    url: b,
+                    name: act.nama_kegiatan + ' (Draft Offline - HST ' + act.target_hst + ')'
+                }));
+                btn.onclick = () => openImageLightbox(lightboxItems, 0, act.nama_kegiatan + ' (Draft Offline)');
+                draftFotoContainer.appendChild(btn);
+                colFoto.appendChild(draftFotoContainer);
+            }
+        }
+    }
+
+    window.deleteOfflineActivityDraft = function(clientId, name) {
+        if (window.AgriSwal) {
+            AgriSwal.confirmDelete('Hapus Draft Offline?', name, async () => {
+                await window.AgriOfflineStore.deleteCropActivityOffline(null, clientId);
+                ['draft-act-', 'draft-obat-', 'draft-sasaran-', 'draft-ket-', 'draft-foto-'].forEach(prefix => {
+                    const el = document.getElementById(prefix + clientId);
+                    if (el) el.remove();
+                });
+                AgriSwal.toastSuccess(`Draft "${name}" dihapus.`);
+                const p = await window.AgriOfflineStore.getPendingCount();
+                if (window.updateConnectionBadges) window.updateConnectionBadges('offline', p);
+            });
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Render draft offline activities for this crop
+        if (window.AgriOfflineStore) {
+            try {
+                const drafts = await window.AgriOfflineStore.getOfflineCropActivities({{ $crop->id }});
+                drafts.forEach(act => renderDraftActivityInRow(act));
+            } catch (err) {
+                console.warn('Gagal memuat draft offline:', err);
+            }
+        }
+
+        // Intercept form tambah kegiatan saat offline
+        const addForm = document.getElementById('form-add-activity');
+        if (addForm) {
+            addForm.addEventListener('submit', async (e) => {
+                if (!navigator.onLine) {
+                    e.preventDefault();
+                    const submitBtn = addForm.querySelector('button[type="submit"]');
+                    const origBtnText = submitBtn ? submitBtn.innerHTML : '';
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span>Menyimpan ke HP...</span>';
+                    }
+
+                    try {
+                        const fd = new FormData(addForm);
+                        const photosBase64 = [];
+                        if (addSelectedFiles && addSelectedFiles.length > 0) {
+                            for (const file of addSelectedFiles) {
+                                const b64 = await fileToBase64(file);
+                                if (b64) photosBase64.push(b64);
+                            }
+                        }
+
+                        const hstVal = parseInt(fd.get('target_hst') || '{{ $currentHst }}', 10);
+                        const data = {
+                            nama_kegiatan: fd.get('nama_kegiatan') || '',
+                            target_hst: hstVal,
+                            tanggal_kegiatan: fd.get('tanggal_kegiatan') || '',
+                            aplikasi_obat: fd.get('aplikasi_obat') || null,
+                            sasaran: fd.get('sasaran') || null,
+                            keterangan: fd.get('keterangan') || null,
+                            photos_base64: photosBase64
+                        };
+
+                        const record = await window.AgriOfflineStore.addCropActivityOffline({{ $crop->id }}, data);
+                        renderDraftActivityInRow(record);
+
+                        // Reset input form
+                        addSelectedFiles = [];
+                        syncAddFileInput();
+                        renderAddPhotoPreviews();
+                        addForm.reset();
+                        closeModal('modal-add-activity');
+
+                        if (window.AgriSwal) {
+                            AgriSwal.toastSuccess('Kegiatan berhasil disimpan di HP (Mode Offline). Akan otomatis diunggah saat online.');
+                        }
+                        const pendingCount = await window.AgriOfflineStore.getPendingCount();
+                        if (window.updateConnectionBadges) window.updateConnectionBadges('offline', pendingCount);
+                    } catch (err) {
+                        console.error('Offline save error:', err);
+                        alert('Gagal menyimpan draft offline: ' + err.message);
+                    } finally {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = origBtnText;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Intercept form catat panen saat offline
+        const harvestForm = document.getElementById('form-harvest');
+        if (harvestForm) {
+            harvestForm.addEventListener('submit', async (e) => {
+                if (!navigator.onLine) {
+                    e.preventDefault();
+                    try {
+                        const fd = new FormData(harvestForm);
+                        const totalGrossDigits = (fd.get('total_harga') || '').toString().replace(/[^0-9]/g, '');
+                        const data = {
+                            tanggal_panen: fd.get('tanggal_panen') || '',
+                            total_panen: fd.get('total_panen') || null,
+                            harga_panen: fd.get('harga_panen') || null,
+                            total_harga: totalGrossDigits ? parseInt(totalGrossDigits, 10) : null,
+                            catatan: fd.get('catatan') || null
+                        };
+
+                        const tx = await window.AgriOfflineStore.getTransaction(['sync_queue'], 'readwrite');
+                        tx.objectStore('sync_queue').add({
+                            type: 'crop_activity',
+                            action: 'record_harvest',
+                            crop_id: {{ $crop->id }},
+                            data: data,
+                            timestamp: Date.now()
+                        });
+                        await new Promise(r => { tx.oncomplete = r; });
+
+                        closeModal('modal-harvest');
+                        harvestForm.reset();
+
+                        if (window.AgriSwal) {
+                            AgriSwal.toastSuccess('Catatan panen disimpan di HP (Mode Offline). Akan otomatis diunggah saat online.');
+                        }
+                        const pendingCount = await window.AgriOfflineStore.getPendingCount();
+                        if (window.updateConnectionBadges) window.updateConnectionBadges('offline', pendingCount);
+                    } catch (err) {
+                        console.error('Harvest offline error:', err);
+                        alert('Gagal menyimpan panen offline: ' + err.message);
+                    }
+                }
+            });
+        }
+    });
 </script>
 @endsection

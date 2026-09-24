@@ -123,6 +123,7 @@ function updateConnectionBadges(status, pendingCount = 0) {
         }
     });
 }
+window.updateConnectionBadges = updateConnectionBadges;
 
 // ── Offline Form Interception & Auto Sync ──
 document.addEventListener('DOMContentLoaded', async () => {
@@ -147,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('offline', async () => {
         const p = await offlineStore.getPendingCount();
         updateConnectionBadges('offline', p);
-        AgriSwal.toastInfo('Anda sedang offline. Data obat tetap dapat dicatat & disimpan di HP.');
+        AgriSwal.toastInfo('Anda sedang offline. Data dan foto tetap dapat dicatat & disimpan di HP.');
     });
 
     window.addEventListener('agri:sync-status', (e) => {
@@ -158,8 +159,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const count = e.detail.count || 0;
         if (count > 0) {
             AgriSwal.toastSuccess(`Sinkronisasi selesai! ${count} data berhasil disimpan ke server.`);
-            // If on data-obat index, reload to reflect fresh IDs from MySQL
+            // If on data-obat index or kalender-hst tanaman show, reload to reflect fresh IDs from server
             if (window.location.pathname.startsWith('/data-obat') && !window.location.pathname.includes('/tambah') && !window.location.pathname.includes('/edit')) {
+                setTimeout(() => window.location.reload(), 1200);
+            } else if (window.location.pathname.startsWith('/kalender-hst/tanaman/')) {
                 setTimeout(() => window.location.reload(), 1200);
             }
         }

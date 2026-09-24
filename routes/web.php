@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\KalenderHstSyncController;
 use App\Http\Controllers\Api\MedicineSyncController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KalenderHstController;
@@ -50,4 +51,5 @@ Route::delete('/kalender-hst/kegiatan/{activity}', [KalenderHstController::class
 Route::prefix('api')->group(function () {
     Route::get('/medicines', [MedicineSyncController::class, 'index']);
     Route::post('/medicines/sync', [MedicineSyncController::class, 'sync']);
+    Route::post('/kalender-hst/sync', [KalenderHstSyncController::class, 'sync']);
 });
