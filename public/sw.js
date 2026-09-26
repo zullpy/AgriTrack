@@ -1,9 +1,11 @@
-const CACHE_NAME = 'agritrack-v6';
+const CACHE_NAME = 'agritrack-v7';
 const PRECACHE_ASSETS = [
     '/',
     '/dashboard',
     '/kalender-hst',
     '/steps',
+    '/steps/pengolahan-tanah',
+    '/steps/penanaman-bibit',
     '/data-obat',
     '/data-obat/tambah',
     '/keuangan',
@@ -98,6 +100,8 @@ self.addEventListener('fetch', (event) => {
 
                     // 4. Fallback ke shell yang tersedia jika URL belum pernah di-cache
                     return (await caches.match('/dashboard'))
+                        || (await caches.match('/steps/pengolahan-tanah'))
+                        || (await caches.match('/steps/penanaman-bibit'))
                         || (await caches.match('/kalender-hst'))
                         || (await caches.match('/data-obat'))
                         || (await caches.match('/keuangan'));

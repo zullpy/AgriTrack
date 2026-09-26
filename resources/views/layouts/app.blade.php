@@ -370,14 +370,6 @@
                             <span class="w-1.5 h-1.5 rounded-full {{ $isPenanamanBibit ? 'bg-primary' : 'bg-gray-300' }}"></span>
                             <span>Tahapan Penanaman Bibit</span>
                         </a>
-
-                        <a href="/steps"
-                           class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-text-muted hover:text-text transition-colors">
-                            <span>Ikhtisar Tahapan</span>
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </a>
                     </div>
                 </div>
 

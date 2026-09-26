@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\LandPreparationStep;
+use App\Models\PlantingSeed;
+use App\Models\PlantingStep;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -42,12 +44,144 @@ class StepTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Tahapan Penanaman Bibit');
-        $response->assertSee('Seleksi & Pemilihan Benih', false);
-        $response->assertSee('Perlakuan Benih', false);
-        $response->assertSee('Persiapan Media Semai', false);
-        $response->assertSee('Pemeliharaan Bibit', false);
-        $response->assertSee('Aklimatisasi', false);
-        $response->assertSee('Transplanting', false);
+        $response->assertSee('Bibit Wortel');
+        $response->assertSee('Bibit Cabai Rawit / Merah');
+        $response->assertSee('Bibit Tomat Hibrida');
+        $response->assertSee('Seleksi & Uji Daya Kecambah Benih Wortel');
+    }
+
+    public function test_can_create_planting_seed(): void
+    {
+        $response = $this->post('/steps/penanaman-bibit/seeds', [
+            'nama_bibit' => 'Bibit Terong Ungu',
+            'varietas' => 'Antaboga F1',
+            'deskripsi' => 'Persemaian terong membutuhkan waktu 25-30 hari hingga siap pindah tanam.',
+            'urutan' => 4,
+        ]);
+
+        $response->assertRedirect('/steps/penanaman-bibit');
+        $this->assertDatabaseHas('planting_seeds', [
+            'nama_bibit' => 'Bibit Terong Ungu',
+            'varietas' => 'Antaboga F1',
+        ]);
+    }
+
+    public function test_can_update_planting_seed(): void
+    {
+        $this->get('/steps/penanaman-bibit'); // auto-seeds
+        $seed = PlantingSeed::first();
+
+        $response = $this->put("/steps/penanaman-bibit/seeds/{$seed->id}", [
+            'nama_bibit' => 'Bibit Wortel Unggul Super',
+            'varietas' => 'Kuroda New Season',
+            'deskripsi' => 'Deskripsi bibit diperbarui.',
+            'urutan' => 1,
+        ]);
+
+        $response->assertRedirect('/steps/penanaman-bibit');
+        $this->assertDatabaseHas('planting_seeds', [
+            'id' => $seed->id,
+            'nama_bibit' => 'Bibit Wortel Unggul Super',
+            'varietas' => 'Kuroda New Season',
+        ]);
+    }
+
+    public function test_can_delete_planting_seed(): void
+    {
+        $this->get('/steps/penanaman-bibit'); // auto-seeds
+        $seed = PlantingSeed::first();
+        $seedId = $seed->id;
+
+        $response = $this->delete("/steps/penanaman-bibit/seeds/{$seedId}");
+
+        $response->assertRedirect('/steps/penanaman-bibit');
+        $this->assertDatabaseMissing('planting_seeds', [
+            'id' => $seedId,
+        ]);
+        $this->assertDatabaseMissing('planting_steps', [
+            'planting_seed_id' => $seedId,
+        ]);
+    }
+
+    public function test_can_create_planting_step_for_a_seed(): void
+    {
+        $this->get('/steps/penanaman-bibit'); // auto-seeds
+        $seed = PlantingSeed::first();
+
+        $response = $this->post("/steps/penanaman-bibit/seeds/{$seed->id}/steps", [
+            'nomor' => '9',
+            'judul' => 'Pemasangan Mulsa Reflektif',
+            'waktu' => 'H-3 Sebelum Pindah Tanam',
+            'deskripsi' => 'Pasang mulsa perak hitam untuk mencegah serangan trips.',
+            'tips' => 'Tarik mulsa hingga kencang dan kunci pasak bambu.',
+        ]);
+
+        $response->assertRedirect('/steps/penanaman-bibit');
+        $this->assertDatabaseHas('planting_steps', [
+            'planting_seed_id' => $seed->id,
+            'nomor' => '9',
+            'judul' => 'Pemasangan Mulsa Reflektif',
+        ]);
+    }
+
+    public function test_can_update_planting_step(): void
+    {
+        $this->get('/steps/penanaman-bibit'); // auto-seeds
+        $step = PlantingStep::first();
+
+        $response = $this->put("/steps/penanaman-bibit/steps/{$step->id}", [
+            'nomor' => '1',
+            'judul' => 'Judul Langkah Diperbarui',
+            'waktu' => 'H-5',
+            'deskripsi' => 'Deskripsi langkah yang telah disunting.',
+            'tips' => 'Tips terupdate.',
+        ]);
+
+        $response->assertRedirect('/steps/penanaman-bibit');
+        $this->assertDatabaseHas('planting_steps', [
+            'id' => $step->id,
+            'judul' => 'Judul Langkah Diperbarui',
+        ]);
+    }
+
+    public function test_can_delete_planting_step(): void
+    {
+        $this->get('/steps/penanaman-bibit'); // auto-seeds
+        $step = PlantingStep::first();
+        $stepId = $step->id;
+
+        $response = $this->delete("/steps/penanaman-bibit/steps/{$stepId}");
+
+        $response->assertRedirect('/steps/penanaman-bibit');
+        $this->assertDatabaseMissing('planting_steps', [
+            'id' => $stepId,
+        ]);
+    }
+
+    public function test_can_upload_and_delete_photo_on_planting_step(): void
+    {
+        Storage::fake('public');
+        $this->get('/steps/penanaman-bibit');
+        $step = PlantingStep::first();
+
+        $file = UploadedFile::fake()->image('bibit_kamera.jpg');
+
+        $response = $this->post("/steps/penanaman-bibit/steps/{$step->id}/foto", [
+            'foto_kamera' => [$file],
+        ]);
+
+        $response->assertRedirect('/steps/penanaman-bibit');
+        $step->refresh();
+        $this->assertNotEmpty($step->foto_urls);
+
+        $photoUrl = $step->foto_urls[0];
+        $deleteResponse = $this->delete("/steps/penanaman-bibit/steps/{$step->id}/foto", [
+            'photo_url' => $photoUrl,
+        ]);
+
+        $deleteResponse->assertRedirect('/steps/penanaman-bibit');
+        $step->refresh();
+        $this->assertEmpty($step->foto_urls);
     }
 
     public function test_can_create_new_land_preparation_step(): void

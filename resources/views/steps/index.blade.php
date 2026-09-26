@@ -20,10 +20,6 @@
 
     {{-- ── Quick Navigation Tabs (Solid Colors) ── --}}
     <div class="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit max-w-full overflow-x-auto no-scrollbar">
-        <a href="/steps"
-           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-emerald-800 shadow-xs whitespace-nowrap transition-all">
-            Ikhtisar Tahapan
-        </a>
         <a href="/steps/pengolahan-tanah"
            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
             1. Pengolahan Tanah

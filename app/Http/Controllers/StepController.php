@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\LandPreparationStep;
+use App\Models\PlantingSeed;
+use App\Models\PlantingStep;
 use App\Services\CloudinaryService;
 use App\Services\ImageCompressionService;
 use Database\Seeders\LandPreparationStepSeeder;
+use Database\Seeders\PlantingSeedSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -240,7 +243,7 @@ class StepController extends Controller
      *
      * @return array<int, array{url: string, public_id: string, storage_type: string}>
      */
-    protected function handleUploadedFiles(Request $request): array
+    protected function handleUploadedFiles(Request $request, string $folder = 'pertanian/pengolahan_tanah'): array
     {
         $files = [];
 
@@ -258,7 +261,7 @@ class StepController extends Controller
         foreach ($files as $file) {
             if ($file && $file->isValid()) {
                 $compressed = $this->compressionService->compress($file);
-                $res = $this->cloudinaryService->upload($compressed['path'], 'pertanian/pengolahan_tanah');
+                $res = $this->cloudinaryService->upload($compressed['path'], $folder);
 
                 if (file_exists($compressed['path'])) {
                     @unlink($compressed['path']);
@@ -277,6 +280,254 @@ class StepController extends Controller
 
     public function penanamanBibit(): View
     {
-        return view('steps.penanaman-bibit');
+        if (PlantingSeed::count() === 0) {
+            (new PlantingSeedSeeder)->run();
+        }
+
+        $seeds = PlantingSeed::with('steps')
+            ->orderBy('urutan')
+            ->orderBy('id')
+            ->get();
+
+        return view('steps.penanaman-bibit', compact('seeds'));
+    }
+
+    public function storePlantingSeed(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nama_bibit' => 'required|string|max:255',
+            'varietas' => 'nullable|string|max:255',
+            'deskripsi' => 'nullable|string',
+        ]);
+
+        $maxUrutan = (int) (PlantingSeed::max('urutan') ?? 0);
+
+        $seed = PlantingSeed::create([
+            'nama_bibit' => trim($validated['nama_bibit']),
+            'varietas' => ! empty($validated['varietas']) ? trim($validated['varietas']) : null,
+            'deskripsi' => ! empty($validated['deskripsi']) ? trim($validated['deskripsi']) : null,
+            'urutan' => $maxUrutan + 1,
+        ]);
+
+        return redirect()->route('steps.penanaman-bibit')
+            ->with('success', "Jenis bibit '{$seed->nama_bibit}' berhasil ditambahkan.");
+    }
+
+    public function updatePlantingSeed(Request $request, PlantingSeed $seed): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nama_bibit' => 'required|string|max:255',
+            'varietas' => 'nullable|string|max:255',
+            'deskripsi' => 'nullable|string',
+        ]);
+
+        $seed->update([
+            'nama_bibit' => trim($validated['nama_bibit']),
+            'varietas' => ! empty($validated['varietas']) ? trim($validated['varietas']) : null,
+            'deskripsi' => ! empty($validated['deskripsi']) ? trim($validated['deskripsi']) : null,
+        ]);
+
+        return redirect()->route('steps.penanaman-bibit')
+            ->with('success', "Informasi bibit '{$seed->nama_bibit}' berhasil diperbarui.");
+    }
+
+    public function destroyPlantingSeed(PlantingSeed $seed): RedirectResponse
+    {
+        $nama = $seed->nama_bibit;
+        $seed->delete(); // Otomatis menghapus steps & foto fisik via model deleting event
+
+        return redirect()->route('steps.penanaman-bibit')
+            ->with('success', "Bibit '{$nama}' beserta seluruh tahapan dan foto dokumentasinya berhasil dihapus.");
+    }
+
+    public function storePlantingStep(Request $request, PlantingSeed $seed): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nomor' => 'required|string|max:50',
+            'judul' => 'required|string|max:255',
+            'waktu' => 'nullable|string|max:255',
+            'deskripsi' => 'required|string',
+            'tips' => 'nullable|string',
+            'foto' => 'nullable',
+            'foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'foto_kamera' => 'nullable',
+            'foto_kamera.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        $rawNomor = trim($validated['nomor']);
+        $numericPart = (int) preg_replace('/[^0-9]/', '', $rawNomor);
+        $maxUrutan = (int) ($seed->steps()->max('urutan') ?? 0);
+        $urutan = $numericPart > 0 ? $numericPart : ($maxUrutan + 1);
+
+        $uploadedPhotos = $this->handleUploadedFiles($request, 'pertanian/penanaman_bibit');
+
+        $seed->steps()->create([
+            'nomor' => $rawNomor,
+            'urutan' => $urutan,
+            'judul' => $validated['judul'],
+            'waktu' => $validated['waktu'] ?? null,
+            'deskripsi' => $validated['deskripsi'],
+            'tips' => $validated['tips'] ?? null,
+            'foto' => ! empty($uploadedPhotos) ? $uploadedPhotos : null,
+        ]);
+
+        return redirect()->route('steps.penanaman-bibit')
+            ->with('active_seed_id', $seed->id)
+            ->with('success', "Langkah nomor {$rawNomor} ('{$validated['judul']}') untuk {$seed->nama_bibit} berhasil ditambahkan.");
+    }
+
+    public function updatePlantingStep(Request $request, PlantingStep $step): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nomor' => 'required|string|max:50',
+            'judul' => 'required|string|max:255',
+            'waktu' => 'nullable|string|max:255',
+            'deskripsi' => 'required|string',
+            'tips' => 'nullable|string',
+            'deleted_photos' => 'nullable|array',
+            'deleted_photos.*' => 'string',
+            'foto' => 'nullable',
+            'foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'foto_kamera' => 'nullable',
+            'foto_kamera.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        $rawNomor = trim($validated['nomor']);
+        $numericPart = (int) preg_replace('/[^0-9]/', '', $rawNomor);
+        $urutan = $numericPart > 0 ? $numericPart : $step->urutan;
+
+        // Proses foto yang dihapus
+        $existingPhotos = is_array($step->foto) ? $step->foto : [];
+        $deletedTargets = $request->input('deleted_photos', []);
+        if (! is_array($deletedTargets)) {
+            $deletedTargets = [];
+        }
+
+        $remainingPhotos = [];
+        foreach ($existingPhotos as $photoItem) {
+            $photoUrl = is_array($photoItem) ? ($photoItem['url'] ?? $photoItem['public_id'] ?? '') : (string) $photoItem;
+            $photoId = is_array($photoItem) ? ($photoItem['public_id'] ?? '') : '';
+
+            $isDeleted = false;
+            foreach ($deletedTargets as $target) {
+                if ($target && ($target === $photoUrl || $target === $photoId || str_contains($photoUrl, $target) || ($photoId && str_contains($target, $photoId)))) {
+                    $isDeleted = true;
+                    break;
+                }
+            }
+
+            if ($isDeleted) {
+                if ($photoUrl) {
+                    $this->cloudinaryService->deleteImage($photoUrl);
+                }
+                if ($photoId) {
+                    $this->cloudinaryService->deleteImage($photoId);
+                }
+            } else {
+                $remainingPhotos[] = $photoItem;
+            }
+        }
+
+        foreach ($deletedTargets as $target) {
+            if ($target) {
+                $this->cloudinaryService->deleteImage((string) $target);
+            }
+        }
+
+        // Upload foto baru
+        $newUploadedPhotos = $this->handleUploadedFiles($request, 'pertanian/penanaman_bibit');
+        $allPhotos = array_merge($remainingPhotos, $newUploadedPhotos);
+
+        $step->update([
+            'nomor' => $rawNomor,
+            'urutan' => $urutan,
+            'judul' => $validated['judul'],
+            'waktu' => $validated['waktu'] ?? null,
+            'deskripsi' => $validated['deskripsi'],
+            'tips' => $validated['tips'] ?? null,
+            'foto' => ! empty($allPhotos) ? $allPhotos : null,
+        ]);
+
+        return redirect()->route('steps.penanaman-bibit')
+            ->with('active_seed_id', $step->planting_seed_id)
+            ->with('success', "Tahapan nomor {$rawNomor} ('{$step->judul}') berhasil diperbarui.");
+    }
+
+    public function destroyPlantingStep(PlantingStep $step): RedirectResponse
+    {
+        $nomor = $step->nomor;
+        $judul = $step->judul;
+        $seedId = $step->planting_seed_id;
+        $step->delete(); // Otomatis menghapus file foto fisik melalui model deleting event
+
+        return redirect()->route('steps.penanaman-bibit')
+            ->with('active_seed_id', $seedId)
+            ->with('success', "Tahapan nomor {$nomor} ('{$judul}') berhasil dihapus.");
+    }
+
+    public function uploadPhotoPlantingStep(Request $request, PlantingStep $step): RedirectResponse
+    {
+        $request->validate([
+            'foto' => 'nullable',
+            'foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'foto_kamera' => 'nullable',
+            'foto_kamera.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        $uploadedPhotos = $this->handleUploadedFiles($request, 'pertanian/penanaman_bibit');
+
+        if (empty($uploadedPhotos)) {
+            return redirect()->route('steps.penanaman-bibit')
+                ->with('error', 'Tidak ada foto yang dipilih atau dijepret.');
+        }
+
+        $existingPhotos = is_array($step->foto) ? $step->foto : [];
+        $step->update([
+            'foto' => array_merge($existingPhotos, $uploadedPhotos),
+        ]);
+
+        return redirect()->route('steps.penanaman-bibit')
+            ->with('active_seed_id', $step->planting_seed_id)
+            ->with('success', count($uploadedPhotos).' foto berhasil ditambahkan ke langkah nomor '.$step->nomor.'.');
+    }
+
+    public function destroyPhotoPlantingStep(Request $request, PlantingStep $step): RedirectResponse
+    {
+        $targetUrl = $request->input('photo_url');
+        if (! $targetUrl) {
+            return redirect()->route('steps.penanaman-bibit')
+                ->with('active_seed_id', $step->planting_seed_id);
+        }
+
+        $existingPhotos = is_array($step->foto) ? $step->foto : [];
+        $remainingPhotos = [];
+
+        foreach ($existingPhotos as $photoItem) {
+            $url = is_array($photoItem) ? ($photoItem['url'] ?? '') : (string) $photoItem;
+            $publicId = is_array($photoItem) ? ($photoItem['public_id'] ?? '') : '';
+
+            $isMatch = ($url === $targetUrl || str_contains($url, $targetUrl) || ($publicId && $publicId === $targetUrl) || ($publicId && str_contains($targetUrl, $publicId)));
+
+            if ($isMatch) {
+                if ($url) {
+                    $this->cloudinaryService->deleteImage($url);
+                }
+                if ($publicId) {
+                    $this->cloudinaryService->deleteImage($publicId);
+                }
+            } else {
+                $remainingPhotos[] = $photoItem;
+            }
+        }
+
+        $this->cloudinaryService->deleteImage($targetUrl);
+
+        $step->update([
+            'foto' => ! empty($remainingPhotos) ? $remainingPhotos : null,
+        ]);
+
+        return redirect()->route('steps.penanaman-bibit')
+            ->with('active_seed_id', $step->planting_seed_id)
+            ->with('success', 'Foto berhasil dihapus dari sistem dan penyimpanan.');
     }
 }

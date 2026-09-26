@@ -169,6 +169,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (typeof window.loadKeuanganData === 'function') {
                     window.loadKeuanganData();
                 }
+            } else if (window.location.pathname.startsWith('/steps')) {
+                setTimeout(() => window.location.reload(), 1200);
             }
         }
     });

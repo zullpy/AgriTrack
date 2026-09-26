@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'AgriTrackDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 class AgriOfflineStore {
     constructor() {
@@ -50,6 +50,28 @@ class AgriOfflineStore {
                 // Object store for sync queue (mutations made while offline)
                 if (!db.objectStoreNames.contains('sync_queue')) {
                     db.createObjectStore('sync_queue', { keyPath: 'queue_id', autoIncrement: true });
+                }
+
+                // Object store for land preparation steps
+                if (!db.objectStoreNames.contains('land_preparation_steps')) {
+                    const landStore = db.createObjectStore('land_preparation_steps', { keyPath: 'client_id' });
+                    landStore.createIndex('id', 'id', { unique: false });
+                    landStore.createIndex('is_synced', 'is_synced', { unique: false });
+                }
+
+                // Object store for planting seeds
+                if (!db.objectStoreNames.contains('planting_seeds')) {
+                    const seedStore = db.createObjectStore('planting_seeds', { keyPath: 'client_id' });
+                    seedStore.createIndex('id', 'id', { unique: false });
+                    seedStore.createIndex('is_synced', 'is_synced', { unique: false });
+                }
+
+                // Object store for planting steps
+                if (!db.objectStoreNames.contains('planting_steps')) {
+                    const plantStepStore = db.createObjectStore('planting_steps', { keyPath: 'client_id' });
+                    plantStepStore.createIndex('id', 'id', { unique: false });
+                    plantStepStore.createIndex('planting_seed_id', 'planting_seed_id', { unique: false });
+                    plantStepStore.createIndex('is_synced', 'is_synced', { unique: false });
                 }
             };
 
@@ -361,6 +383,8 @@ class AgriOfflineStore {
             const medicineMutations = mutations.filter(m => !m.type || m.type === 'medicine');
             const hstMutations = mutations.filter(m => m.type === 'crop_activity' || m.type === 'kalender_hst');
             const keuanganMutations = mutations.filter(m => m.type === 'keuangan');
+            const landMutations = mutations.filter(m => m.type === 'land_step');
+            const plantingMutations = mutations.filter(m => m.type === 'planting_step' || m.type === 'planting_seed');
 
             let totalProcessed = 0;
 
@@ -430,6 +454,50 @@ class AgriOfflineStore {
                             if (kJson.success) {
                                 await this.cacheKeuanganData(kJson.transactions, kJson.categories);
                             }
+                        }
+                    }
+                }
+            }
+
+            // Sync Pengolahan Tanah (Land Preparation Steps) if any
+            if (landMutations.length > 0) {
+                const lRes = await fetch('/api/steps/pengolahan-tanah/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ mutations: landMutations })
+                });
+
+                if (lRes.ok) {
+                    const lResult = await lRes.json();
+                    if (lResult.success) {
+                        totalProcessed += (lResult.processed_count || landMutations.length);
+                        if (lResult.steps) {
+                            await this.cacheLandPreparationSteps(lResult.steps);
+                        }
+                    }
+                }
+            }
+
+            // Sync Penanaman Bibit (Planting Seeds & Steps) if any
+            if (plantingMutations.length > 0) {
+                const pRes = await fetch('/api/steps/penanaman-bibit/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ mutations: plantingMutations })
+                });
+
+                if (pRes.ok) {
+                    const pResult = await pRes.json();
+                    if (pResult.success) {
+                        totalProcessed += (pResult.processed_count || plantingMutations.length);
+                        if (pResult.seeds) {
+                            await this.cachePlantingData(pResult.seeds);
                         }
                     }
                 }
@@ -773,6 +841,749 @@ class AgriOfflineStore {
         }
 
         return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PENGOLAHAN TANAH (LAND PREPARATION STEPS) OFFLINE METHODS
+    // ══════════════════════════════════════════════════════════════════
+
+    async cacheLandPreparationSteps(steps = []) {
+        const tx = await this.getTransaction(['land_preparation_steps', 'sync_queue'], 'readwrite');
+        const landStore = tx.objectStore('land_preparation_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const pendingQueueReq = queueStore.getAll();
+        return new Promise((resolve) => {
+            pendingQueueReq.onsuccess = () => {
+                const pending = pendingQueueReq.result || [];
+                const localIds = new Set(
+                    pending.filter(q => q.type === 'land_step' && q.action === 'create').map(q => q.local_id)
+                );
+
+                const clearReq = landStore.openCursor();
+                clearReq.onsuccess = (e) => {
+                    const cursor = e.target.result;
+                    if (cursor) {
+                        if (!localIds.has(cursor.value.client_id) && !String(cursor.value.client_id).startsWith('offline_land_')) {
+                            cursor.delete();
+                        }
+                        cursor.continue();
+                    } else {
+                        steps.forEach((step) => {
+                            landStore.put({
+                                ...step,
+                                client_id: 'srv_' + step.id,
+                                is_synced: true
+                            });
+                        });
+                        resolve(true);
+                    }
+                };
+            };
+        });
+    }
+
+    async getAllLandPreparationSteps() {
+        const tx = await this.getTransaction('land_preparation_steps', 'readonly');
+        const store = tx.objectStore('land_preparation_steps');
+        return new Promise((resolve) => {
+            const req = store.getAll();
+            req.onsuccess = () => {
+                const results = req.result || [];
+                results.sort((a, b) => {
+                    const urutanA = typeof a.urutan === 'number' ? a.urutan : 999;
+                    const urutanB = typeof b.urutan === 'number' ? b.urutan : 999;
+                    if (urutanA !== urutanB) return urutanA - urutanB;
+                    return String(a.nomor || '').localeCompare(String(b.nomor || ''), undefined, { numeric: true });
+                });
+                resolve(results);
+            };
+            req.onerror = () => resolve([]);
+        });
+    }
+
+    async addLandPreparationStepOffline(data) {
+        const tx = await this.getTransaction(['land_preparation_steps', 'sync_queue'], 'readwrite');
+        const landStore = tx.objectStore('land_preparation_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const localId = 'offline_land_' + Date.now();
+        const rawNomor = (data.nomor || '1').toString().trim();
+        const numPart = parseInt(rawNomor.replace(/[^0-9]/g, ''), 10);
+        const urutan = !isNaN(numPart) && numPart > 0 ? numPart : 999;
+
+        const photosBase64 = data.photos_base64 || [];
+        const photoItems = photosBase64.map(b64 => ({
+            url: b64,
+            public_id: null,
+            storage_type: 'offline_base64'
+        }));
+
+        const record = {
+            id: localId,
+            client_id: localId,
+            nomor: rawNomor,
+            urutan: urutan,
+            judul: data.judul || 'Langkah Baru',
+            waktu: data.waktu || null,
+            deskripsi: data.deskripsi || '-',
+            tips: data.tips || null,
+            spesifikasi: null,
+            foto: photoItems,
+            foto_urls: photosBase64,
+            foto_count: photosBase64.length,
+            is_synced: false
+        };
+
+        landStore.put(record);
+        queueStore.add({
+            type: 'land_step',
+            action: 'create',
+            local_id: localId,
+            data: data,
+            timestamp: Date.now()
+        });
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(record);
+            };
+        });
+    }
+
+    async updateLandPreparationStepOffline(id, data) {
+        const tx = await this.getTransaction(['land_preparation_steps', 'sync_queue'], 'readwrite');
+        const landStore = tx.objectStore('land_preparation_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(id).startsWith('offline_land_') ? id : ('srv_' + id);
+        const req = landStore.get(targetKey);
+
+        return new Promise((resolve) => {
+            req.onsuccess = () => {
+                const current = req.result || { client_id: targetKey, id: id };
+                let existingPhotos = Array.isArray(current.foto) ? current.foto : [];
+
+                if (Array.isArray(data.deleted_photos) && data.deleted_photos.length > 0) {
+                    const toDelete = new Set(data.deleted_photos);
+                    existingPhotos = existingPhotos.filter(p => {
+                        const url = (p && typeof p === 'object') ? (p.url || p.public_id) : p;
+                        return !toDelete.has(url);
+                    });
+                }
+
+                const newBase64 = data.photos_base64 || [];
+                const newPhotoItems = newBase64.map(b64 => ({
+                    url: b64,
+                    public_id: null,
+                    storage_type: 'offline_base64'
+                }));
+
+                const allPhotos = [...existingPhotos, ...newPhotoItems];
+                const allUrls = allPhotos.map(p => (p && typeof p === 'object') ? (p.url || '') : String(p));
+
+                const rawNomor = (data.nomor || current.nomor || '1').toString().trim();
+                const numPart = parseInt(rawNomor.replace(/[^0-9]/g, ''), 10);
+                const urutan = !isNaN(numPart) && numPart > 0 ? numPart : (current.urutan || 999);
+
+                const updated = {
+                    ...current,
+                    ...data,
+                    nomor: rawNomor,
+                    urutan: urutan,
+                    foto: allPhotos,
+                    foto_urls: allUrls,
+                    foto_count: allPhotos.length,
+                    is_synced: false
+                };
+
+                landStore.put(updated);
+                queueStore.add({
+                    type: 'land_step',
+                    action: 'update',
+                    data: { id: current.id || id, ...data },
+                    timestamp: Date.now()
+                });
+            };
+
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async deleteLandPreparationStepOffline(id) {
+        const tx = await this.getTransaction(['land_preparation_steps', 'sync_queue'], 'readwrite');
+        const landStore = tx.objectStore('land_preparation_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(id).startsWith('offline_land_') ? id : ('srv_' + id);
+        landStore.delete(targetKey);
+
+        if (!String(id).startsWith('offline_land_')) {
+            queueStore.add({
+                type: 'land_step',
+                action: 'delete',
+                data: { id: id },
+                timestamp: Date.now()
+            });
+        }
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async uploadLandPreparationPhotosOffline(stepId, photosBase64) {
+        const tx = await this.getTransaction(['land_preparation_steps', 'sync_queue'], 'readwrite');
+        const landStore = tx.objectStore('land_preparation_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(stepId).startsWith('offline_land_') ? stepId : ('srv_' + stepId);
+        const req = landStore.get(targetKey);
+
+        return new Promise((resolve) => {
+            req.onsuccess = () => {
+                const current = req.result || { client_id: targetKey, id: stepId };
+                const existingPhotos = Array.isArray(current.foto) ? current.foto : [];
+                const newItems = (photosBase64 || []).map(b64 => ({
+                    url: b64,
+                    public_id: null,
+                    storage_type: 'offline_base64'
+                }));
+                const allPhotos = [...existingPhotos, ...newItems];
+                const allUrls = allPhotos.map(p => (p && typeof p === 'object') ? (p.url || '') : String(p));
+
+                const updated = {
+                    ...current,
+                    foto: allPhotos,
+                    foto_urls: allUrls,
+                    foto_count: allPhotos.length,
+                    is_synced: false
+                };
+                landStore.put(updated);
+
+                queueStore.add({
+                    type: 'land_step',
+                    action: 'upload_photos',
+                    data: { step_id: current.id || stepId, photos_base64: photosBase64 },
+                    timestamp: Date.now()
+                });
+            };
+
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async deleteLandPreparationPhotoOffline(stepId, photoUrl) {
+        const tx = await this.getTransaction(['land_preparation_steps', 'sync_queue'], 'readwrite');
+        const landStore = tx.objectStore('land_preparation_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(stepId).startsWith('offline_land_') ? stepId : ('srv_' + stepId);
+        const req = landStore.get(targetKey);
+
+        return new Promise((resolve) => {
+            req.onsuccess = () => {
+                const current = req.result || { client_id: targetKey, id: stepId };
+                const existingPhotos = Array.isArray(current.foto) ? current.foto : [];
+                const remaining = existingPhotos.filter(p => {
+                    const u = (p && typeof p === 'object') ? (p.url || p.public_id) : p;
+                    return u !== photoUrl;
+                });
+                const allUrls = remaining.map(p => (p && typeof p === 'object') ? (p.url || '') : String(p));
+
+                const updated = {
+                    ...current,
+                    foto: remaining,
+                    foto_urls: allUrls,
+                    foto_count: remaining.length,
+                    is_synced: false
+                };
+                landStore.put(updated);
+
+                if (!String(stepId).startsWith('offline_land_')) {
+                    queueStore.add({
+                        type: 'land_step',
+                        action: 'delete_photo',
+                        data: { step_id: stepId, photo_url: photoUrl },
+                        timestamp: Date.now()
+                    });
+                }
+            };
+
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PENANAMAN BIBIT (SEEDS & PLANTING STEPS) OFFLINE METHODS
+    // ══════════════════════════════════════════════════════════════════
+
+    async cachePlantingData(seeds = []) {
+        const tx = await this.getTransaction(['planting_seeds', 'planting_steps', 'sync_queue'], 'readwrite');
+        const seedStore = tx.objectStore('planting_seeds');
+        const stepStore = tx.objectStore('planting_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const pendingQueueReq = queueStore.getAll();
+        return new Promise((resolve) => {
+            pendingQueueReq.onsuccess = () => {
+                const pending = pendingQueueReq.result || [];
+                const pendingSeedLocalIds = new Set(
+                    pending.filter(q => q.type === 'planting_seed' && q.action === 'create_seed').map(q => q.local_id)
+                );
+                const pendingStepLocalIds = new Set(
+                    pending.filter(q => q.type === 'planting_step' && q.action === 'create_step').map(q => q.local_id)
+                );
+
+                // Clean synced seeds
+                const clearSeedReq = seedStore.openCursor();
+                clearSeedReq.onsuccess = (e) => {
+                    const cursor = e.target.result;
+                    if (cursor) {
+                        if (!pendingSeedLocalIds.has(cursor.value.client_id) && !String(cursor.value.client_id).startsWith('offline_seed_')) {
+                            cursor.delete();
+                        }
+                        cursor.continue();
+                    } else {
+                        // Clean synced steps
+                        const clearStepReq = stepStore.openCursor();
+                        clearStepReq.onsuccess = (e2) => {
+                            const cursor2 = e2.target.result;
+                            if (cursor2) {
+                                if (!pendingStepLocalIds.has(cursor2.value.client_id) && !String(cursor2.value.client_id).startsWith('offline_pstep_')) {
+                                    cursor2.delete();
+                                }
+                                cursor2.continue();
+                            } else {
+                                // Put fresh seeds & their steps
+                                seeds.forEach(seed => {
+                                    seedStore.put({
+                                        id: seed.id,
+                                        client_id: 'srv_' + seed.id,
+                                        nama_bibit: seed.nama_bibit,
+                                        varietas: seed.varietas,
+                                        deskripsi: seed.deskripsi,
+                                        urutan: seed.urutan,
+                                        is_synced: true
+                                    });
+
+                                    const steps = seed.steps || [];
+                                    steps.forEach(st => {
+                                        stepStore.put({
+                                            ...st,
+                                            client_id: 'srv_' + st.id,
+                                            planting_seed_id: seed.id,
+                                            is_synced: true
+                                        });
+                                    });
+                                });
+                                resolve(true);
+                            }
+                        };
+                    }
+                };
+            };
+        });
+    }
+
+    async getAllPlantingSeedsWithSteps() {
+        const tx = await this.getTransaction(['planting_seeds', 'planting_steps'], 'readonly');
+        const seedStore = tx.objectStore('planting_seeds');
+        const stepStore = tx.objectStore('planting_steps');
+
+        const [seeds, steps] = await Promise.all([
+            new Promise((res) => {
+                const req = seedStore.getAll();
+                req.onsuccess = () => res(req.result || []);
+                req.onerror = () => res([]);
+            }),
+            new Promise((res) => {
+                const req = stepStore.getAll();
+                req.onsuccess = () => res(req.result || []);
+                req.onerror = () => res([]);
+            })
+        ]);
+
+        // Group steps by seed
+        const stepsBySeed = {};
+        steps.forEach(st => {
+            const sid = String(st.planting_seed_id);
+            if (!stepsBySeed[sid]) stepsBySeed[sid] = [];
+            stepsBySeed[sid].push(st);
+        });
+
+        // Sort steps for each seed
+        Object.keys(stepsBySeed).forEach(sid => {
+            stepsBySeed[sid].sort((a, b) => {
+                const urutanA = typeof a.urutan === 'number' ? a.urutan : 999;
+                const urutanB = typeof b.urutan === 'number' ? b.urutan : 999;
+                if (urutanA !== urutanB) return urutanA - urutanB;
+                return String(a.nomor || '').localeCompare(String(b.nomor || ''), undefined, { numeric: true });
+            });
+        });
+
+        // Attach steps to seed objects
+        const results = seeds.map(seed => {
+            const seedKey = String(seed.id);
+            const rawKey = String(seed.client_id).replace(/^srv_/, '');
+            const seedSteps = stepsBySeed[seedKey] || stepsBySeed[rawKey] || [];
+            return {
+                ...seed,
+                steps: seedSteps
+            };
+        });
+
+        // Sort seeds
+        results.sort((a, b) => {
+            const urutanA = typeof a.urutan === 'number' ? a.urutan : 999;
+            const urutanB = typeof b.urutan === 'number' ? b.urutan : 999;
+            if (urutanA !== urutanB) return urutanA - urutanB;
+            return String(a.nama_bibit || '').localeCompare(String(b.nama_bibit || ''));
+        });
+
+        return results;
+    }
+
+    async addPlantingSeedOffline(data) {
+        const tx = await this.getTransaction(['planting_seeds', 'sync_queue'], 'readwrite');
+        const seedStore = tx.objectStore('planting_seeds');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const localId = 'offline_seed_' + Date.now();
+        const record = {
+            id: localId,
+            client_id: localId,
+            nama_bibit: data.nama_bibit || 'Bibit Baru',
+            varietas: data.varietas || '',
+            deskripsi: data.deskripsi || '',
+            urutan: 999,
+            steps: [],
+            is_synced: false
+        };
+
+        seedStore.put(record);
+        queueStore.add({
+            type: 'planting_seed',
+            action: 'create_seed',
+            local_id: localId,
+            data: data,
+            timestamp: Date.now()
+        });
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(record);
+            };
+        });
+    }
+
+    async updatePlantingSeedOffline(id, data) {
+        const tx = await this.getTransaction(['planting_seeds', 'sync_queue'], 'readwrite');
+        const seedStore = tx.objectStore('planting_seeds');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(id).startsWith('offline_seed_') ? id : ('srv_' + id);
+        const req = seedStore.get(targetKey);
+
+        return new Promise((resolve) => {
+            req.onsuccess = () => {
+                const current = req.result || { client_id: targetKey, id: id };
+                const updated = {
+                    ...current,
+                    ...data,
+                    is_synced: false
+                };
+                seedStore.put(updated);
+                queueStore.add({
+                    type: 'planting_seed',
+                    action: 'update_seed',
+                    data: { id: current.id || id, ...data },
+                    timestamp: Date.now()
+                });
+            };
+
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async deletePlantingSeedOffline(id) {
+        const tx = await this.getTransaction(['planting_seeds', 'planting_steps', 'sync_queue'], 'readwrite');
+        const seedStore = tx.objectStore('planting_seeds');
+        const stepStore = tx.objectStore('planting_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(id).startsWith('offline_seed_') ? id : ('srv_' + id);
+        seedStore.delete(targetKey);
+
+        // Delete associated steps
+        const stepCursorReq = stepStore.openCursor();
+        stepCursorReq.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+                if (String(cursor.value.planting_seed_id) === String(id) || String(cursor.value.planting_seed_id) === String(targetKey)) {
+                    cursor.delete();
+                }
+                cursor.continue();
+            }
+        };
+
+        if (!String(id).startsWith('offline_seed_')) {
+            queueStore.add({
+                type: 'planting_seed',
+                action: 'delete_seed',
+                data: { id: id },
+                timestamp: Date.now()
+            });
+        }
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async addPlantingStepOffline(seedId, data) {
+        const tx = await this.getTransaction(['planting_steps', 'sync_queue'], 'readwrite');
+        const stepStore = tx.objectStore('planting_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const localId = 'offline_pstep_' + Date.now();
+        const rawNomor = (data.nomor || '1').toString().trim();
+        const numPart = parseInt(rawNomor.replace(/[^0-9]/g, ''), 10);
+        const urutan = !isNaN(numPart) && numPart > 0 ? numPart : 999;
+
+        const photosBase64 = data.photos_base64 || [];
+        const photoItems = photosBase64.map(b64 => ({
+            url: b64,
+            public_id: null,
+            storage_type: 'offline_base64'
+        }));
+
+        const record = {
+            id: localId,
+            client_id: localId,
+            planting_seed_id: seedId,
+            nomor: rawNomor,
+            urutan: urutan,
+            judul: data.judul || 'Langkah Baru',
+            waktu: data.waktu || null,
+            deskripsi: data.deskripsi || '-',
+            tips: data.tips || null,
+            foto: photoItems,
+            foto_urls: photosBase64,
+            foto_count: photosBase64.length,
+            is_synced: false
+        };
+
+        stepStore.put(record);
+        queueStore.add({
+            type: 'planting_step',
+            action: 'create_step',
+            local_id: localId,
+            data: { planting_seed_id: seedId, ...data },
+            timestamp: Date.now()
+        });
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(record);
+            };
+        });
+    }
+
+    async updatePlantingStepOffline(stepId, data) {
+        const tx = await this.getTransaction(['planting_steps', 'sync_queue'], 'readwrite');
+        const stepStore = tx.objectStore('planting_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(stepId).startsWith('offline_pstep_') ? stepId : ('srv_' + stepId);
+        const req = stepStore.get(targetKey);
+
+        return new Promise((resolve) => {
+            req.onsuccess = () => {
+                const current = req.result || { client_id: targetKey, id: stepId };
+                let existingPhotos = Array.isArray(current.foto) ? current.foto : [];
+
+                if (Array.isArray(data.deleted_photos) && data.deleted_photos.length > 0) {
+                    const toDelete = new Set(data.deleted_photos);
+                    existingPhotos = existingPhotos.filter(p => {
+                        const url = (p && typeof p === 'object') ? (p.url || p.public_id) : p;
+                        return !toDelete.has(url);
+                    });
+                }
+
+                const newBase64 = data.photos_base64 || [];
+                const newPhotoItems = newBase64.map(b64 => ({
+                    url: b64,
+                    public_id: null,
+                    storage_type: 'offline_base64'
+                }));
+
+                const allPhotos = [...existingPhotos, ...newPhotoItems];
+                const allUrls = allPhotos.map(p => (p && typeof p === 'object') ? (p.url || '') : String(p));
+
+                const rawNomor = (data.nomor || current.nomor || '1').toString().trim();
+                const numPart = parseInt(rawNomor.replace(/[^0-9]/g, ''), 10);
+                const urutan = !isNaN(numPart) && numPart > 0 ? numPart : (current.urutan || 999);
+
+                const updated = {
+                    ...current,
+                    ...data,
+                    nomor: rawNomor,
+                    urutan: urutan,
+                    foto: allPhotos,
+                    foto_urls: allUrls,
+                    foto_count: allPhotos.length,
+                    is_synced: false
+                };
+
+                stepStore.put(updated);
+                queueStore.add({
+                    type: 'planting_step',
+                    action: 'update_step',
+                    data: { id: current.id || stepId, ...data },
+                    timestamp: Date.now()
+                });
+            };
+
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async deletePlantingStepOffline(stepId) {
+        const tx = await this.getTransaction(['planting_steps', 'sync_queue'], 'readwrite');
+        const stepStore = tx.objectStore('planting_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(stepId).startsWith('offline_pstep_') ? stepId : ('srv_' + stepId);
+        stepStore.delete(targetKey);
+
+        if (!String(stepId).startsWith('offline_pstep_')) {
+            queueStore.add({
+                type: 'planting_step',
+                action: 'delete_step',
+                data: { id: stepId },
+                timestamp: Date.now()
+            });
+        }
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async uploadPlantingStepPhotosOffline(stepId, photosBase64) {
+        const tx = await this.getTransaction(['planting_steps', 'sync_queue'], 'readwrite');
+        const stepStore = tx.objectStore('planting_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(stepId).startsWith('offline_pstep_') ? stepId : ('srv_' + stepId);
+        const req = stepStore.get(targetKey);
+
+        return new Promise((resolve) => {
+            req.onsuccess = () => {
+                const current = req.result || { client_id: targetKey, id: stepId };
+                const existingPhotos = Array.isArray(current.foto) ? current.foto : [];
+                const newItems = (photosBase64 || []).map(b64 => ({
+                    url: b64,
+                    public_id: null,
+                    storage_type: 'offline_base64'
+                }));
+                const allPhotos = [...existingPhotos, ...newItems];
+                const allUrls = allPhotos.map(p => (p && typeof p === 'object') ? (p.url || '') : String(p));
+
+                const updated = {
+                    ...current,
+                    foto: allPhotos,
+                    foto_urls: allUrls,
+                    foto_count: allPhotos.length,
+                    is_synced: false
+                };
+                stepStore.put(updated);
+
+                queueStore.add({
+                    type: 'planting_step',
+                    action: 'upload_step_photos',
+                    data: { step_id: current.id || stepId, photos_base64: photosBase64 },
+                    timestamp: Date.now()
+                });
+            };
+
+            tx.oncomplete = () => {
+                window.dispatchEvent(new CustomEvent('agri:data-changed'));
+                resolve(true);
+            };
+        });
+    }
+
+    async deletePlantingStepPhotoOffline(stepId, photoUrl) {
+        const tx = await this.getTransaction(['planting_steps', 'sync_queue'], 'readwrite');
+        const stepStore = tx.objectStore('planting_steps');
+        const queueStore = tx.objectStore('sync_queue');
+
+        const targetKey = String(stepId).startsWith('offline_pstep_') ? stepId : ('srv_' + stepId);
+        const req = stepStore.get(targetKey);
+
+        return new Promise((resolve) => {
+            req.onsuccess = () => {
+                const current = req.result || { client_id: targetKey, id: stepId };
+                const existingPhotos = Array.isArray(current.foto) ? current.foto : [];
+                const remaining = existingPhotos.filter(p => {
+                    const u = (p && typeof p === 'object') ? (p.url || p.public_id) : p;
+                    return u !== photoUrl;
+                });
+                const allUrls = remaining.map(p => (p && typeof p === 'object') ? (p.url || '') : String(p));
+
+                const updated = {
+                    ...current,
+                    foto: remaining,
+                    foto_urls: allUrls,
+                    foto_count: remaining.length,
+                    is_synced: false
+                };
+                stepStore.put(updated);
+
+                if (!String(stepId).startsWith('offline_pstep_')) {
+                    queueStore.add({
+                        type: 'planting_step',
+                        action: 'delete_step_photo',
+                        data: { step_id: stepId, photo_url: photoUrl },
+                        timestamp: Date.now()
+                    });
+                }
+            };
+
             tx.oncomplete = () => {
                 window.dispatchEvent(new CustomEvent('agri:data-changed'));
                 resolve(true);

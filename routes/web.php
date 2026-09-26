@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\KalenderHstSyncController;
 use App\Http\Controllers\Api\KeuanganSyncController;
 use App\Http\Controllers\Api\MedicineSyncController;
+use App\Http\Controllers\Api\StepSyncController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KalenderHstController;
 use App\Http\Controllers\KeuanganController;
@@ -34,7 +35,18 @@ Route::put('/steps/pengolahan-tanah/{step}', [StepController::class, 'updatePeng
 Route::delete('/steps/pengolahan-tanah/{step}', [StepController::class, 'destroyPengolahanTanah'])->name('steps.pengolahan-tanah.destroy');
 Route::post('/steps/pengolahan-tanah/{step}/foto', [StepController::class, 'uploadPhotoPengolahanTanah'])->name('steps.pengolahan-tanah.foto.upload');
 Route::delete('/steps/pengolahan-tanah/{step}/foto', [StepController::class, 'destroyPhotoPengolahanTanah'])->name('steps.pengolahan-tanah.foto.destroy');
+// Tahapan Penanaman Bibit (Multi-Bibit & SOP Langkah)
 Route::get('/steps/penanaman-bibit', [StepController::class, 'penanamanBibit'])->name('steps.penanaman-bibit');
+Route::post('/steps/penanaman-bibit/seeds', [StepController::class, 'storePlantingSeed'])->name('steps.penanaman-bibit.seeds.store');
+Route::put('/steps/penanaman-bibit/seeds/{seed}', [StepController::class, 'updatePlantingSeed'])->name('steps.penanaman-bibit.seeds.update');
+Route::delete('/steps/penanaman-bibit/seeds/{seed}', [StepController::class, 'destroyPlantingSeed'])->name('steps.penanaman-bibit.seeds.destroy');
+
+Route::post('/steps/penanaman-bibit/seeds/{seed}/steps', [StepController::class, 'storePlantingStep'])->name('steps.penanaman-bibit.steps.store');
+Route::put('/steps/penanaman-bibit/steps/{step}', [StepController::class, 'updatePlantingStep'])->name('steps.penanaman-bibit.steps.update');
+Route::delete('/steps/penanaman-bibit/steps/{step}', [StepController::class, 'destroyPlantingStep'])->name('steps.penanaman-bibit.steps.destroy');
+
+Route::post('/steps/penanaman-bibit/steps/{step}/foto', [StepController::class, 'uploadPhotoPlantingStep'])->name('steps.penanaman-bibit.steps.foto.upload');
+Route::delete('/steps/penanaman-bibit/steps/{step}/foto', [StepController::class, 'destroyPhotoPlantingStep'])->name('steps.penanaman-bibit.steps.foto.destroy');
 
 // Keuangan
 Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');
@@ -66,4 +78,8 @@ Route::prefix('api')->group(function () {
     Route::post('/kalender-hst/sync', [KalenderHstSyncController::class, 'sync']);
     Route::get('/keuangan', [KeuanganSyncController::class, 'index']);
     Route::post('/keuangan/sync', [KeuanganSyncController::class, 'sync']);
+    Route::get('/steps/pengolahan-tanah', [StepSyncController::class, 'getPengolahanTanah']);
+    Route::post('/steps/pengolahan-tanah/sync', [StepSyncController::class, 'syncPengolahanTanah']);
+    Route::get('/steps/penanaman-bibit', [StepSyncController::class, 'getPenanamanBibit']);
+    Route::post('/steps/penanaman-bibit/sync', [StepSyncController::class, 'syncPenanamanBibit']);
 });

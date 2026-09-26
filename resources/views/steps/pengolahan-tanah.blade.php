@@ -57,29 +57,18 @@
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
                     Pra-Tanam (Fase 1)
                 </span>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                <span id="steps-counter" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
                     {{ count($steps) }} Langkah Tersimpan
                 </span>
             </div>
             <p class="text-xs sm:text-sm text-gray-500 mt-1">Standar operasional penyiapan lahan gembur, subur, bebas patogen, dan memiliki drainase optimal.</p>
         </div>
 
-        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-
-            <a href="/steps/penanaman-bibit"
-               class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs sm:text-sm font-semibold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
-                <span>Lanjut: Penanaman Bibit</span>
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-            </a>
-        </div>
+        
     </div>
 
     {{-- ── Quick Navigation Tabs ── --}}
     <div class="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit max-w-full overflow-x-auto no-scrollbar">
-        <a href="/steps"
-           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
-            Ikhtisar Tahapan
-        </a>
         <a href="/steps/pengolahan-tanah"
            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-amber-800 shadow-xs whitespace-nowrap transition-all">
             1. Pengolahan Tanah
@@ -112,10 +101,10 @@
     </div>
 
     {{-- ── Step by Step Details ── --}}
-    <div class="space-y-4">
+    <div class="space-y-4" id="land-steps-list">
 
         @forelse($steps as $step)
-            <div class="bg-surface rounded-2xl border border-gray-200 p-5 sm:p-6 shadow-xs hover:border-amber-300 transition-all group">
+            <div class="bg-surface rounded-2xl border border-gray-200 p-5 sm:p-6 shadow-xs hover:border-amber-300 transition-all group" id="step-card-{{ $step->id }}">
                 <div class="flex items-start gap-4">
 
                     {{-- Badge Nomor Langkah --}}
@@ -767,14 +756,14 @@
             return step.foto.map(item => {
                 if (typeof item === 'string') {
                     let u = item.trim();
-                    if (!u.startsWith('http://') && !u.startsWith('https://') && !u.startsWith('/')) {
+                    if (!u.startsWith('http://') && !u.startsWith('https://') && !u.startsWith('/') && !u.startsWith('data:')) {
                         u = '/storage/' + u.replace(/^\/+/, '');
                     }
                     return u;
                 }
                 if (item && typeof item === 'object') {
                     let u = item.url || item.secure_url || item.path || '';
-                    if (u && !u.startsWith('http://') && !u.startsWith('https://') && !u.startsWith('/')) {
+                    if (u && !u.startsWith('http://') && !u.startsWith('https://') && !u.startsWith('/') && !u.startsWith('data:')) {
                         u = '/storage/' + u.replace(/^\/+/, '');
                     }
                     return u;
@@ -979,13 +968,30 @@
         const form = document.getElementById('form-delete-step');
         form.action = '/steps/pengolahan-tanah/' + stepId;
 
+        const handleDeleteConfirmed = async () => {
+            if (!navigator.onLine || String(stepId).startsWith('offline_')) {
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.deleteLandPreparationStepOffline(stepId);
+                }
+                if (window.AgriSwal) {
+                    AgriSwal.toastSuccess(`Langkah nomor ${nomor} ("${judul}") berhasil dihapus secara offline.`);
+                }
+                const card = document.getElementById('step-card-' + stepId);
+                if (card) {
+                    card.style.opacity = '0.3';
+                    card.style.pointerEvents = 'none';
+                    setTimeout(() => card.remove(), 400);
+                }
+            } else {
+                form.submit();
+            }
+        };
+
         if (window.AgriSwal && typeof window.AgriSwal.confirmDelete === 'function') {
             window.AgriSwal.confirmDelete(
                 'Hapus Tahapan Ini?',
                 `Langkah ${nomor}: ${judul}`,
-                function() {
-                    form.submit();
-                }
+                handleDeleteConfirmed
             );
             return;
         }
@@ -1004,7 +1010,7 @@
                 cancelButtonColor: '#6B7280'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    form.submit();
+                    handleDeleteConfirmed();
                 }
             });
             return;
@@ -1177,6 +1183,263 @@
         if (e.key === 'Escape') {
             ['modal-add-step', 'modal-edit-step', 'modal-quick-photo', 'modal-view-step-photos', 'modal-delete-step', 'modal-lightbox'].forEach(closeModal);
         }
+    });
+
+    // ══════════════════════════════════════════════════════════════════
+    // OFFLINE SUPPORT & CLIENT-SIDE RENDERING
+    // ══════════════════════════════════════════════════════════════════
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    async function renderLandStepsFromStore() {
+        if (!window.AgriOfflineStore) return;
+        const steps = await AgriOfflineStore.getAllLandPreparationSteps();
+        if (!steps || steps.length === 0) return;
+
+        const counter = document.getElementById('steps-counter');
+        if (counter) {
+            counter.textContent = steps.length + ' Langkah Tersimpan';
+        }
+
+        const container = document.getElementById('land-steps-list');
+        if (!container) return;
+
+        let html = '';
+        steps.forEach(step => {
+            const photos = getStepPhotos(step);
+            const isOfflineDraft = step.is_synced === false;
+            const offlineBadge = isOfflineDraft
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Offline Draft</span>`
+                : '';
+
+            const waktuBadge = step.waktu
+                ? `<span class="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-700 w-fit">Waktu: ${escapeHtml(step.waktu)}</span>`
+                : '';
+
+            const tipsBlock = step.tips
+                ? `<div class="mt-3 bg-amber-50 rounded-xl p-3 border border-amber-100 text-xs text-amber-900 space-y-1">
+                     <p class="font-semibold text-amber-950 flex items-center gap-1.5">
+                         <svg class="w-3.5 h-3.5 text-amber-700 inline shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.002 6.002 0 00-4-5.659V5a2 2 0 114 0v2.091a6.002 6.002 0 004 5.659M12 12.75v5.25m-3 0h6"/>
+                         </svg>
+                         <span>Tips Praktisi:</span>
+                     </p>
+                     <p class="whitespace-pre-line">${escapeHtml(step.tips)}</p>
+                   </div>`
+                : '';
+
+            const viewPhotosBtn = photos.length > 0
+                ? `<button type="button"
+                           onclick='openStepPhotosModal(${JSON.stringify(step).replace(/'/g, "&#39;")})'
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer">
+                       <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                       </svg>
+                       <span>Lihat Foto (${photos.length})</span>
+                   </button>`
+                : `<div></div>`;
+
+            const quickPhotoBtn = `<button type="button"
+                       onclick="openQuickPhotoModal('${step.id}', '${escapeHtml(step.nomor)}', '${escapeHtml(step.judul)}')"
+                       class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-emerald-700 transition-colors cursor-pointer">
+                   <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                   </svg>
+                   <span>+ Ambil / Unggah Foto</span>
+               </button>`;
+
+            html += `
+                <div class="bg-surface rounded-2xl border border-gray-200 p-5 sm:p-6 shadow-xs hover:border-amber-300 transition-all group" id="step-card-${step.id}">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black text-sm shrink-0 border border-amber-200 shadow-2xs">
+                            ${escapeHtml(step.nomor)}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h2 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-amber-900 transition-colors">
+                                            ${escapeHtml(step.judul)}
+                                        </h2>
+                                        ${offlineBadge}
+                                    </div>
+                                    ${waktuBadge}
+                                </div>
+                                <div class="flex items-center gap-1.5 self-start shrink-0 flex-wrap">
+                                    <button type="button"
+                                            onclick='openEditStepModal(${JSON.stringify(step).replace(/'/g, "&#39;")})'
+                                            title="Edit seluruh isi pengolahan tanah ini"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 text-xs font-semibold transition-all cursor-pointer">
+                                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                                        </svg>
+                                        <span>Edit</span>
+                                    </button>
+                                    <button type="button"
+                                            onclick="confirmDeleteStep('${step.id}', '${escapeHtml(step.nomor)}', '${escapeHtml(step.judul)}')"
+                                            title="Hapus tahapan ini"
+                                            class="inline-flex items-center justify-center p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition-all cursor-pointer">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-xs sm:text-sm text-gray-600 mt-2.5 leading-relaxed whitespace-pre-line">
+                                ${escapeHtml(step.deskripsi)}
+                            </div>
+                            ${tipsBlock}
+                            <div class="mt-3.5 pt-3 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+                                ${viewPhotosBtn}
+                                ${quickPhotoBtn}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Intercept Add Step Form
+    const addStepForm = document.getElementById('form-add-step');
+    if (addStepForm) {
+        addStepForm.addEventListener('submit', async function(e) {
+            if (!navigator.onLine) {
+                e.preventDefault();
+                const formData = new FormData(addStepForm);
+                const photosBase64 = [];
+                const items = window.previewStore ? (window.previewStore['add-photo-preview'] || []) : [];
+                items.forEach(item => {
+                    if (item.url) photosBase64.push(item.url);
+                });
+
+                const data = {
+                    nomor: formData.get('nomor') || '1',
+                    judul: formData.get('judul') || 'Langkah Baru',
+                    waktu: formData.get('waktu') || null,
+                    deskripsi: formData.get('deskripsi') || '-',
+                    tips: formData.get('tips') || null,
+                    photos_base64: photosBase64
+                };
+
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.addLandPreparationStepOffline(data);
+                }
+                closeModal('modal-add-step');
+                addStepForm.reset();
+                clearAllPreviewFiles('add-photo-preview');
+                if (window.AgriSwal) {
+                    AgriSwal.toastSuccess(`Langkah nomor ${data.nomor} ("${data.judul}") berhasil disimpan di HP (Mode Offline).`);
+                }
+                await renderLandStepsFromStore();
+            }
+        });
+    }
+
+    // Intercept Edit Step Form
+    const editStepForm = document.getElementById('form-edit-step');
+    if (editStepForm) {
+        editStepForm.addEventListener('submit', async function(e) {
+            const actionUrl = editStepForm.getAttribute('action') || '';
+            const parts = actionUrl.split('/');
+            const stepId = parts[parts.length - 1];
+
+            if (!navigator.onLine || String(stepId).startsWith('offline_')) {
+                e.preventDefault();
+                const formData = new FormData(editStepForm);
+                const photosBase64 = [];
+                const items = window.previewStore ? (window.previewStore['edit-photo-preview'] || []) : [];
+                items.forEach(item => {
+                    if (item.url) photosBase64.push(item.url);
+                });
+
+                const deletedPhotos = [];
+                editStepForm.querySelectorAll('input[name="deleted_photos[]"]').forEach(inp => {
+                    if (inp.value) deletedPhotos.push(inp.value);
+                });
+
+                const data = {
+                    nomor: formData.get('nomor') || '1',
+                    judul: formData.get('judul') || 'Langkah Baru',
+                    waktu: formData.get('waktu') || null,
+                    deskripsi: formData.get('deskripsi') || '-',
+                    tips: formData.get('tips') || null,
+                    deleted_photos: deletedPhotos,
+                    photos_base64: photosBase64
+                };
+
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.updateLandPreparationStepOffline(stepId, data);
+                }
+                closeModal('modal-edit-step');
+                editStepForm.reset();
+                clearAllPreviewFiles('edit-photo-preview');
+                if (window.AgriSwal) {
+                    AgriSwal.toastSuccess(`Perubahan langkah nomor ${data.nomor} berhasil disimpan di HP (Mode Offline).`);
+                }
+                await renderLandStepsFromStore();
+            }
+        });
+    }
+
+    // Intercept Quick Photo Form
+    const quickPhotoForm = document.getElementById('form-quick-photo');
+    if (quickPhotoForm) {
+        quickPhotoForm.addEventListener('submit', async function(e) {
+            const actionUrl = quickPhotoForm.getAttribute('action') || '';
+            const parts = actionUrl.split('/');
+            const stepId = parts[parts.length - 2];
+
+            if (!navigator.onLine || String(stepId).startsWith('offline_')) {
+                e.preventDefault();
+                if (!validateQuickPhotoSubmit()) return;
+
+                const photosBase64 = [];
+                const items = window.previewStore ? (window.previewStore['quick-photo-preview'] || []) : [];
+                items.forEach(item => {
+                    if (item.url) photosBase64.push(item.url);
+                });
+
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.uploadLandPreparationPhotosOffline(stepId, photosBase64);
+                }
+                closeModal('modal-quick-photo');
+                quickPhotoForm.reset();
+                clearAllPreviewFiles('quick-photo-preview');
+                if (window.AgriSwal) {
+                    AgriSwal.toastSuccess(`${photosBase64.length} foto berhasil ditambahkan ke langkah di HP (Mode Offline).`);
+                }
+                await renderLandStepsFromStore();
+            }
+        });
+    }
+
+    // Cache server data & initialize offline listener
+    document.addEventListener('DOMContentLoaded', async function() {
+        if (window.AgriOfflineStore) {
+            try {
+                @if(isset($steps) && count($steps) > 0)
+                    await AgriOfflineStore.cacheLandPreparationSteps(@json($steps));
+                @endif
+
+                const pending = await AgriOfflineStore.getPendingCount();
+                if (!navigator.onLine || pending > 0) {
+                    await renderLandStepsFromStore();
+                }
+            } catch (err) {
+                console.warn('Error syncing offline land steps:', err);
+            }
+        }
+    });
+
+    window.addEventListener('agri:data-changed', async () => {
+        await renderLandStepsFromStore();
     });
 </script>
 @endsection
