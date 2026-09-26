@@ -29,6 +29,11 @@ Route::delete('/data-obat/{medicine}/foto', [MedicineController::class, 'destroy
 // Tahapan & Sub-menu
 Route::get('/steps', [StepController::class, 'index'])->name('steps.index');
 Route::get('/steps/pengolahan-tanah', [StepController::class, 'pengolahanTanah'])->name('steps.pengolahan-tanah');
+Route::post('/steps/pengolahan-tanah', [StepController::class, 'storePengolahanTanah'])->name('steps.pengolahan-tanah.store');
+Route::put('/steps/pengolahan-tanah/{step}', [StepController::class, 'updatePengolahanTanah'])->name('steps.pengolahan-tanah.update');
+Route::delete('/steps/pengolahan-tanah/{step}', [StepController::class, 'destroyPengolahanTanah'])->name('steps.pengolahan-tanah.destroy');
+Route::post('/steps/pengolahan-tanah/{step}/foto', [StepController::class, 'uploadPhotoPengolahanTanah'])->name('steps.pengolahan-tanah.foto.upload');
+Route::delete('/steps/pengolahan-tanah/{step}/foto', [StepController::class, 'destroyPhotoPengolahanTanah'])->name('steps.pengolahan-tanah.foto.destroy');
 Route::get('/steps/penanaman-bibit', [StepController::class, 'penanamanBibit'])->name('steps.penanaman-bibit');
 
 // Keuangan

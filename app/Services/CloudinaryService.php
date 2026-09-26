@@ -130,12 +130,22 @@ class CloudinaryService
         }
 
         // Cek jika gambar berada di Cloudinary
-        if (str_contains($target, 'cloudinary.com') || (! str_starts_with($target, '/storage/') && ! str_starts_with($target, 'kegiatan_fotos/'))) {
+        if (str_contains($target, 'cloudinary.com')) {
             return $this->deleteFromCloudinary($target);
         }
 
-        // Jika file di storage lokal
-        return $this->deleteFromLocalStorage($target);
+        // Coba hapus dari storage lokal terlebih dahulu
+        $deletedLocal = $this->deleteFromLocalStorage($target);
+        if ($deletedLocal) {
+            return true;
+        }
+
+        // Jika tidak ditemukan di lokal dan Cloudinary terkonfigurasi, coba hapus dari Cloudinary
+        if ($this->isConfigured()) {
+            return $this->deleteFromCloudinary($target);
+        }
+
+        return false;
     }
 
     /**
@@ -241,12 +251,28 @@ class CloudinaryService
     {
         $normalized = preg_replace('#^https?://[^/]+#', '', $urlOrPath);
         $normalized = preg_replace('#^/storage/#', '', $normalized);
+        $normalized = preg_replace('#^storage/#', '', $normalized);
         $normalized = ltrim($normalized, '/');
 
-        if (Storage::disk('public')->exists($normalized)) {
-            return Storage::disk('public')->delete($normalized);
+        if (empty($normalized)) {
+            return false;
         }
 
-        return false;
+        $deleted = false;
+        if (Storage::disk('public')->exists($normalized)) {
+            $deleted = Storage::disk('public')->delete($normalized);
+        }
+
+        $appPublicPath = storage_path('app/public/'.$normalized);
+        if (file_exists($appPublicPath)) {
+            $deleted = @unlink($appPublicPath) || $deleted;
+        }
+
+        $publicStoragePath = public_path('storage/'.$normalized);
+        if (file_exists($publicStoragePath)) {
+            $deleted = @unlink($publicStoragePath) || $deleted;
+        }
+
+        return $deleted;
     }
 }
