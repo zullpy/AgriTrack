@@ -131,10 +131,10 @@ class FinancialTransactionSeeder extends Seeder
                     ['judul' => 'Bibit Semai Sulaman / Cadangan Tanam', 'nominal' => 150000, 'ket' => 'Cadangan bibit jika ada yang layu di lahan'],
                 ],
             ],
-            // b) Sub: Gok Penanaman
+            // b) Sub: HOK Penanaman
             [
                 'kategori' => 'Penanaman',
-                'sub_kategori' => 'Gok Penanaman',
+                'sub_kategori' => 'HOK Penanaman',
                 'tipe' => 'pengeluaran',
                 'items' => [
                     ['judul' => 'HOK Tanam Pindah Bibit Blok Timur 4 Orang', 'nominal' => 320000, 'ket' => 'Pindah tanam pagi hari ke bedengan utama'],

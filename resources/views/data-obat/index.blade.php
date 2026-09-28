@@ -47,27 +47,33 @@
     {{-- ── Search & Filter Bar (Compact Pills, Clean & Space-Saving) ── --}}
     <div class="bg-surface rounded-2xl border border-gray-200 shadow-sm p-3 mb-4 space-y-2 w-full max-w-full min-w-0 overflow-hidden box-border">
         {{-- Search Bar --}}
-        <form method="GET" action="/data-obat" class="flex gap-2 w-full min-w-0">
+        <form method="GET" action="/data-obat" class="flex gap-2 w-full min-w-0" id="search-medicine-form">
             <input type="hidden" name="jenis" value="{{ request('jenis') }}">
             <input type="hidden" name="cara_kerja" value="{{ request('cara_kerja') }}">
             <input type="hidden" name="fase" value="{{ request('fase') }}">
             <div class="relative flex-1 min-w-0">
-                <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg id="search-static-icon" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
                 </svg>
+                <div id="search-spinner-icon" class="absolute left-3.5 top-1/2 -translate-y-1/2 hidden">
+                    <svg class="animate-spin w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
                 <input type="text"
                        id="search-input"
                        name="search"
                        value="{{ request('search') }}"
+                       autocomplete="off"
                        placeholder="Cari nama obat, hama sasaran, bahan..."
                        class="w-full pl-10 pr-9 py-2 rounded-xl border border-gray-300 bg-page text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-primary focus:bg-white transition-all box-border">
-                @if(request('search'))
-                    <a href="{{ request()->fullUrlWithQuery(['search' => null]) }}"
-                       class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
-                       title="Hapus pencarian">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </a>
-                @endif
+                <button type="button"
+                   id="clear-search-btn"
+                   class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 {{ request('search') ? '' : 'hidden' }}"
+                   title="Hapus pencarian">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
             <button type="submit"
                     class="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-all shrink-0">
@@ -1128,5 +1134,94 @@ window.deleteOfflineItem = function(clientId, name) {
         AgriSwal.toastSuccess(`Draft "${name}" dihapus.`);
     });
 };
+
+// ── Debounce Auto-Search Tanpa Perlu Enter ──
+(function() {
+    const searchForm = document.getElementById('search-medicine-form');
+    const searchInput = document.getElementById('search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    const staticIcon = document.getElementById('search-static-icon');
+    const spinnerIcon = document.getElementById('search-spinner-icon');
+
+    if (!searchForm || !searchInput) return;
+
+    // Jika reload terjadi setelah auto-search, kembalikan kursor & fokus ke input pencarian
+    if (sessionStorage.getItem('medicine_search_auto') === 'true') {
+        sessionStorage.removeItem('medicine_search_auto');
+        searchInput.focus();
+        const len = searchInput.value.length;
+        searchInput.setSelectionRange(len, len);
+    }
+
+    let debounceTimer = null;
+    let initialValue = searchInput.value.trim();
+
+    function executeSearch(isAuto = false) {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+            debounceTimer = null;
+        }
+
+        const currentValue = searchInput.value.trim();
+        // Jangan request jika nilai tidak berubah dari yang sedang aktif
+        if (currentValue === initialValue) {
+            return;
+        }
+
+        if (isAuto) {
+            sessionStorage.setItem('medicine_search_auto', 'true');
+        }
+
+        if (staticIcon && spinnerIcon) {
+            staticIcon.classList.add('hidden');
+            spinnerIcon.classList.remove('hidden');
+        }
+
+        searchForm.submit();
+    }
+
+    // Listener pengetikan dengan debounce 800ms
+    searchInput.addEventListener('input', function() {
+        const val = this.value;
+
+        if (clearBtn) {
+            if (val.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        }
+
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+
+        // Tunggu 800ms setelah user berhenti mengetik agar tidak membebani server
+        debounceTimer = setTimeout(function() {
+            executeSearch(true);
+        }, 800);
+    });
+
+    // Jika user menekan Enter di input atau form disubmit manual
+    searchForm.addEventListener('submit', function() {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+            debounceTimer = null;
+        }
+        if (staticIcon && spinnerIcon) {
+            staticIcon.classList.add('hidden');
+            spinnerIcon.classList.remove('hidden');
+        }
+    });
+
+    // Tombol 'x' diklik: kosongkan dan langsung submit tanpa menunggu
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            clearBtn.classList.add('hidden');
+            executeSearch(false);
+        });
+    }
+})();
 </script>
 @endpush

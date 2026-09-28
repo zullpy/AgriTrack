@@ -60,7 +60,7 @@ class FinancialCategorySeeder extends Seeder
                 'urutan' => 3,
                 'sub' => [
                     'Bibit',
-                    'Gok Penanaman',
+                    'HOK Penanaman',
                     'Mamin',
                 ],
             ],
