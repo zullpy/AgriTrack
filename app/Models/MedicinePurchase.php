@@ -43,10 +43,15 @@ class MedicinePurchase extends Model
 
     public function getFotoUrlAttribute(): ?string
     {
-        if (! $this->foto_nota) {
+        if (! $this->foto_nota || ! is_string($this->foto_nota) || trim($this->foto_nota) === '') {
             return null;
         }
 
-        return Storage::disk('public')->url($this->foto_nota);
+        $trimmed = trim($this->foto_nota);
+        if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+            return $trimmed;
+        }
+
+        return Storage::disk('public')->url($trimmed);
     }
 }

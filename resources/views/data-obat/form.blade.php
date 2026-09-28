@@ -17,13 +17,29 @@
 </div>
 
 {{-- ── Page Title ── --}}
-<div class="mb-6">
-    <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
-        {{ isset($medicine) ? 'Edit Obat Tanaman' : 'Tambah Obat Baru' }}
-    </h1>
-    <p class="text-sm text-gray-500 mt-1">
-        Isi detail formulir di bawah. Data pada bagian prioritas utama akan ditampilkan paling menonjol pada aplikasi.
-    </p>
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+        <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
+            {{ isset($medicine) ? 'Edit Obat Tanaman' : 'Tambah Obat Baru' }}
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">
+            Isi detail formulir di bawah. Data pada bagian prioritas utama akan ditampilkan paling menonjol pada aplikasi.
+        </p>
+    </div>
+    <div class="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+        <button type="submit"
+                form="form-medicine"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-dark active:scale-95 transition-all shadow-sm cursor-pointer">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+            </svg>
+            <span>{{ isset($medicine) ? 'Simpan Perubahan' : 'Simpan Obat' }}</span>
+        </button>
+        <a href="/data-obat"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-all">
+            Batal
+        </a>
+    </div>
 </div>
 
 <div class="max-w-3xl">
@@ -479,11 +495,17 @@
                             {{-- Existing Photos (Edit Mode) --}}
                             <div id="existing-photos-container" class="space-y-2">
                                 @foreach ($existingPhotos as $idx => $photoPath)
+                                    @php
+                                        $displayPhotoUrl = (str_starts_with($photoPath, 'http://') || str_starts_with($photoPath, 'https://'))
+                                            ? $photoPath
+                                            : Storage::disk('public')->url($photoPath);
+                                    @endphp
                                     <div class="existing-photo-card bg-white rounded-xl p-2.5 border border-gray-200 flex items-center justify-between gap-3 shadow-2xs">
                                         <div class="flex items-center gap-3 min-w-0">
-                                            <img src="{{ Storage::disk('public')->url($photoPath) }}" 
+                                            <img src="{{ $displayPhotoUrl }}" 
                                                  alt="Foto {{ $idx + 1 }}" 
-                                                 class="w-12 h-12 object-cover rounded-lg border border-gray-200 shrink-0">
+                                                 class="w-12 h-12 object-cover rounded-lg border border-gray-200 shrink-0"
+                                                 onerror="this.src='/images/icon.png'">
                                             <div class="min-w-0">
                                                 <p class="text-xs font-bold text-gray-800 truncate">
                                                     {{ basename($photoPath) }}
@@ -624,9 +646,9 @@
         </div>
 
         {{-- ── Action Buttons ── --}}
-        <div class="flex items-center gap-3 pt-2">
+        <div class="flex items-center gap-3 pt-4 pb-6">
             <button type="submit"
-                    class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-dark active:scale-95 transition-all shadow-sm">
+                    class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-dark active:scale-95 transition-all shadow-sm cursor-pointer">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
                 </svg>

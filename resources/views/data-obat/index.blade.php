@@ -790,12 +790,21 @@ window.openMedicineDetail = function(id) {
     const fotoCounter = document.getElementById('modal-foto-counter');
     const fotoThumbnails = document.getElementById('modal-foto-thumbnails');
 
-    const photos = Array.isArray(data.foto_urls) && data.foto_urls.length > 0
+    const rawPhotos = Array.isArray(data.foto_urls) && data.foto_urls.length > 0
         ? data.foto_urls
         : (data.foto_url ? [data.foto_url] : []);
 
+    const photos = rawPhotos.filter(u => typeof u === 'string' && u.trim().length > 0 && u.trim() !== '/storage' && u.trim() !== '/storage/' && !u.endsWith('/storage/'));
+
     if (photos.length > 0) {
         fotoContainer.classList.remove('hidden');
+
+        fotoImg.onerror = function() {
+            fotoContainer.classList.add('hidden');
+            if (fotoThumbnails) {
+                fotoThumbnails.classList.add('hidden');
+            }
+        };
 
         function selectModalPhoto(idx) {
             fotoImg.src = photos[idx];
@@ -821,7 +830,7 @@ window.openMedicineDetail = function(id) {
                 btn.type = 'button';
                 btn.className = 'modal-thumb-btn shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-gray-200 opacity-60 hover:opacity-100 transition-all cursor-pointer';
                 btn.onclick = () => selectModalPhoto(pIdx);
-                btn.innerHTML = `<img src="${url}" alt="Thumbnail ${pIdx + 1}" class="w-full h-full object-cover">`;
+                btn.innerHTML = `<img src="${url}" alt="Thumbnail ${pIdx + 1}" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">`;
                 fotoThumbnails.appendChild(btn);
             });
             fotoThumbnails.classList.remove('hidden');
@@ -1016,6 +1025,10 @@ window.closeMedicineDetail = function() {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
+    const fotoContainer = document.getElementById('modal-foto-container');
+    const fotoImg = document.getElementById('modal-foto-img');
+    if (fotoImg) fotoImg.src = '';
+    if (fotoContainer) fotoContainer.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
 };
 

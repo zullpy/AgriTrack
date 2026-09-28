@@ -64,7 +64,7 @@ class CloudinaryService
 
         // Jika kredensial Cloudinary belum diisi, simpan ke storage disk public lokal
         if (! $this->isConfigured()) {
-            return $this->storeToLocalStorage($realPath, $ext);
+            return $this->storeToLocalStorage($realPath, $ext, $folder);
         }
 
         try {
@@ -114,7 +114,7 @@ class CloudinaryService
         }
 
         // Fallback ke penyimpanan lokal jika Cloudinary gagal
-        return $this->storeToLocalStorage($realPath, $ext);
+        return $this->storeToLocalStorage($realPath, $ext, $folder);
     }
 
     /**
@@ -228,10 +228,12 @@ class CloudinaryService
      *
      * @return array{url: string, public_id: string, storage_type: string}
      */
-    protected function storeToLocalStorage(string $sourcePath, string $ext): array
+    protected function storeToLocalStorage(string $sourcePath, string $ext, string $folder = 'pertanian/kegiatan_hst'): array
     {
-        $filename = uniqid('kegiatan_').'_'.time().'.'.$ext;
-        $subDirectory = 'kegiatan_fotos';
+        $isMedicine = str_contains($folder, 'medicine');
+        $subDirectory = $isMedicine ? 'medicines' : 'kegiatan_fotos';
+        $prefix = $isMedicine ? 'medicine_' : 'kegiatan_';
+        $filename = uniqid($prefix).'_'.time().'.'.$ext;
         $destinationRelativePath = "{$subDirectory}/{$filename}";
 
         $fileContents = (string) file_get_contents($sourcePath);

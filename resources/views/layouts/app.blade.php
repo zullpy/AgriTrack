@@ -431,7 +431,7 @@
             </header>
 
             {{-- Page content --}}
-            <main class="flex-1 p-3.5 sm:p-4 lg:p-8 pb-24 lg:pb-8 min-w-0 w-full max-w-full overflow-x-hidden">
+            <main class="flex-1 px-3.5 pt-3.5 sm:px-4 sm:pt-4 lg:px-8 lg:pt-8 pb-28 sm:pb-32 lg:pb-8 min-w-0 w-full max-w-full overflow-x-hidden">
                 @yield('content')
             </main>
         </div>

@@ -4,11 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Medicine;
 use App\Models\MedicinePurchase;
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 class MedicineController extends Controller
 {
+    public function __construct(
+        protected CloudinaryService $cloudinaryService
+    ) {}
+
     public function index(Request $request)
     {
         $query = Medicine::with('purchases');
@@ -105,15 +111,7 @@ class MedicineController extends Controller
             'purchases.*.foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
 
-        $uploadedPhotoPaths = [];
-        if ($request->hasFile('foto_nota')) {
-            $files = is_array($request->file('foto_nota')) ? $request->file('foto_nota') : [$request->file('foto_nota')];
-            foreach ($files as $f) {
-                if ($f && $f->isValid()) {
-                    $uploadedPhotoPaths[] = $f->store('medicines', 'public');
-                }
-            }
-        }
+        $uploadedPhotoPaths = $this->uploadPhotos($request->file('foto_nota'));
         $primaryFotoPath = $uploadedPhotoPaths[0] ?? null;
         $validated['foto_nota'] = ! empty($uploadedPhotoPaths) ? json_encode($uploadedPhotoPaths) : null;
 
@@ -128,7 +126,7 @@ class MedicineController extends Controller
                 foreach ($request->input('purchases') as $idx => $pData) {
                     $pFoto = null;
                     if ($request->hasFile("purchases.{$idx}.foto_nota")) {
-                        $pFoto = $request->file("purchases.{$idx}.foto_nota")->store('medicines', 'public');
+                        $pFoto = $this->uploadSinglePhoto($request->file("purchases.{$idx}.foto_nota"));
                     }
                     if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli'])) {
                         $purchasesInput[] = [
@@ -180,7 +178,7 @@ class MedicineController extends Controller
                     }
                     if (! empty($p['foto_nota'])) {
                         if ($existingPurchase->foto_nota && $existingPurchase->foto_nota !== $p['foto_nota']) {
-                            Storage::disk('public')->delete($existingPurchase->foto_nota);
+                            $this->cloudinaryService->deleteImage($existingPurchase->foto_nota);
                         }
                         $updatePurchaseData['foto_nota'] = $p['foto_nota'];
                     }
@@ -251,7 +249,7 @@ class MedicineController extends Controller
             foreach ($request->input('purchases') as $idx => $pData) {
                 $pFoto = null;
                 if ($request->hasFile("purchases.{$idx}.foto_nota")) {
-                    $pFoto = $request->file("purchases.{$idx}.foto_nota")->store('medicines', 'public');
+                    $pFoto = $this->uploadSinglePhoto($request->file("purchases.{$idx}.foto_nota"));
                 }
                 if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli'])) {
                     $purchasesToAdd[] = [
@@ -351,23 +349,13 @@ class MedicineController extends Controller
         if ($request->has('deleted_foto_paths') && is_array($request->input('deleted_foto_paths'))) {
             $deletedPaths = array_map(fn ($p) => str_replace('\\', '/', trim((string) $p)), $request->input('deleted_foto_paths'));
             foreach ($deletedPaths as $delPath) {
-                if (Storage::disk('public')->exists($delPath)) {
-                    Storage::disk('public')->delete($delPath);
-                }
+                $this->cloudinaryService->deleteImage($delPath);
                 $currentPaths = array_values(array_filter($currentPaths, fn ($p) => str_replace('\\', '/', trim((string) $p)) !== $delPath));
             }
         }
 
         // Tangani foto-foto baru yang diupload
-        $newPhotoPaths = [];
-        if ($request->hasFile('foto_nota')) {
-            $files = is_array($request->file('foto_nota')) ? $request->file('foto_nota') : [$request->file('foto_nota')];
-            foreach ($files as $f) {
-                if ($f && $f->isValid()) {
-                    $newPhotoPaths[] = $f->store('medicines', 'public');
-                }
-            }
-        }
+        $newPhotoPaths = $this->uploadPhotos($request->file('foto_nota'));
 
         $allPhotoPaths = array_values(array_unique(array_merge($currentPaths, $newPhotoPaths)));
         $validated['foto_nota'] = ! empty($allPhotoPaths) ? json_encode($allPhotoPaths) : null;
@@ -390,7 +378,7 @@ class MedicineController extends Controller
 
                 $pFoto = null;
                 if ($request->hasFile("purchases.{$idx}.foto_nota")) {
-                    $pFoto = $request->file("purchases.{$idx}.foto_nota")->store('medicines', 'public');
+                    $pFoto = $this->uploadSinglePhoto($request->file("purchases.{$idx}.foto_nota"));
                 }
 
                 $purchaseId = $pData['id'] ?? null;
@@ -419,7 +407,7 @@ class MedicineController extends Controller
                     ];
                     if ($pFoto) {
                         if ($purchase->foto_nota) {
-                            Storage::disk('public')->delete($purchase->foto_nota);
+                            $this->cloudinaryService->deleteImage($purchase->foto_nota);
                         }
                         $updateData['foto_nota'] = $pFoto;
                     }
@@ -476,13 +464,13 @@ class MedicineController extends Controller
     {
         foreach ($medicine->foto_paths as $p) {
             if ($p) {
-                Storage::disk('public')->delete($p);
+                $this->cloudinaryService->deleteImage($p);
             }
         }
 
         foreach ($medicine->purchases as $p) {
             if ($p->foto_nota) {
-                Storage::disk('public')->delete($p->foto_nota);
+                $this->cloudinaryService->deleteImage($p->foto_nota);
             }
         }
 
@@ -503,10 +491,7 @@ class MedicineController extends Controller
 
         $normalizedPath = str_replace('\\', '/', trim((string) $rawPath));
 
-        // Hapus file fisik dari storage disk public jika ada
-        if (Storage::disk('public')->exists($normalizedPath)) {
-            Storage::disk('public')->delete($normalizedPath);
-        }
+        $this->cloudinaryService->deleteImage($normalizedPath);
 
         // Hapus dari foto_paths obat
         $currentPaths = $medicine->foto_paths;
@@ -529,5 +514,50 @@ class MedicineController extends Controller
             'remaining_count' => count($remaining),
             'remaining_paths' => $remaining,
         ]);
+    }
+
+    /**
+     * Upload an array of files using CloudinaryService.
+     *
+     * @param  array<UploadedFile>|UploadedFile|null  $files
+     * @return array<string>
+     */
+    private function uploadPhotos(mixed $files): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        $fileList = is_array($files) ? $files : [$files];
+        $urls = [];
+
+        foreach ($fileList as $f) {
+            if ($f && $f->isValid()) {
+                $res = $this->cloudinaryService->upload($f, 'pertanian/medicines');
+                if (! empty($res['url'])) {
+                    $urls[] = ($res['storage_type'] ?? '') === 'cloudinary' ? $res['url'] : ($res['public_id'] ?? $res['url']);
+                }
+            }
+        }
+
+        return $urls;
+    }
+
+    /**
+     * Upload a single file using CloudinaryService.
+     */
+    private function uploadSinglePhoto(mixed $file): ?string
+    {
+        if (! $file || ! $file->isValid()) {
+            return null;
+        }
+
+        $res = $this->cloudinaryService->upload($file, 'pertanian/medicines');
+
+        if (empty($res)) {
+            return null;
+        }
+
+        return ($res['storage_type'] ?? '') === 'cloudinary' ? ($res['url'] ?? null) : ($res['public_id'] ?? $res['url'] ?? null);
     }
 }

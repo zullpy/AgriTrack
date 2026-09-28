@@ -4,15 +4,19 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Medicine;
+use App\Services\CloudinaryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class MedicineSyncController extends Controller
 {
+    public function __construct(
+        protected CloudinaryService $cloudinaryService
+    ) {}
+
     /**
      * Get all medicines for offline cache initial load.
      */
@@ -187,7 +191,7 @@ class MedicineSyncController extends Controller
     }
 
     /**
-     * Decode and save base64 photos to public storage.
+     * Decode and save base64 photos to Cloudinary (or local storage fallback).
      */
     private function saveBase64Photos(array $base64List): array
     {
@@ -210,9 +214,20 @@ class MedicineSyncController extends Controller
 
             $binary = base64_decode($data);
             if ($binary !== false && strlen($binary) > 0) {
-                $filename = 'medicines/'.Str::random(40).'.'.$extension;
-                Storage::disk('public')->put($filename, $binary);
-                $paths[] = $filename;
+                $tempFile = tempnam(sys_get_temp_dir(), 'agri_med_').'.'.$extension;
+                file_put_contents($tempFile, $binary);
+                try {
+                    $res = $this->cloudinaryService->upload($tempFile, 'pertanian/medicines');
+                    if (! empty($res['url'])) {
+                        $paths[] = ($res['storage_type'] ?? '') === 'cloudinary' ? $res['url'] : ($res['public_id'] ?? $res['url']);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Gagal upload foto obat base64: '.$e->getMessage());
+                } finally {
+                    if (file_exists($tempFile)) {
+                        @unlink($tempFile);
+                    }
+                }
             }
         }
 

@@ -94,8 +94,13 @@ class Medicine extends Model
         $paths = $this->foto_paths;
         $urls = [];
         foreach ($paths as $path) {
-            if ($path) {
-                $urls[] = Storage::disk('public')->url($path);
+            if ($path && is_string($path) && trim($path) !== '') {
+                $trimmed = trim($path);
+                if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+                    $urls[] = $trimmed;
+                } else {
+                    $urls[] = Storage::disk('public')->url($trimmed);
+                }
             }
         }
 
@@ -109,7 +114,7 @@ class Medicine extends Model
             }
         }
 
-        return $urls;
+        return array_values(array_filter($urls));
     }
 
     /**
