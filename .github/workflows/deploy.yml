@@ -1,56 +1,51 @@
-name: Deploy to Hostinger
+
+name: Deploy to InfinityFree
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infinityfree-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    name: FTP Deploy
     runs-on: ubuntu-latest
+
     steps:
-    - name: Executing remote ssh commands
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.HOSTINGER_HOST }}
-        username: ${{ secrets.HOSTINGER_USER }}
-        key: ${{ secrets.HOSTINGER_SSH }}
-        port: ${{ secrets.HOSTINGER_PORT }}
-        script: |
-          cd ${{ secrets.HOSTINGER_PATH }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-          # Cek apakah folder sudah git repository
-          if [ ! -d .git ]; then
-            git init
-            git remote add origin https://github.com/zullpy/agritrack.git
-          fi
+      - name: Verify Laravel files
+        run: |
+          test -f artisan
+          test -f composer.json
+          test -f public/index.php
+          test -f vendor/autoload.php
 
-          git pull origin main
-
-          # Install PHP dependencies
-          composer install --no-dev --optimize-autoloader
-
-          # Install & build JS/CSS assets
-          npm ci --prefer-offline
-          npm run build
-
-          # Pastikan .env ada di server (file ini harus sudah ada secara manual)
-          if [ ! -f .env ]; then
-            echo "ERROR: .env file tidak ditemukan di server!"
-            exit 1
-          fi
-
-          # Fix permissions
-          chmod -R 775 storage bootstrap/cache
-          chown -R $USER:www-data storage bootstrap/cache 2>/dev/null || true
-
-          # Storage symlink
-          php artisan storage:link --force 2>/dev/null || true
-
-          # Jalankan migrasi
-          php artisan migrate --force
-
-          # Clear & rebuild cache
-          php artisan optimize:clear
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
+      - name: Deploy to InfinityFree
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER_INFINITY }}
+          username: ${{ secrets.FTP_USERNAME_INFINITY }}
+          password: ${{ secrets.FTP_PASSWORD_INFINITY }}
+          protocol: ftp
+          port: 21
+          server-dir: /htdocs/
+          local-dir: ./
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/.env
+            **/.env.*
+            !**/.env.example
+            **/node_modules/**
+            **/tests/**
+            **/storage/logs/*.log

@@ -5,6 +5,16 @@
 @section('content')
 
 <div class="w-full max-w-full min-w-0 overflow-x-hidden">
+@php
+    $categoryListForThemes = isset($categories) && $categories->isNotEmpty()
+        ? $categories
+        : \App\Models\MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
+
+    $categoryThemesMap = [];
+    foreach ($categoryListForThemes as $cItem) {
+        $categoryThemesMap[$cItem->nama] = $cItem->theme_config;
+    }
+@endphp
 
     {{-- ── Header Section (Sleek, Clean, Solid Colors, No Gradient) ── --}}
     <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-gray-200">
@@ -18,7 +28,16 @@
             <p class="text-xs sm:text-sm text-gray-500 mt-1">Kelola fungisida, insektisida, pupuk, dan vitamin kebun.</p>
         </div>
 
-        <div class="shrink-0 flex items-center">
+        <div class="shrink-0 flex items-center gap-2">
+            <button type="button"
+                    onclick="openCategoryManagementModal()"
+                    class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-bold active:scale-95 transition-all shadow-2xs shrink-0 whitespace-nowrap cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+                </svg>
+                <span>Kelola Kategori</span>
+            </button>
             <a href="/data-obat/tambah"
                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold hover:bg-primary-dark active:scale-95 transition-all shadow-sm shrink-0 whitespace-nowrap">
                 <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -86,27 +105,34 @@
             <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar w-full max-w-full">
                 @php
                     $currentJenis = request('jenis');
-                    $kategoriList = [
-                        '' => 'Semua',
-                        'Fungisida' => 'Fungisida',
-                        'Insektisida' => 'Insektisida',
-                        'Pupuk' => 'Pupuk',
-                        'Vitamin' => 'Vitamin',
-                        'Bibit' => 'Bibit',
-                        'Perlengkapan' => 'Perlengkapan',
-                        'Peralatan' => 'Peralatan',
-                    ];
+                    $categoryItems = $categoryListForThemes;
                 @endphp
 
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-0.5">Kategori:</span>
 
-                @foreach($kategoriList as $key => $label)
-                    @php $isActive = ($currentJenis === $key) || ($key === '' && empty($currentJenis)); @endphp
-                    <a href="{{ request()->fullUrlWithQuery(['jenis' => $key ?: null, 'page' => null]) }}"
+                {{-- 'Semua' pill --}}
+                @php $isAllActive = empty($currentJenis); @endphp
+                <a href="{{ request()->fullUrlWithQuery(['jenis' => null, 'page' => null]) }}"
+                   class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 {{ $isAllActive ? 'bg-primary text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
+                    Semua
+                </a>
+
+                @foreach($categoryItems as $cat)
+                    @php $isActive = ($currentJenis === $cat->nama); @endphp
+                    <a href="{{ request()->fullUrlWithQuery(['jenis' => $cat->nama, 'page' => null]) }}"
                        class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 {{ $isActive ? 'bg-primary text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
-                        {{ $label }}
+                        {{ $cat->nama }}
                     </a>
                 @endforeach
+
+                {{-- Quick Add / Manage Category pill --}}
+                <button type="button"
+                        onclick="openCategoryManagementModal()"
+                        title="Tambah & Kelola Kategori"
+                        class="px-2 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all shrink-0 flex items-center gap-1 cursor-pointer">
+                    <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                    <span>+ Kategori</span>
+                </button>
             </div>
         </div>
 
@@ -217,17 +243,19 @@
 
         {{-- Helper function for badge colors (Solid Colors Only, No Gradient) --}}
         @php
-            $getCategoryBadge = function($jenis) {
-                return match($jenis) {
-                    'Fungisida'    => ['bg' => 'bg-purple-100', 'text' => 'text-purple-800'],
-                    'Insektisida'  => ['bg' => 'bg-rose-100',   'text' => 'text-rose-800'],
-                    'Pupuk'        => ['bg' => 'bg-emerald-100','text' => 'text-emerald-800'],
-                    'Vitamin'      => ['bg' => 'bg-teal-100',   'text' => 'text-teal-800'],
-                    'Bibit'        => ['bg' => 'bg-lime-100',   'text' => 'text-lime-800'],
-                    'Perlengkapan' => ['bg' => 'bg-amber-100',  'text' => 'text-amber-800'],
-                    'Peralatan'    => ['bg' => 'bg-blue-100',   'text' => 'text-blue-800'],
-                    default        => ['bg' => 'bg-gray-100',   'text' => 'text-gray-800'],
-                };
+            $getCategoryBadge = function($jenis) use ($categoryThemesMap) {
+                if (isset($categoryThemesMap[$jenis])) {
+                    return [
+                        'bg' => $categoryThemesMap[$jenis]['badge_bg'] ?? 'bg-purple-100',
+                        'text' => $categoryThemesMap[$jenis]['badge_text'] ?? 'text-purple-800',
+                    ];
+                }
+
+                $themeConfig = \App\Models\MedicineCategory::getThemeConfig(null);
+                return [
+                    'bg' => $themeConfig['badge_bg'] ?? 'bg-gray-100',
+                    'text' => $themeConfig['badge_text'] ?? 'text-gray-800',
+                ];
             };
 
             $getCaraKerjaBadge = function($ck) {
@@ -753,6 +781,106 @@
         </div>
     </div>
 
+    {{-- ══════════════════════════════════════════════════════════════════ --}}
+    {{-- ── MODAL KELOLA KATEGORI OBAT PERTANIAN ── --}}
+    {{-- ══════════════════════════════════════════════════════════════════ --}}
+    <div id="category-management-modal" 
+         class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-xs items-center justify-center p-3 sm:p-4 transition-opacity duration-200"
+         onclick="if(event.target === this) closeCategoryManagementModal()">
+        <div class="bg-surface rounded-2xl border border-gray-200 shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-slide-up"
+             onclick="event.stopPropagation()">
+            
+            {{-- Header Modal --}}
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/80 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <h3 class="text-base font-bold text-gray-900">Kelola Kategori Obat</h3>
+                </div>
+                <button type="button" 
+                        onclick="closeCategoryManagementModal()"
+                        class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Body Modal --}}
+            <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 min-h-0">
+                
+                {{-- Form Tambah / Edit Kategori --}}
+                <div class="p-4 rounded-xl border border-emerald-200/90 bg-emerald-50/50 space-y-3">
+                    <h4 id="cat-form-title" class="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                        </svg>
+                        <span>Tambah Kategori Obat Baru</span>
+                    </h4>
+
+                    <form id="form-manage-category" onsubmit="handleCategoryFormSubmit(event)" class="space-y-3">
+                        <input type="hidden" id="manage-cat-id" value="">
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Nama Kategori <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="manage-cat-nama"
+                                   required
+                                   placeholder="Contoh: Herbisida, Akarisida, Perekat..."
+                                   class="w-full px-3.5 py-2 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <div class="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/60 flex items-center gap-2 text-xs text-emerald-900">
+                            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                            </svg>
+                            <span>Warna tema & badge ditentukan <strong>secara otomatis</strong> agar setiap kategori berbeda dan unik.</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Keterangan (Opsional)
+                            </label>
+                            <input type="text"
+                                   id="manage-cat-deskripsi"
+                                   placeholder="Contoh: Pembasmi gulma dan rumput liar"
+                                   class="w-full px-3.5 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1">
+                            <button type="button" 
+                                    id="btn-cancel-edit-cat"
+                                    onclick="resetCategoryForm()"
+                                    class="text-xs text-gray-500 hover:text-gray-700 font-semibold hidden cursor-pointer">
+                                Batal Edit
+                            </button>
+                            <button type="submit" 
+                                    id="btn-submit-cat"
+                                    class="ml-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer flex items-center gap-1.5">
+                                <span>Simpan Kategori</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Daftar Kategori Saat Ini --}}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500">
+                            Daftar Kategori Saat Ini (<span id="cat-list-count">{{ isset($categories) ? $categories->count() : 0 }}</span>)
+                        </h4>
+                    </div>
+
+                    <div id="category-items-container" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                        {{-- Items loaded dynamically via JavaScript --}}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @endsection
@@ -852,16 +980,8 @@ window.openMedicineDetail = function(id) {
     // Kategori Badge
     const jenisBadge = document.getElementById('modal-jenis-badge');
     jenisBadge.textContent = data.jenis || '—';
-    const catColors = {
-        'Fungisida': { bg: 'bg-purple-100', text: 'text-purple-800' },
-        'Insektisida': { bg: 'bg-rose-100', text: 'text-rose-800' },
-        'Pupuk': { bg: 'bg-emerald-100', text: 'text-emerald-800' },
-        'Vitamin': { bg: 'bg-teal-100', text: 'text-teal-800' },
-        'Bibit': { bg: 'bg-lime-100', text: 'text-lime-800' },
-        'Perlengkapan': { bg: 'bg-amber-100', text: 'text-amber-800' },
-        'Peralatan': { bg: 'bg-blue-100', text: 'text-blue-800' }
-    };
-    const cat = catColors[data.jenis] || { bg: 'bg-gray-100', text: 'text-gray-800' };
+    const catColors = window.categoryColorsMap || {};
+    const cat = catColors[data.jenis] || { bg: 'bg-purple-100', text: 'text-purple-800' };
     jenisBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold ${cat.bg} ${cat.text}`;
 
     // Cara Kerja Badge
@@ -1166,15 +1286,9 @@ window.deleteOfflineItem = function(clientId, name) {
         searchInput.setSelectionRange(len, len);
     }
 
-    let debounceTimer = null;
     let initialValue = searchInput.value.trim();
 
     function executeSearch(isAuto = false) {
-        if (debounceTimer) {
-            clearTimeout(debounceTimer);
-            debounceTimer = null;
-        }
-
         const currentValue = searchInput.value.trim();
         // Jangan request jika nilai tidak berubah dari yang sedang aktif
         if (currentValue === initialValue) {
@@ -1193,7 +1307,7 @@ window.deleteOfflineItem = function(clientId, name) {
         searchForm.submit();
     }
 
-    // Listener pengetikan dengan debounce 800ms
+    // Listener pengetikan — langsung submit tanpa debounce
     searchInput.addEventListener('input', function() {
         const val = this.value;
 
@@ -1205,29 +1319,18 @@ window.deleteOfflineItem = function(clientId, name) {
             }
         }
 
-        if (debounceTimer) {
-            clearTimeout(debounceTimer);
-        }
-
-        // Tunggu 800ms setelah user berhenti mengetik agar tidak membebani server
-        debounceTimer = setTimeout(function() {
-            executeSearch(true);
-        }, 800);
+        executeSearch(true);
     });
 
     // Jika user menekan Enter di input atau form disubmit manual
     searchForm.addEventListener('submit', function() {
-        if (debounceTimer) {
-            clearTimeout(debounceTimer);
-            debounceTimer = null;
-        }
         if (staticIcon && spinnerIcon) {
             staticIcon.classList.add('hidden');
             spinnerIcon.classList.remove('hidden');
         }
     });
 
-    // Tombol 'x' diklik: kosongkan dan langsung submit tanpa menunggu
+    // Tombol 'x' diklik: kosongkan dan langsung submit
     if (clearBtn) {
         clearBtn.addEventListener('click', function() {
             searchInput.value = '';
@@ -1236,5 +1339,234 @@ window.deleteOfflineItem = function(clientId, name) {
         });
     }
 })();
+
+// ══════════════════════════════════════════════════════════════════════
+// ── Category Management Logic
+// ══════════════════════════════════════════════════════════════════════
+window.categoryColorsMap = @json(
+    $categoryListForThemes->mapWithKeys(fn($c) => [$c->nama => ['bg' => $c->theme_config['badge_bg'] ?? 'bg-purple-100', 'text' => $c->theme_config['badge_text'] ?? 'text-purple-800']])
+);
+
+let cachedCategories = @json($categoryListForThemes);
+
+function openCategoryManagementModal() {
+    const modal = document.getElementById('category-management-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    loadCategoriesList();
+}
+
+function closeCategoryManagementModal() {
+    const modal = document.getElementById('category-management-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    resetCategoryForm();
+}
+
+async function loadCategoriesList() {
+    const container = document.getElementById('category-items-container');
+    const countSpan = document.getElementById('cat-list-count');
+    if (!container) return;
+
+    try {
+        const res = await fetch('/data-obat/kategori', {
+            headers: { 'Accept': 'application/json' }
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+            cachedCategories = json.data;
+            if (countSpan) countSpan.textContent = cachedCategories.length;
+            renderCategoriesList(cachedCategories);
+        }
+    } catch (err) {
+        console.error('Gagal memuat kategori:', err);
+    }
+}
+
+function renderCategoriesList(items) {
+    const container = document.getElementById('category-items-container');
+    if (!container) return;
+
+    if (!items || items.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Belum ada kategori obat.</p>';
+        return;
+    }
+
+    container.innerHTML = items.map(cat => {
+        const cfg = cat.theme_config || {};
+        const bg = cfg.badge_bg || 'bg-gray-100';
+        const text = cfg.badge_text || 'text-gray-800';
+        const medCount = cat.medicines_count || 0;
+        const encodedCat = encodeURIComponent(JSON.stringify(cat));
+
+        return `
+            <div class="flex items-center justify-between p-2.5 rounded-xl border border-gray-200/90 bg-white hover:bg-gray-50/80 transition-colors gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${bg} ${text} shrink-0">
+                        ${cat.nama}
+                    </span>
+                    ${cat.deskripsi ? `<span class="text-[11px] text-gray-500 truncate max-w-[180px] sm:max-w-xs">${cat.deskripsi}</span>` : ''}
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <span class="text-[11px] font-semibold text-gray-400 mr-1">${medCount} obat</span>
+                    <button type="button" 
+                            onclick="handleEditCategoryClick('${encodedCat}')" 
+                            title="Edit Kategori"
+                            class="p-1 rounded-lg text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+                        </svg>
+                    </button>
+                    <button type="button" 
+                            onclick="handleDeleteCategoryClick(${cat.id}, '${cat.nama.replace(/'/g, "\\'")}', ${medCount})" 
+                            title="${medCount > 0 ? 'Kategori tidak dapat dihapus karena masih digunakan obat' : 'Hapus Kategori'}"
+                            class="p-1 rounded-lg ${medCount > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer'} transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function handleEditCategoryClick(encodedCat) {
+    try {
+        const cat = JSON.parse(decodeURIComponent(encodedCat));
+        document.getElementById('manage-cat-id').value = cat.id;
+        document.getElementById('manage-cat-nama').value = cat.nama;
+        document.getElementById('manage-cat-deskripsi').value = cat.deskripsi || '';
+        document.getElementById('cat-form-title').innerHTML = `
+            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+            </svg>
+            <span>Edit Kategori: ${cat.nama}</span>
+        `;
+        document.getElementById('btn-cancel-edit-cat').classList.remove('hidden');
+        document.getElementById('btn-submit-cat').querySelector('span').textContent = 'Perbarui Kategori';
+        document.getElementById('manage-cat-nama').focus();
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function resetCategoryForm() {
+    document.getElementById('manage-cat-id').value = '';
+    document.getElementById('manage-cat-nama').value = '';
+    document.getElementById('manage-cat-deskripsi').value = '';
+    document.getElementById('cat-form-title').innerHTML = `
+        <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        <span>Tambah Kategori Obat Baru</span>
+    `;
+    document.getElementById('btn-cancel-edit-cat').classList.add('hidden');
+    document.getElementById('btn-submit-cat').querySelector('span').textContent = 'Simpan Kategori';
+}
+
+async function handleCategoryFormSubmit(event) {
+    event.preventDefault();
+    const id = document.getElementById('manage-cat-id').value;
+    const nama = document.getElementById('manage-cat-nama').value.trim();
+    const deskripsi = document.getElementById('manage-cat-deskripsi').value.trim();
+
+    if (!nama) {
+        if (window.AgriSwal) window.AgriSwal.toastError('Nama kategori wajib diisi.');
+        return;
+    }
+
+    const btnSubmit = document.getElementById('btn-submit-cat');
+    const originalText = btnSubmit.querySelector('span').textContent;
+    btnSubmit.disabled = true;
+    btnSubmit.querySelector('span').textContent = 'Menyimpan...';
+
+    const isEdit = Boolean(id);
+    const url = isEdit ? `/data-obat/kategori/${id}` : '/data-obat/kategori';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ nama, deskripsi })
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+            if (window.AgriSwal) {
+                window.AgriSwal.toastSuccess(json.message);
+            }
+            resetCategoryForm();
+            await loadCategoriesList();
+
+            // Refresh halaman agar filter pills dan badges ikut terupdate secara otomatis
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        } else {
+            const errMsg = json.message || (json.errors ? Object.values(json.errors).flat().join(', ') : 'Gagal menyimpan kategori.');
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError(errMsg);
+            } else {
+                alert(errMsg);
+            }
+        }
+    } catch (err) {
+        console.error(err);
+        if (window.AgriSwal) window.AgriSwal.toastError('Terjadi kesalahan jaringan.');
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.querySelector('span').textContent = originalText;
+    }
+}
+
+function handleDeleteCategoryClick(id, nama, medCount) {
+    if (medCount > 0) {
+        if (window.AgriSwal) {
+            window.AgriSwal.toastError(`Kategori "${nama}" tidak dapat dihapus karena masih digunakan oleh ${medCount} data obat.`);
+        } else {
+            alert(`Kategori "${nama}" tidak dapat dihapus karena masih digunakan.`);
+        }
+        return;
+    }
+
+    const doDelete = async () => {
+        try {
+            const res = await fetch(`/data-obat/kategori/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+                }
+            });
+            const json = await res.json();
+            if (res.ok && json.success) {
+                if (window.AgriSwal) window.AgriSwal.toastSuccess(json.message);
+                await loadCategoriesList();
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                if (window.AgriSwal) window.AgriSwal.toastError(json.message || 'Gagal menghapus kategori.');
+            }
+        } catch (e) {
+            console.error(e);
+            if (window.AgriSwal) window.AgriSwal.toastError('Gagal menghubungi server.');
+        }
+    };
+
+    if (window.AgriSwal && typeof window.AgriSwal.confirmDelete === 'function') {
+        window.AgriSwal.confirmDelete('Hapus Kategori Obat?', nama, doDelete);
+    } else if (confirm(`Yakin ingin menghapus kategori "${nama}"?`)) {
+        doDelete();
+    }
+}
+
 </script>
 @endpush

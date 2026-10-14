@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Medicine;
+use App\Models\MedicineCategory;
 use App\Models\MedicinePurchase;
 use App\Services\CloudinaryService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class MedicineController extends Controller
 {
@@ -45,15 +49,17 @@ class MedicineController extends Controller
         }
 
         $medicines = $query->latest()->paginate(10)->withQueryString();
+        $categories = MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
 
-        return view('data-obat.index', compact('medicines'));
+        return view('data-obat.index', compact('medicines', 'categories'));
     }
 
     public function create()
     {
         $existingMedicines = Medicine::with('purchases')->get();
+        $categories = MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
 
-        return view('data-obat.form', compact('existingMedicines'));
+        return view('data-obat.form', compact('existingMedicines', 'categories'));
     }
 
     public function store(Request $request)
@@ -88,7 +94,7 @@ class MedicineController extends Controller
 
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
-            'jenis' => 'required|string|in:Fungisida,Insektisida,Pupuk,Vitamin,Bibit,Perlengkapan,Peralatan',
+            'jenis' => 'required|string|max:100',
             'cara_kerja' => 'nullable|string|in:Sistemik,Kontak,Sistemik + Kontak',
             'sasaran_obat' => 'nullable|string|max:255',
             'tanaman_sasaran' => 'required|string|max:255',
@@ -240,6 +246,15 @@ class MedicineController extends Controller
             return redirect('/data-obat')->with('success', "Obat '{$existing->nama}' sudah terdaftar{$msgDetail}.");
         }
 
+        // Pastikan kategori obat tersimpan di database dengan warna otomatis
+        MedicineCategory::firstOrCreate(
+            ['nama' => $validated['jenis']],
+            [
+                'warna' => MedicineCategory::getNextAvailableColor(),
+                'urutan' => (MedicineCategory::max('urutan') ?? 0) + 1,
+            ]
+        );
+
         // Jika obat belum ada, buat baru
         $medicine = Medicine::create($validated);
 
@@ -284,8 +299,9 @@ class MedicineController extends Controller
     {
         $medicine->load('purchases');
         $existingMedicines = Medicine::with('purchases')->where('id', '!=', $medicine->id)->get();
+        $categories = MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
 
-        return view('data-obat.form', compact('medicine', 'existingMedicines'));
+        return view('data-obat.form', compact('medicine', 'existingMedicines', 'categories'));
     }
 
     public function update(Request $request, Medicine $medicine)
@@ -318,7 +334,7 @@ class MedicineController extends Controller
 
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
-            'jenis' => 'required|string|in:Fungisida,Insektisida,Pupuk,Vitamin,Bibit,Perlengkapan,Peralatan',
+            'jenis' => 'required|string|max:100',
             'cara_kerja' => 'nullable|string|in:Sistemik,Kontak,Sistemik + Kontak',
             'sasaran_obat' => 'nullable|string|max:255',
             'tanaman_sasaran' => 'required|string|max:255',
@@ -360,6 +376,15 @@ class MedicineController extends Controller
         $allPhotoPaths = array_values(array_unique(array_merge($currentPaths, $newPhotoPaths)));
         $validated['foto_nota'] = ! empty($allPhotoPaths) ? json_encode($allPhotoPaths) : null;
         unset($validated['deleted_foto_paths']);
+
+        // Pastikan kategori obat tersimpan di database dengan warna otomatis
+        MedicineCategory::firstOrCreate(
+            ['nama' => $validated['jenis']],
+            [
+                'warna' => MedicineCategory::getNextAvailableColor(),
+                'urutan' => (MedicineCategory::max('urutan') ?? 0) + 1,
+            ]
+        );
 
         $medicine->update($validated);
 
@@ -559,5 +584,132 @@ class MedicineController extends Controller
         }
 
         return ($res['storage_type'] ?? '') === 'cloudinary' ? ($res['url'] ?? null) : ($res['public_id'] ?? $res['url'] ?? null);
+    }
+
+    /**
+     * Dapatkan daftar kategori obat (untuk JSON endpoint / sync).
+     */
+    public function getCategories(Request $request): JsonResponse
+    {
+        $categories = MedicineCategory::withCount('medicines')
+            ->orderBy('urutan')
+            ->orderBy('nama')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories,
+            'color_presets' => MedicineCategory::colorPresets(),
+        ]);
+    }
+
+    /**
+     * Simpan kategori obat baru.
+     */
+    public function storeCategory(Request $request): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'nama' => 'required|string|max:100|unique:medicine_categories,nama',
+            'warna' => 'nullable|string|max:50',
+            'deskripsi' => 'nullable|string|max:255',
+            'urutan' => 'nullable|integer',
+        ], [
+            'nama.unique' => 'Kategori obat dengan nama tersebut sudah ada.',
+            'nama.required' => 'Nama kategori obat wajib diisi.',
+        ]);
+
+        if (empty($validated['warna'])) {
+            $validated['warna'] = MedicineCategory::getNextAvailableColor();
+        }
+
+        if (! isset($validated['urutan'])) {
+            $validated['urutan'] = (MedicineCategory::max('urutan') ?? 0) + 1;
+        }
+
+        $category = MedicineCategory::create($validated);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Kategori '{$category->nama}' berhasil ditambahkan!",
+                'data' => $category,
+                'theme_config' => $category->theme_config,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Kategori '{$category->nama}' berhasil ditambahkan!");
+    }
+
+    /**
+     * Perbarui kategori obat.
+     */
+    public function updateCategory(Request $request, MedicineCategory $category): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'nama' => ['required', 'string', 'max:100', Rule::unique('medicine_categories', 'nama')->ignore($category->id)],
+            'warna' => 'nullable|string|max:50',
+            'deskripsi' => 'nullable|string|max:255',
+            'urutan' => 'nullable|integer',
+        ], [
+            'nama.unique' => 'Kategori obat dengan nama tersebut sudah ada.',
+            'nama.required' => 'Nama kategori obat wajib diisi.',
+        ]);
+
+        if (empty($validated['warna'])) {
+            $validated['warna'] = $category->warna ?: MedicineCategory::getNextAvailableColor($category->id);
+        }
+
+        $oldName = $category->nama;
+        $category->update($validated);
+
+        if ($oldName !== $category->nama) {
+            Medicine::where('jenis', $oldName)->update(['jenis' => $category->nama]);
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Kategori '{$category->nama}' berhasil diperbarui!",
+                'data' => $category,
+                'theme_config' => $category->theme_config,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Kategori '{$category->nama}' berhasil diperbarui!");
+    }
+
+    /**
+     * Hapus kategori obat.
+     */
+    public function destroyCategory(Request $request, MedicineCategory $category): RedirectResponse|JsonResponse
+    {
+        $count = Medicine::where('jenis', $category->nama)->count();
+
+        if ($count > 0) {
+            $msg = "Kategori '{$category->nama}' tidak dapat dihapus karena masih digunakan oleh {$count} data obat.";
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $msg,
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', $msg);
+        }
+
+        $name = $category->nama;
+        $category->delete();
+
+        $msg = "Kategori '{$name}' berhasil dihapus.";
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+            ]);
+        }
+
+        return redirect()->back()->with('success', $msg);
     }
 }

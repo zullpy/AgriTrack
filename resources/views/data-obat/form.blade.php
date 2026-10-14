@@ -109,76 +109,31 @@
 
                 {{-- Kategori (Jenis) --}}
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Kategori <span class="text-red-500">*</span>
-                    </label>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Kategori <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5" id="kategori-group">
                         @php
-                            $kategoriConfigs = [
-                                'Fungisida' => [
-                                    'label'        => 'Fungisida',
-                                    'theme'        => 'purple',
-                                    'hover_card'   => 'hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-900 hover:shadow-md hover:-translate-y-0.5',
-                                    'hover_dot'    => 'group-hover:bg-purple-400 group-hover:scale-125',
-                                    'checked_card' => 'border-purple-500 bg-purple-50/90 text-purple-900 font-bold ring-2 ring-purple-400/25 shadow-sm shadow-purple-500/10',
-                                    'checked_dot'  => 'bg-purple-600 ring-2 ring-purple-200 scale-110',
-                                    'badge_icon'   => 'text-purple-600',
-                                ],
-                                'Insektisida' => [
-                                    'label'        => 'Insektisida',
-                                    'theme'        => 'rose',
-                                    'hover_card'   => 'hover:border-rose-300 hover:bg-rose-50/50 hover:text-rose-900 hover:shadow-md hover:-translate-y-0.5',
-                                    'hover_dot'    => 'group-hover:bg-rose-400 group-hover:scale-125',
-                                    'checked_card' => 'border-rose-500 bg-rose-50/90 text-rose-900 font-bold ring-2 ring-rose-400/25 shadow-sm shadow-rose-500/10',
-                                    'checked_dot'  => 'bg-rose-600 ring-2 ring-rose-200 scale-110',
-                                    'badge_icon'   => 'text-rose-600',
-                                ],
-                                'Pupuk' => [
-                                    'label'        => 'Pupuk',
-                                    'theme'        => 'emerald',
-                                    'hover_card'   => 'hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-900 hover:shadow-md hover:-translate-y-0.5',
-                                    'hover_dot'    => 'group-hover:bg-emerald-400 group-hover:scale-125',
-                                    'checked_card' => 'border-emerald-500 bg-emerald-50/90 text-emerald-900 font-bold ring-2 ring-emerald-400/25 shadow-sm shadow-emerald-500/10',
-                                    'checked_dot'  => 'bg-emerald-600 ring-2 ring-emerald-200 scale-110',
-                                    'badge_icon'   => 'text-emerald-600',
-                                ],
-                                'Vitamin' => [
-                                    'label'        => 'Vitamin',
-                                    'theme'        => 'teal',
-                                    'hover_card'   => 'hover:border-teal-300 hover:bg-teal-50/50 hover:text-teal-900 hover:shadow-md hover:-translate-y-0.5',
-                                    'hover_dot'    => 'group-hover:bg-teal-400 group-hover:scale-125',
-                                    'checked_card' => 'border-teal-500 bg-teal-50/90 text-teal-900 font-bold ring-2 ring-teal-400/25 shadow-sm shadow-teal-500/10',
-                                    'checked_dot'  => 'bg-teal-600 ring-2 ring-teal-200 scale-110',
-                                    'badge_icon'   => 'text-teal-600',
-                                ],
-                                'Bibit' => [
-                                    'label'        => 'Bibit',
-                                    'theme'        => 'lime',
-                                    'hover_card'   => 'hover:border-lime-300 hover:bg-lime-50/50 hover:text-lime-900 hover:shadow-md hover:-translate-y-0.5',
-                                    'hover_dot'    => 'group-hover:bg-lime-400 group-hover:scale-125',
-                                    'checked_card' => 'border-lime-500 bg-lime-50/90 text-lime-900 font-bold ring-2 ring-lime-400/25 shadow-sm shadow-lime-500/10',
-                                    'checked_dot'  => 'bg-lime-600 ring-2 ring-lime-200 scale-110',
-                                    'badge_icon'   => 'text-lime-600',
-                                ],
-                                'Perlengkapan' => [
-                                    'label'        => 'Perlengkapan',
-                                    'theme'        => 'amber',
-                                    'hover_card'   => 'hover:border-amber-300 hover:bg-amber-50/50 hover:text-amber-900 hover:shadow-md hover:-translate-y-0.5',
-                                    'hover_dot'    => 'group-hover:bg-amber-400 group-hover:scale-125',
-                                    'checked_card' => 'border-amber-500 bg-amber-50/90 text-amber-900 font-bold ring-2 ring-amber-400/25 shadow-sm shadow-amber-500/10',
-                                    'checked_dot'  => 'bg-amber-600 ring-2 ring-amber-200 scale-110',
-                                    'badge_icon'   => 'text-amber-600',
-                                ],
-                                'Peralatan' => [
-                                    'label'        => 'Peralatan',
-                                    'theme'        => 'blue',
-                                    'hover_card'   => 'hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-900 hover:shadow-md hover:-translate-y-0.5',
-                                    'hover_dot'    => 'group-hover:bg-blue-400 group-hover:scale-125',
-                                    'checked_card' => 'border-blue-500 bg-blue-50/90 text-blue-900 font-bold ring-2 ring-blue-400/25 shadow-sm shadow-blue-500/10',
-                                    'checked_dot'  => 'bg-blue-600 ring-2 ring-blue-200 scale-110',
-                                    'badge_icon'   => 'text-blue-600',
-                                ],
-                            ];
+                            $categoryCollection = isset($categories) && $categories->isNotEmpty()
+                                ? $categories
+                                : \App\Models\MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
+
+                            $kategoriConfigs = [];
+                            foreach ($categoryCollection as $catItem) {
+                                $cfg = $catItem->theme_config;
+                                $kategoriConfigs[$catItem->nama] = [
+                                    'label'        => $catItem->nama,
+                                    'theme'        => $cfg['theme'] ?? 'purple',
+                                    'hover_card'   => $cfg['hover_card'],
+                                    'hover_dot'    => $cfg['hover_dot'],
+                                    'checked_card' => $cfg['checked_card'],
+                                    'checked_dot'  => $cfg['checked_dot'],
+                                    'badge_icon'   => $cfg['badge_icon'],
+                                ];
+                            }
                         @endphp
                         @foreach ($kategoriConfigs as $val => $cfg)
                             @php $isChecked = old('jenis', $medicine->jenis ?? 'Fungisida') === $val; @endphp
@@ -202,6 +157,15 @@
                                 </svg>
                             </label>
                         @endforeach
+
+                        {{-- Card Tambah Kategori di akhir Grid --}}
+                        <button type="button"
+                                onclick="openAddCategoryModal()"
+                                id="btn-add-kategori-card"
+                                class="flex items-center justify-center gap-2 p-2.5 sm:p-3 rounded-xl border-2 border-dashed border-gray-300 hover:border-emerald-500 bg-gray-50/60 hover:bg-emerald-50/40 text-gray-600 hover:text-emerald-700 text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 group">
+                            <svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            <span>Kategori Baru</span>
+                        </button>
                     </div>
                     @error('jenis')
                         <p class="text-xs text-red-600 mt-1 font-semibold">{{ $message }}</p>
@@ -661,6 +625,55 @@
             </a>
         </div>
     </form>
+</div>
+
+{{-- ── MODAL QUICK TAMBAH KATEGORI OBAT ── --}}
+<div id="quick-add-category-modal" 
+     class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-xs items-center justify-center p-3 sm:p-4 transition-opacity duration-200"
+     onclick="if(event.target === this) closeAddCategoryModal()">
+    <div class="bg-surface rounded-2xl border border-gray-200 shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden animate-slide-up"
+         onclick="event.stopPropagation()">
+        
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/80 shrink-0">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <h3 class="text-base font-bold text-gray-900">Tambah Kategori Obat Baru</h3>
+            </div>
+            <button type="button" 
+                    onclick="closeAddCategoryModal()"
+                    class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="form-quick-add-category" onsubmit="handleQuickAddCategorySubmit(event)" class="p-4 sm:p-5 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                    Nama Kategori <span class="text-red-500">*</span>
+                </label>
+                <input type="text"
+                       id="quick-cat-nama"
+                       required
+                       placeholder="Contoh: Herbisida, Akarisida, Perekat..."
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button type="button" 
+                        onclick="closeAddCategoryModal()"
+                        class="px-3.5 py-2 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" 
+                        id="btn-quick-cat-submit"
+                        class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer flex items-center gap-1.5">
+                    <span>Simpan & Terapkan</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 @endsection
@@ -1531,5 +1544,127 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ══════════════════════════════════════════════════════════════════════
+// ── Quick Add Category Modal Logic for Form
+// ══════════════════════════════════════════════════════════════════════
+function openAddCategoryModal() {
+    const modal = document.getElementById('quick-add-category-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+        const input = document.getElementById('quick-cat-nama');
+        if (input) input.focus();
+    }, 100);
+}
+
+function closeAddCategoryModal() {
+    const modal = document.getElementById('quick-add-category-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.getElementById('quick-cat-nama').value = '';
+    const desc = document.getElementById('quick-cat-deskripsi');
+    if (desc) desc.value = '';
+}
+
+async function handleQuickAddCategorySubmit(event) {
+    event.preventDefault();
+    const namaInput = document.getElementById('quick-cat-nama');
+    const nama = namaInput ? namaInput.value.trim() : '';
+    const deskripsi = document.getElementById('quick-cat-deskripsi')?.value.trim() || '';
+
+    if (!nama) {
+        if (window.AgriSwal) window.AgriSwal.toastError('Nama kategori wajib diisi.');
+        return;
+    }
+
+    const btn = document.getElementById('btn-quick-cat-submit');
+    const origText = btn.querySelector('span').textContent;
+    btn.disabled = true;
+    btn.querySelector('span').textContent = 'Menyimpan...';
+
+    try {
+        const res = await fetch('/data-obat/kategori', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.querySelector('input[name="_token"]')?.value
+            },
+            body: JSON.stringify({ nama, deskripsi })
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+            const cat = json.data;
+            const cfg = json.theme_config || cat.theme_config || {};
+
+            // Check if already in pills
+            const existingRadio = document.querySelector(`input[name="jenis"][value="${cat.nama}"]`);
+            if (existingRadio) {
+                existingRadio.checked = true;
+                existingRadio.dispatchEvent(new Event('change'));
+            } else {
+                // Construct new pill HTML and insert before #btn-add-kategori-card
+                const label = document.createElement('label');
+                label.className = `group kategori-pill relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ease-out select-none active:scale-[0.98] active:translate-y-0 ${cfg.checked_card || 'border-emerald-500 bg-emerald-50/90 text-emerald-900 font-bold'}`;
+                label.dataset.theme = cfg.theme || 'emerald';
+                label.dataset.checkedCard = cfg.checked_card || '';
+                label.dataset.checkedDot = cfg.checked_dot || '';
+                label.dataset.hoverCard = cfg.hover_card || '';
+                label.dataset.hoverDot = cfg.hover_dot || '';
+
+                label.innerHTML = `
+                    <input type="radio" name="jenis" value="${cat.nama}" class="sr-only" checked required>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="pill-dot w-2.5 h-2.5 rounded-full transition-all duration-200 shrink-0 ${cfg.checked_dot || 'bg-emerald-600'}"></span>
+                        <span class="text-xs tracking-tight truncate">${cat.nama}</span>
+                    </div>
+                    <svg class="pill-check w-3.5 h-3.5 transition-all duration-200 shrink-0 opacity-100 scale-100 ${cfg.badge_icon || 'text-emerald-600'}" 
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                    </svg>
+                `;
+
+                const addCardBtn = document.getElementById('btn-add-kategori-card');
+                const group = document.getElementById('kategori-group');
+                if (addCardBtn && group) {
+                    group.insertBefore(label, addCardBtn);
+                } else if (group) {
+                    group.appendChild(label);
+                }
+
+                // Re-bind setupPillGroup
+                setupPillGroup('.kategori-pill', true, false);
+                const newInp = label.querySelector('input');
+                if (newInp) {
+                    newInp.checked = true;
+                    newInp.dispatchEvent(new Event('change'));
+                }
+            }
+
+            closeAddCategoryModal();
+            if (window.AgriSwal) {
+                window.AgriSwal.toastSuccess(`Kategori "${cat.nama}" berhasil ditambahkan & dipilih!`);
+            }
+        } else {
+            const errMsg = json.message || (json.errors ? Object.values(json.errors).flat().join(', ') : 'Gagal menambahkan kategori.');
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError(errMsg);
+            } else {
+                alert(errMsg);
+            }
+        }
+    } catch (err) {
+        console.error(err);
+        if (window.AgriSwal) window.AgriSwal.toastError('Terjadi kesalahan jaringan.');
+    } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = origText;
+    }
+}
 </script>
 @endpush

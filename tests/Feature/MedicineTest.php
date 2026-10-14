@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Medicine;
+use App\Models\MedicineCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -543,5 +544,198 @@ class MedicineTest extends TestCase
         $purchase = $medicine->purchases()->find($purchaseId);
         $this->assertNotNull($purchase);
         $this->assertNull($purchase->harga);
+    }
+
+    public function test_can_get_medicine_categories(): void
+    {
+        $response = $this->getJson('/data-obat/kategori');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ])
+            ->assertJsonStructure([
+                'success',
+                'data' => [
+                    '*' => ['id', 'nama', 'warna', 'deskripsi', 'urutan', 'theme_config'],
+                ],
+                'color_presets',
+            ]);
+    }
+
+    public function test_can_create_new_medicine_category(): void
+    {
+        $response = $this->postJson('/data-obat/kategori', [
+            'nama' => 'Herbisida',
+            'warna' => 'orange',
+            'deskripsi' => 'Racun pembasmi gulma dan rumput liar',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'nama' => 'Herbisida',
+                    'warna' => 'orange',
+                    'deskripsi' => 'Racun pembasmi gulma dan rumput liar',
+                ],
+            ]);
+
+        $this->assertDatabaseHas('medicine_categories', [
+            'nama' => 'Herbisida',
+            'warna' => 'orange',
+        ]);
+    }
+
+    public function test_cannot_create_duplicate_medicine_category_name(): void
+    {
+        $this->postJson('/data-obat/kategori', [
+            'nama' => 'Herbisida',
+            'warna' => 'orange',
+        ])->assertStatus(200);
+
+        $response = $this->postJson('/data-obat/kategori', [
+            'nama' => 'Herbisida',
+            'warna' => 'cyan',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['nama']);
+    }
+
+    public function test_can_update_medicine_category_and_sync_medicine_jenis(): void
+    {
+        $category = MedicineCategory::create([
+            'nama' => 'Herbisida Awal',
+            'warna' => 'orange',
+            'urutan' => 8,
+        ]);
+
+        $medicine = Medicine::create([
+            'nama' => 'Gramoxone 276 SL',
+            'jenis' => 'Herbisida Awal',
+            'tanaman_sasaran' => 'Lahan Tanpa Tanaman',
+            'harga' => 95000,
+        ]);
+
+        $response = $this->putJson("/data-obat/kategori/{$category->id}", [
+            'nama' => 'Herbisida Kontak',
+            'warna' => 'red',
+            'deskripsi' => 'Herbisida kontak purna tumbuh',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $category->refresh();
+        $this->assertEquals('Herbisida Kontak', $category->nama);
+        $this->assertEquals('red', $category->warna);
+
+        $medicine->refresh();
+        $this->assertEquals('Herbisida Kontak', $medicine->jenis);
+    }
+
+    public function test_cannot_delete_category_that_has_medicines(): void
+    {
+        $category = MedicineCategory::create([
+            'nama' => 'Akarisida',
+            'warna' => 'teal',
+            'urutan' => 9,
+        ]);
+
+        Medicine::create([
+            'nama' => 'Samite 135 EC',
+            'jenis' => 'Akarisida',
+            'tanaman_sasaran' => 'Cabai',
+            'harga' => 70000,
+        ]);
+
+        $response = $this->deleteJson("/data-obat/kategori/{$category->id}");
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+            ]);
+
+        $this->assertDatabaseHas('medicine_categories', [
+            'id' => $category->id,
+            'nama' => 'Akarisida',
+        ]);
+    }
+
+    public function test_can_delete_unused_category(): void
+    {
+        $category = MedicineCategory::create([
+            'nama' => 'Kategori Kosong',
+            'warna' => 'slate',
+            'urutan' => 20,
+        ]);
+
+        $response = $this->deleteJson("/data-obat/kategori/{$category->id}");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseMissing('medicine_categories', [
+            'id' => $category->id,
+        ]);
+    }
+
+    public function test_can_create_medicine_with_custom_category(): void
+    {
+        MedicineCategory::create([
+            'nama' => 'ZPT',
+            'warna' => 'cyan',
+            'urutan' => 15,
+        ]);
+
+        $payload = [
+            'nama' => 'Atonik 6.0 L',
+            'jenis' => 'ZPT',
+            'tanaman_sasaran' => 'Padi, Cabai',
+            'harga' => 45000,
+        ];
+
+        $response = $this->post('/data-obat', $payload);
+        $response->assertRedirect('/data-obat');
+
+        $this->assertDatabaseHas('medicines', [
+            'nama' => 'Atonik 6.0 L',
+            'jenis' => 'ZPT',
+        ]);
+    }
+
+    public function test_creating_multiple_categories_without_specifying_color_assigns_distinct_automatic_colors(): void
+    {
+        $response1 = $this->postJson('/data-obat/kategori', [
+            'nama' => 'Kategori Auto 1',
+        ]);
+        $response1->assertStatus(200);
+        $color1 = $response1->json('data.warna');
+
+        $response2 = $this->postJson('/data-obat/kategori', [
+            'nama' => 'Kategori Auto 2',
+        ]);
+        $response2->assertStatus(200);
+        $color2 = $response2->json('data.warna');
+
+        $response3 = $this->postJson('/data-obat/kategori', [
+            'nama' => 'Kategori Auto 3',
+        ]);
+        $response3->assertStatus(200);
+        $color3 = $response3->json('data.warna');
+
+        $this->assertNotEmpty($color1);
+        $this->assertNotEmpty($color2);
+        $this->assertNotEmpty($color3);
+
+        // Pastikan setiap kategori baru mendapatkan warna yang berbeda
+        $this->assertNotEquals($color1, $color2);
+        $this->assertNotEquals($color2, $color3);
+        $this->assertNotEquals($color1, $color3);
     }
 }

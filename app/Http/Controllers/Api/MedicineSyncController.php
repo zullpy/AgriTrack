@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Medicine;
+use App\Models\MedicineCategory;
 use App\Services\CloudinaryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,7 +57,10 @@ class MedicineSyncController extends Controller
                 $data = $item['data'] ?? [];
                 $localId = $item['local_id'] ?? null;
 
-                $validTypes = ['Fungisida', 'Insektisida', 'Pupuk', 'Vitamin', 'Bibit', 'Perlengkapan', 'Peralatan'];
+                $validTypes = MedicineCategory::pluck('nama')->toArray();
+                if (empty($validTypes)) {
+                    $validTypes = ['Fungisida', 'Insektisida', 'Pupuk', 'Vitamin', 'Bibit', 'Perlengkapan', 'Peralatan'];
+                }
 
                 if ($action === 'create') {
                     $newPhotos = [];
@@ -64,9 +68,15 @@ class MedicineSyncController extends Controller
                         $newPhotos = $this->saveBase64Photos($data['photos_base64']);
                     }
 
+                    $jenisInput = trim((string) ($data['jenis'] ?? ''));
+                    $jenis = ! empty($jenisInput) ? $jenisInput : 'Fungisida';
+                    if (! in_array($jenis, $validTypes)) {
+                        MedicineCategory::firstOrCreate(['nama' => $jenis], ['warna' => MedicineCategory::getNextAvailableColor(), 'urutan' => 99]);
+                    }
+
                     $medicine = Medicine::create([
                         'nama' => $data['nama'] ?? 'Tanpa Nama',
-                        'jenis' => in_array($data['jenis'] ?? '', $validTypes) ? $data['jenis'] : 'Fungisida',
+                        'jenis' => $jenis,
                         'cara_kerja' => $data['cara_kerja'] ?? null,
                         'sasaran_obat' => $data['sasaran_obat'] ?? null,
                         'tanaman_sasaran' => $data['tanaman_sasaran'] ?? '-',
@@ -105,8 +115,12 @@ class MedicineSyncController extends Controller
                             if (isset($data['nama'])) {
                                 $updateData['nama'] = $data['nama'];
                             }
-                            if (isset($data['jenis']) && in_array($data['jenis'], $validTypes)) {
-                                $updateData['jenis'] = $data['jenis'];
+                            if (isset($data['jenis']) && trim((string) $data['jenis']) !== '') {
+                                $cleanJenis = trim((string) $data['jenis']);
+                                if (! in_array($cleanJenis, $validTypes)) {
+                                    MedicineCategory::firstOrCreate(['nama' => $cleanJenis], ['warna' => MedicineCategory::getNextAvailableColor(), 'urutan' => 99]);
+                                }
+                                $updateData['jenis'] = $cleanJenis;
                             }
                             if (array_key_exists('cara_kerja', $data)) {
                                 $updateData['cara_kerja'] = $data['cara_kerja'];
