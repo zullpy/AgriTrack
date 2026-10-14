@@ -124,15 +124,6 @@
                         {{ $cat->nama }}
                     </a>
                 @endforeach
-
-                {{-- Quick Add / Manage Category pill --}}
-                <button type="button"
-                        onclick="openCategoryManagementModal()"
-                        title="Tambah & Kelola Kategori"
-                        class="px-2 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all shrink-0 flex items-center gap-1 cursor-pointer">
-                    <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                    <span>+ Kategori</span>
-                </button>
             </div>
         </div>
 
@@ -1268,7 +1259,7 @@ window.deleteOfflineItem = function(clientId, name) {
     });
 };
 
-// ── Debounce Auto-Search Tanpa Perlu Enter ──
+// ── Pencarian: submit hanya saat Enter atau klik tombol × ──
 (function() {
     const searchForm = document.getElementById('search-medicine-form');
     const searchInput = document.getElementById('search-input');
@@ -1278,51 +1269,14 @@ window.deleteOfflineItem = function(clientId, name) {
 
     if (!searchForm || !searchInput) return;
 
-    // Jika reload terjadi setelah auto-search, kembalikan kursor & fokus ke input pencarian
-    if (sessionStorage.getItem('medicine_search_auto') === 'true') {
-        sessionStorage.removeItem('medicine_search_auto');
-        searchInput.focus();
-        const len = searchInput.value.length;
-        searchInput.setSelectionRange(len, len);
-    }
-
-    let initialValue = searchInput.value.trim();
-
-    function executeSearch(isAuto = false) {
-        const currentValue = searchInput.value.trim();
-        // Jangan request jika nilai tidak berubah dari yang sedang aktif
-        if (currentValue === initialValue) {
-            return;
-        }
-
-        if (isAuto) {
-            sessionStorage.setItem('medicine_search_auto', 'true');
-        }
-
-        if (staticIcon && spinnerIcon) {
-            staticIcon.classList.add('hidden');
-            spinnerIcon.classList.remove('hidden');
-        }
-
-        searchForm.submit();
-    }
-
-    // Listener pengetikan — langsung submit tanpa debounce
+    // Tampilkan / sembunyikan tombol × saat mengetik
     searchInput.addEventListener('input', function() {
-        const val = this.value;
-
         if (clearBtn) {
-            if (val.length > 0) {
-                clearBtn.classList.remove('hidden');
-            } else {
-                clearBtn.classList.add('hidden');
-            }
+            clearBtn.classList.toggle('hidden', this.value.length === 0);
         }
-
-        executeSearch(true);
     });
 
-    // Jika user menekan Enter di input atau form disubmit manual
+    // Spinner saat form disubmit (Enter)
     searchForm.addEventListener('submit', function() {
         if (staticIcon && spinnerIcon) {
             staticIcon.classList.add('hidden');
@@ -1330,12 +1284,12 @@ window.deleteOfflineItem = function(clientId, name) {
         }
     });
 
-    // Tombol 'x' diklik: kosongkan dan langsung submit
+    // Tombol × diklik: kosongkan dan langsung submit
     if (clearBtn) {
         clearBtn.addEventListener('click', function() {
             searchInput.value = '';
             clearBtn.classList.add('hidden');
-            executeSearch(false);
+            searchForm.submit();
         });
     }
 })();
