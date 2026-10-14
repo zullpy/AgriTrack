@@ -395,7 +395,7 @@
                                     <td class="px-5 py-3.5 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center gap-1.5">
                                             <button type="button"
-                                                    onclick='openEditTransactionModal(@json($t))'
+                                                    onclick="openEditTransactionModal({{ $t['raw_id'] }})"
                                                     class="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                                                     title="Edit Transaksi">
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -528,7 +528,7 @@
                                                 @endif
 
                                                 <button type="button"
-                                                        onclick='openEditTransactionModal(@json($t))'
+                                                        onclick="openEditTransactionModal({{ $t['raw_id'] }})"
                                                         class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
                                                     Edit
                                                 </button>
@@ -660,13 +660,12 @@
                     </label>
                     <div class="relative">
                         <span class="absolute left-3.5 top-2.5 text-sm font-bold text-gray-400">Rp</span>
-                        <input type="number"
+                        <input type="text"
+                               inputmode="numeric"
                                id="create-nominal"
                                name="nominal"
                                required
-                               min="1"
-                               step="1"
-                               placeholder="50000"
+                               placeholder="50.000"
                                class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                     </div>
                 </div>
@@ -859,12 +858,12 @@
                     </label>
                     <div class="relative">
                         <span class="absolute left-3.5 top-2.5 text-sm font-bold text-gray-400">Rp</span>
-                        <input type="number"
+                        <input type="text"
+                               inputmode="numeric"
                                id="edit-nominal"
                                name="nominal"
                                required
-                               min="1"
-                               step="1"
+                               placeholder="50.000"
                                class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                     </div>
                 </div>
@@ -1187,6 +1186,7 @@
     let currentTransaksiList = @json($transaksiList);
     let currentPeriode = '{{ $periode }}';
     let currentFilterType = 'all';
+    let currentEditTransaction = null;
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
 
     function escapeHtml(unsafe) {
@@ -1212,6 +1212,9 @@
         if (el) {
             el.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
+        }
+        if (id === 'modal-edit-transaksi') {
+            currentEditTransaction = null;
         }
     }
 
@@ -1358,9 +1361,7 @@
         const subSelect = document.getElementById(`${prefix}-select-sub-kategori`);
         const subInput = document.getElementById(`${prefix}-input-sub-kategori`);
         if (subSelect && subInput) {
-            if (subSelect.value) {
-                subInput.value = subSelect.value;
-            }
+            subInput.value = subSelect.value || '';
         }
     }
 
@@ -1393,13 +1394,20 @@
     }
 
     // Modal Edit Transaksi
-    function openEditTransactionModal(item) {
+    function openEditTransactionModal(itemOrId) {
+        let item = itemOrId;
+        if (typeof itemOrId === 'number' || typeof itemOrId === 'string') {
+            item = currentTransaksiList.find(t => t.raw_id == itemOrId || t.id == itemOrId);
+        }
+        if (!item) return;
+
+        currentEditTransaction = item;
         const form = document.getElementById('form-edit-transaksi');
-        form.action = '/keuangan/' + item.raw_id;
+        form.action = '/keuangan/' + (item.raw_id || item.id);
 
         setEditType(item.tipe, item.kategori, item.sub_kategori);
         document.getElementById('edit-judul').value = item.judul || '';
-        document.getElementById('edit-nominal').value = item.nominal || '';
+        document.getElementById('edit-nominal').value = formatRupiahNumber(item.nominal || '');
 
         let tgl = '';
         if (item.tanggal_raw) {
@@ -1574,6 +1582,44 @@
     // ── Helper: Format Rupiah ──
     function formatRupiah(num) {
         return 'Rp ' + Math.round(Number(num || 0)).toLocaleString('id-ID');
+    }
+
+    function formatRupiahNumber(val) {
+        if (!val && val !== 0) return '';
+        const digits = val.toString().replace(/[^0-9]/g, '');
+        if (!digits) return '';
+        return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function bindRupiahInput(inputEl) {
+        if (!inputEl) return;
+
+        inputEl.addEventListener('input', () => {
+            const cursorPosition = inputEl.selectionStart;
+            const prevVal = inputEl.value;
+            const digitsBeforeCursor = prevVal.slice(0, cursorPosition).replace(/\D/g, '').length;
+
+            const formatted = formatRupiahNumber(prevVal);
+            inputEl.value = formatted;
+
+            let newCursorPos = 0;
+            let digitCount = 0;
+            for (let i = 0; i < formatted.length; i++) {
+                if (/\d/.test(formatted[i])) digitCount++;
+                if (digitCount === digitsBeforeCursor) {
+                    newCursorPos = i + 1;
+                    break;
+                }
+            }
+            if (digitCount < digitsBeforeCursor || formatted.length === 0) {
+                newCursorPos = formatted.length;
+            }
+            inputEl.setSelectionRange(newCursorPos, newCursorPos);
+        });
+
+        inputEl.addEventListener('blur', () => {
+            inputEl.value = formatRupiahNumber(inputEl.value);
+        });
     }
 
     // ── Helper: Kelompokkan Transaksi Berdasarkan Kategori & Sub-Kategori ──
@@ -1855,7 +1901,7 @@
                             <td class="px-5 py-3.5 text-center whitespace-nowrap">
                                 <div class="flex items-center justify-center gap-1.5">
                                     <button type="button"
-                                            onclick='openEditTransactionModal(${JSON.stringify(t)})'
+                                            onclick="openEditTransactionModal('${effectiveId}')"
                                             class="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                                             title="Edit Transaksi">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1959,7 +2005,7 @@
                                 <div class="flex items-center justify-end gap-2 pt-1 border-t border-gray-100">
                                     ${notaBtn}
                                     <button type="button"
-                                            onclick='openEditTransactionModal(${JSON.stringify(t)})'
+                                            onclick="openEditTransactionModal('${effectiveId}')"
                                             class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
                                         Edit
                                     </button>
@@ -2351,6 +2397,9 @@
 
     // ── Form Submit Handlers (Online & Offline Support) ──
     document.addEventListener('DOMContentLoaded', function() {
+        bindRupiahInput(document.getElementById('create-nominal'));
+        bindRupiahInput(document.getElementById('edit-nominal'));
+
         // Jika sedang offline saat halaman dibuka, render data dari IndexedDB
         if (!navigator.onLine) {
             loadKeuanganData();
@@ -2377,6 +2426,16 @@
                 }
 
                 const formData = new FormData(this);
+
+                const nominalVal = parseInt((formData.get('nominal') || '').toString().replace(/[^0-9]/g, '') || '0', 10);
+                if (nominalVal <= 0) {
+                    notifyError('Nominal harus lebih dari 0');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = originalText;
+                    }
+                    return;
+                }
 
                 // Mode Offline
                 if (!navigator.onLine) {
@@ -2502,57 +2561,72 @@
                     submitBtn.innerText = 'Menyimpan...';
                 }
 
-                const formData = new FormData(this);
-                const rawId = currentEditTransaction ? (currentEditTransaction.raw_id || currentEditTransaction.id) : null;
-
-                // Mode Offline
-                if (!navigator.onLine) {
-                    try {
-                        const fileInput = this.querySelector('input[name="foto_nota"]');
-                        let base64Photo = null;
-                        if (fileInput && fileInput.files && fileInput.files[0]) {
-                            base64Photo = await fileToBase64(fileInput.files[0]);
-                        }
-
-                        const offlineData = {
-                            tipe: formData.get('tipe'),
-                            kategori: formData.get('kategori'),
-                            sub_kategori: formData.get('sub_kategori'),
-                            judul: formData.get('judul'),
-                            nominal: formData.get('nominal'),
-                            tanggal: formData.get('tanggal'),
-                            crop_id: formData.get('crop_id'),
-                            keterangan: formData.get('keterangan'),
-                            foto_nota_base64: base64Photo
-                        };
-
-                        if (window.AgriOfflineStore && rawId) {
-                            await window.AgriOfflineStore.updateKeuanganTransactionOffline(rawId, offlineData);
-                            closeModal('modal-edit-transaksi');
-                            notifySuccess('Perubahan disimpan di HP (Mode Offline). Akan disinkronkan saat online.');
-                            loadKeuanganData();
-                            const p = await window.AgriOfflineStore.getPendingCount();
-                            if (window.updateConnectionBadges) window.updateConnectionBadges('offline', p);
-                        }
-                    } catch (err) {
-                        console.error('Offline edit error:', err);
-                        notifyError('Gagal mengubah transaksi offline: ' + err.message);
-                    } finally {
-                        if (submitBtn) {
-                            submitBtn.disabled = false;
-                            submitBtn.innerText = originalText;
-                        }
-                    }
-                    return;
-                }
-
-                // Mode Online
                 try {
+                    const formData = new FormData(this);
+                    const rawId = currentEditTransaction ? (currentEditTransaction.raw_id || currentEditTransaction.id) : null;
+
+                    const nominalVal = parseInt((formData.get('nominal') || '').toString().replace(/[^0-9]/g, '') || '0', 10);
+                    if (nominalVal <= 0) {
+                        notifyError('Nominal harus lebih dari 0');
+                        return;
+                    }
+
+                    // Hapus input file jika tidak ada file yang dipilih agar tidak mengirim payload multipart yang tidak perlu
+                    const fileInput = this.querySelector('input[name="foto_nota"]');
+                    if (fileInput && (!fileInput.files || fileInput.files.length === 0)) {
+                        formData.delete('foto_nota');
+                    }
+
+                    // Mode Offline
+                    if (!navigator.onLine) {
+                        try {
+                            let base64Photo = null;
+                            if (fileInput && fileInput.files && fileInput.files[0]) {
+                                base64Photo = await fileToBase64(fileInput.files[0]);
+                            }
+
+                            const offlineData = {
+                                tipe: formData.get('tipe'),
+                                kategori: formData.get('kategori'),
+                                sub_kategori: formData.get('sub_kategori'),
+                                judul: formData.get('judul'),
+                                nominal: formData.get('nominal'),
+                                tanggal: formData.get('tanggal'),
+                                crop_id: formData.get('crop_id'),
+                                keterangan: formData.get('keterangan'),
+                                foto_nota_base64: base64Photo
+                            };
+
+                            if (window.AgriOfflineStore && rawId) {
+                                await window.AgriOfflineStore.updateKeuanganTransactionOffline(rawId, offlineData);
+                                closeModal('modal-edit-transaksi');
+                                notifySuccess('Perubahan disimpan di HP (Mode Offline). Akan disinkronkan saat online.');
+                                loadKeuanganData();
+                                const p = await window.AgriOfflineStore.getPendingCount();
+                                if (window.updateConnectionBadges) window.updateConnectionBadges('offline', p);
+                            } else {
+                                notifyError('Gagal menyimpan transaksi offline: ID transaksi tidak ditemukan.');
+                            }
+                        } catch (err) {
+                            console.error('Offline edit error:', err);
+                            notifyError('Gagal mengubah transaksi offline: ' + err.message);
+                        }
+                        return;
+                    }
+
+                    // Mode Online
                     if (!formData.has('_method')) {
                         formData.append('_method', 'PUT');
                     }
 
-                    const res = await fetch(this.action, {
+                    let actionUrl = this.action;
+                    if (!actionUrl || actionUrl.endsWith('/keuangan') || actionUrl.endsWith('/keuangan/')) {
+                        if (rawId) {
+                            actionUrl = '/keuangan/' + rawId;
+                        }
+                    }
+
+                    const res = await fetch(actionUrl, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -2577,6 +2651,7 @@
                     }
                 } catch (err) {
                     console.warn('Network error during online edit, falling back to offline:', err);
+                    const rawId = currentEditTransaction ? (currentEditTransaction.raw_id || currentEditTransaction.id) : null;
                     if (window.AgriOfflineStore && rawId) {
                         try {
                             const fileInput = this.querySelector('input[name="foto_nota"]');
@@ -2585,6 +2660,7 @@
                                 base64Photo = await fileToBase64(fileInput.files[0]);
                             }
 
+                            const formData = new FormData(this);
                             const offlineData = {
                                 tipe: formData.get('tipe'),
                                 kategori: formData.get('kategori'),
@@ -2607,7 +2683,7 @@
                             notifyError('Terjadi kesalahan koneksi.');
                         }
                     } else {
-                        notifyError('Terjadi kesalahan koneksi.');
+                        notifyError('Terjadi kesalahan saat menyimpan perubahan.');
                     }
                 } finally {
                     if (submitBtn) {
