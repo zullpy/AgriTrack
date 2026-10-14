@@ -23,12 +23,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify Laravel files
+    
+      - name: Debug Laravel files
         run: |
-          test -f artisan
-          test -f composer.json
-          test -f public/index.php
-          test -f vendor/autoload.php
+          pwd
+          ls -la
+          for f in artisan composer.json public/index.php vendor/autoload.php; do
+            if [ -f "$f" ]; then
+              echo "OK: $f"
+            else
+              echo "MISSING: $f"
+            fi
+          done
+
 
       - name: Deploy to InfinityFree
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
