@@ -10,6 +10,7 @@ use App\Http\Controllers\KeuanganController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\PlantCatalogController;
 use App\Http\Controllers\StepController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -86,4 +87,97 @@ Route::prefix('api')->group(function () {
     Route::post('/steps/pengolahan-tanah/sync', [StepSyncController::class, 'syncPengolahanTanah']);
     Route::get('/steps/penanaman-bibit', [StepSyncController::class, 'getPenanamanBibit']);
     Route::post('/steps/penanaman-bibit/sync', [StepSyncController::class, 'syncPenanamanBibit']);
+});
+
+// Remote Migration & Maintenance Runner for Shared Hosting (InfinityFree)
+Route::get('/run-migrate', function () {
+    $expectedToken = env('MIGRATE_TOKEN', 'pertanian2026');
+    $token = request('token');
+
+    if (empty($token) || $token !== $expectedToken) {
+        abort(403, 'Akses Ditolak: Token tidak valid. Masukkan ?token='.$expectedToken);
+    }
+
+    $action = request('action', 'migrate');
+    $validActions = [
+        'migrate' => ['cmd' => 'migrate', 'params' => ['--force' => true], 'label' => 'php artisan migrate --force'],
+        'status' => ['cmd' => 'migrate:status', 'params' => [], 'label' => 'php artisan migrate:status'],
+        'optimize-clear' => ['cmd' => 'optimize:clear', 'params' => [], 'label' => 'php artisan optimize:clear'],
+    ];
+
+    if (! isset($validActions[$action])) {
+        $action = 'migrate';
+    }
+
+    $config = $validActions[$action];
+    $success = true;
+    $output = '';
+
+    try {
+        Artisan::call($config['cmd'], $config['params']);
+        $output = trim(Artisan::output());
+        if (empty($output)) {
+            $output = 'Perintah berhasil dijalankan tanpa output khusus.';
+        }
+    } catch (Throwable $e) {
+        $success = false;
+        $output = "Terjadi Kesalahan:\n".$e->getMessage();
+    }
+
+    $escapedOutput = htmlspecialchars($output, ENT_QUOTES, 'UTF-8');
+    $bgStatus = $success ? 'bg-emerald-500' : 'bg-rose-500';
+    $textStatus = $success ? 'Berhasil' : 'Gagal';
+    $tokenQuery = '?token='.urlencode($token);
+    $cmdLabel = htmlspecialchars($config['label'], ENT_QUOTES, 'UTF-8');
+
+    return response(<<<HTML
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artisan Runner - Web Pertanian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-8 flex flex-col items-center justify-center font-sans">
+    <div class="w-full max-w-2xl bg-slate-800 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden">
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-700/70 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+                <span class="w-3.5 h-3.5 rounded-full {$bgStatus} animate-pulse"></span>
+                <div>
+                    <h1 class="font-bold text-base text-white tracking-wide">Artisan Hosting Runner</h1>
+                    <p class="text-xs text-slate-400 font-mono">{$cmdLabel}</p>
+                </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-bold {$bgStatus} text-white">
+                {$textStatus}
+            </span>
+        </div>
+
+        <!-- Terminal Output -->
+        <div class="p-5 bg-slate-950 font-mono text-xs sm:text-sm text-emerald-400 overflow-x-auto whitespace-pre-wrap leading-relaxed border-b border-slate-800 selection:bg-emerald-900 selection:text-white">{$escapedOutput}</div>
+
+        <!-- Control Actions -->
+        <div class="p-4 bg-slate-900/60 flex items-center justify-between flex-wrap gap-2 text-xs">
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <a href="/run-migrate{$tokenQuery}&action=migrate" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all">
+                    Run Migrate
+                </a>
+                <a href="/run-migrate{$tokenQuery}&action=status" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium transition-all">
+                    Cek Status
+                </a>
+                <a href="/run-migrate{$tokenQuery}&action=optimize-clear" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition-all">
+                    Clear Cache
+                </a>
+            </div>
+            <a href="/data-obat" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-all ml-auto">
+                &larr; Ke Data Obat
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+HTML
+    )->header('Content-Type', 'text/html');
 });

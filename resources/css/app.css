@@ -1,299 +1,337 @@
     @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
+    @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+    @source '../../storage/framework/views/*.php';
 
-@theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    @theme {
+        --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+            'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --color-primary: #2FB344;
-    --color-primary-dark: #1F7A3D;
-    --color-primary-light: #D6F5E3;
+        --color-primary: #2FB344;
+        --color-primary-dark: #1F7A3D;
+        --color-primary-light: #D6F5E3;
 
-    --color-accent-purple: #8B7CF6;
-    --color-accent-yellow: #F5A623;
-    --color-accent-red: #E4574C;
+        --color-accent-purple: #8B7CF6;
+        --color-accent-yellow: #F5A623;
+        --color-accent-red: #E4574C;
 
-    --color-surface: #FFFFFF;
-    --color-page: #F5F7F6;
-    --color-text: #1E2A24;
-    --color-text-secondary: #6B7B76;
-    --color-text-muted: #8A9A94;
+        --color-surface: #FFFFFF;
+        --color-page: #F5F7F6;
+        --color-text: #1E2A24;
+        --color-text-secondary: #6B7B76;
+        --color-text-muted: #8A9A94;
 
-    --radius-card: 16px;
-    --radius-sm: 12px;
-    --radius-pill: 9999px;
-}
+        --radius-card: 16px;
+        --radius-sm: 12px;
+        --radius-pill: 9999px;
+    }
 
-/* Smooth slide-up entrance */
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-.animate-slide-up { animation: slideUp 0.3s ease both; }
+    /* Smooth slide-up entrance */
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
 
-/* Page-level scroll */
-html { scroll-behavior: smooth; }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-/* Thin scrollbar */
-::-webkit-scrollbar          { width: 6px; height: 6px; }
-::-webkit-scrollbar-track    { background: transparent; }
-::-webkit-scrollbar-thumb    { background: #d1dbd7; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #adbdb6; }
+    .animate-slide-up {
+        animation: slideUp 0.3s ease both;
+    }
 
-/* Hide scrollbar for clean horizontal swipes */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* Page-level scroll */
+    html {
+        scroll-behavior: smooth;
+    }
 
-/* ── SweetAlert2 AgriTrack Theme ── */
-/* Modal Backdrop ONLY (never for toasts) */
-body:not(.swal2-toast-shown) .swal2-container.swal2-backdrop-show {
-    backdrop-filter: blur(4px) !important;
-    background: rgba(18, 38, 26, 0.45) !important;
-}
+    /* Thin scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
 
-/* Toast Container must be completely transparent without backdrop */
-body.swal2-toast-shown .swal2-container,
-.swal2-container:has(.swal2-toast) {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    pointer-events: none !important;
-}
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
 
-/* Toast Container Positioning */
-.swal2-container.swal2-top-end,
-.swal2-container.swal2-top {
-    top: 16px !important;
-    right: 16px !important;
-    left: auto !important;
-    bottom: auto !important;
-    padding: 0 !important;
-    z-index: 99999 !important;
-}
+    ::-webkit-scrollbar-thumb {
+        background: #d1dbd7;
+        border-radius: 99px;
+    }
 
-@media (max-width: 640px) {
+    ::-webkit-scrollbar-thumb:hover {
+        background: #adbdb6;
+    }
+
+    /* Hide scrollbar for clean horizontal swipes */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    /* ── SweetAlert2 AgriTrack Theme ── */
+    /* Modal Backdrop ONLY (never for toasts) */
+    body:not(.swal2-toast-shown) .swal2-container.swal2-backdrop-show {
+        backdrop-filter: blur(4px) !important;
+        background: rgba(18, 38, 26, 0.45) !important;
+    }
+
+    /* Toast Container must be completely transparent without backdrop */
+    body.swal2-toast-shown .swal2-container,
+    .swal2-container:has(.swal2-toast) {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        pointer-events: none !important;
+    }
+
+    /* Toast Container Positioning */
     .swal2-container.swal2-top-end,
     .swal2-container.swal2-top {
-        top: 12px !important;
-        right: 12px !important;
-        left: 12px !important;
-        width: calc(100% - 24px) !important;
+        top: 16px !important;
+        right: 16px !important;
+        left: auto !important;
+        bottom: auto !important;
+        padding: 0 !important;
+        z-index: 99999 !important;
+    }
+
+    @media (max-width: 640px) {
+
+        .swal2-container.swal2-top-end,
+        .swal2-container.swal2-top {
+            top: 12px !important;
+            right: 12px !important;
+            left: 12px !important;
+            width: calc(100% - 24px) !important;
+            display: flex !important;
+            justify-content: center !important;
+        }
+    }
+
+    /* Modal Dialog */
+    .swal2-popup.agri-swal-popup {
+        border-radius: 20px !important;
+        padding: 24px 20px 20px !important;
+        font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+        box-shadow: 0 25px 50px -12px rgba(15, 45, 25, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+        border: none !important;
+        background: #ffffff !important;
+        max-width: 420px !important;
+    }
+
+    .swal2-title.agri-swal-title {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        color: #1E2A24 !important;
+        padding: 0.25rem 0 0 !important;
+        line-height: 1.35 !important;
+    }
+
+    .swal2-html-container.agri-swal-html {
+        font-size: 0.875rem !important;
+        color: #4A5B53 !important;
+        line-height: 1.55 !important;
+        margin: 0.5rem 0 1.25rem !important;
+    }
+
+    .agri-swal-subtitle {
+        font-size: 0.8125rem;
+        color: #8A9A94;
+        display: inline-block;
+        margin-top: 0.35rem;
+    }
+
+    /* Custom Warning Icon */
+    .swal2-icon.swal2-warning.agri-swal-icon-warning {
+        border-color: #FED7AA !important;
+        color: #E4574C !important;
+        background: #FEF2F2 !important;
+        width: 60px !important;
+        height: 60px !important;
+        margin: 0.5rem auto 1rem !important;
+    }
+
+    .swal2-icon.swal2-warning.agri-swal-icon-warning .swal2-icon-content {
+        font-size: 32px !important;
+        color: #E4574C !important;
+        font-weight: 600 !important;
+    }
+
+    /* Buttons container */
+    .agri-swal-actions {
         display: flex !important;
+        gap: 10px !important;
+        width: 100% !important;
+        margin-top: 0.75rem !important;
+    }
+
+    /* Action Buttons */
+    .agri-swal-btn-danger {
+        flex: 1 !important;
+        background-color: #E4574C !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        padding: 10px 18px !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        border: none !important;
+        cursor: pointer !important;
+        box-shadow: 0 4px 12px rgba(228, 87, 76, 0.28) !important;
+        transition: all 0.15s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
         justify-content: center !important;
     }
-}
 
-/* Modal Dialog */
-.swal2-popup.agri-swal-popup {
-    border-radius: 20px !important;
-    padding: 24px 20px 20px !important;
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
-    box-shadow: 0 25px 50px -12px rgba(15, 45, 25, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
-    border: none !important;
-    background: #ffffff !important;
-    max-width: 420px !important;
-}
-
-.swal2-title.agri-swal-title {
-    font-family: 'Inter', sans-serif !important;
-    font-size: 1.25rem !important;
-    font-weight: 700 !important;
-    color: #1E2A24 !important;
-    padding: 0.25rem 0 0 !important;
-    line-height: 1.35 !important;
-}
-
-.swal2-html-container.agri-swal-html {
-    font-size: 0.875rem !important;
-    color: #4A5B53 !important;
-    line-height: 1.55 !important;
-    margin: 0.5rem 0 1.25rem !important;
-}
-
-.agri-swal-subtitle {
-    font-size: 0.8125rem;
-    color: #8A9A94;
-    display: inline-block;
-    margin-top: 0.35rem;
-}
-
-/* Custom Warning Icon */
-.swal2-icon.swal2-warning.agri-swal-icon-warning {
-    border-color: #FED7AA !important;
-    color: #E4574C !important;
-    background: #FEF2F2 !important;
-    width: 60px !important;
-    height: 60px !important;
-    margin: 0.5rem auto 1rem !important;
-}
-
-.swal2-icon.swal2-warning.agri-swal-icon-warning .swal2-icon-content {
-    font-size: 32px !important;
-    color: #E4574C !important;
-    font-weight: 600 !important;
-}
-
-/* Buttons container */
-.agri-swal-actions {
-    display: flex !important;
-    gap: 10px !important;
-    width: 100% !important;
-    margin-top: 0.75rem !important;
-}
-
-/* Action Buttons */
-.agri-swal-btn-danger {
-    flex: 1 !important;
-    background-color: #E4574C !important;
-    color: #ffffff !important;
-    border-radius: 12px !important;
-    padding: 10px 18px !important;
-    font-size: 0.875rem !important;
-    font-weight: 600 !important;
-    border: none !important;
-    cursor: pointer !important;
-    box-shadow: 0 4px 12px rgba(228, 87, 76, 0.28) !important;
-    transition: all 0.15s ease !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.agri-swal-btn-danger:hover {
-    background-color: #cf4338 !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 16px rgba(228, 87, 76, 0.35) !important;
-}
-
-.agri-swal-btn-danger:active {
-    transform: scale(0.97) !important;
-}
-
-.agri-swal-btn-cancel {
-    flex: 1 !important;
-    background-color: #F3F5F4 !important;
-    color: #4A5B53 !important;
-    border: 1px solid #E2E8E5 !important;
-    border-radius: 12px !important;
-    padding: 10px 18px !important;
-    font-size: 0.875rem !important;
-    font-weight: 500 !important;
-    cursor: pointer !important;
-    transition: all 0.15s ease !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.agri-swal-btn-cancel:hover {
-    background-color: #E7ECE9 !important;
-    color: #1E2A24 !important;
-}
-
-.agri-swal-btn-cancel:active {
-    transform: scale(0.97) !important;
-}
-
-/* ── Responsive Mobile SweetAlert: Compact & Proporsional ── */
-@media (max-width: 640px) {
-    .swal2-popup.agri-swal-popup {
-        width: 86% !important;
-        max-width: 310px !important;
-        border-radius: 18px !important;
-        padding: 16px 14px 14px !important;
+    .agri-swal-btn-danger:hover {
+        background-color: #cf4338 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(228, 87, 76, 0.35) !important;
     }
-    .swal2-title.agri-swal-title {
-        font-size: 1.05rem !important;
-        line-height: 1.3 !important;
-        padding-top: 0.1rem !important;
+
+    .agri-swal-btn-danger:active {
+        transform: scale(0.97) !important;
     }
-    .swal2-html-container.agri-swal-html {
-        font-size: 0.8rem !important;
-        line-height: 1.45 !important;
-        margin: 0.35rem 0 0.85rem !important;
-    }
-    .agri-swal-subtitle {
-        font-size: 0.75rem !important;
-        margin-top: 0.2rem !important;
-    }
-    .swal2-icon.swal2-warning.agri-swal-icon-warning {
-        width: 44px !important;
-        height: 44px !important;
-        margin: 0.2rem auto 0.5rem !important;
-        border-width: 2.5px !important;
-    }
-    .swal2-icon.swal2-warning.agri-swal-icon-warning .swal2-icon-content {
-        font-size: 22px !important;
-    }
-    .agri-swal-actions {
-        gap: 8px !important;
-        margin-top: 0.5rem !important;
-    }
-    .agri-swal-btn-danger,
+
     .agri-swal-btn-cancel {
-        padding: 8px 12px !important;
-        font-size: 0.8rem !important;
-        border-radius: 10px !important;
+        flex: 1 !important;
+        background-color: #F3F5F4 !important;
+        color: #4A5B53 !important;
+        border: 1px solid #E2E8E5 !important;
+        border-radius: 12px !important;
+        padding: 10px 18px !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
-}
 
-/* ── Compact Modern Toast ── */
-.swal2-popup.swal2-toast {
-    position: relative !important;
-    overflow: hidden !important;
-    display: flex !important;
-    align-items: center !important;
-    flex-direction: row !important;
-    width: auto !important;
-    min-width: 280px !important;
-    max-width: 440px !important;
-    padding: 12px 18px !important;
-    border-radius: 14px !important;
-    background: #ffffff !important;
-    box-shadow: 0 10px 30px -4px rgba(15, 45, 25, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
-    border: none !important;
-    border-left: 4px solid #2FB344 !important;
-    pointer-events: auto !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-}
+    .agri-swal-btn-cancel:hover {
+        background-color: #E7ECE9 !important;
+        color: #1E2A24 !important;
+    }
 
-.swal2-popup.swal2-toast.agri-swal-toast-error {
-    border-left: 4px solid #E4574C !important;
-}
+    .agri-swal-btn-cancel:active {
+        transform: scale(0.97) !important;
+    }
 
-.swal2-popup.swal2-toast .swal2-icon {
-    margin: 0 12px 0 0 !important;
-    transform: scale(0.65) !important;
-    transform-origin: center center !important;
-    flex-shrink: 0 !important;
-}
+    /* ── Responsive Mobile SweetAlert: Compact & Proporsional ── */
+    @media (max-width: 640px) {
+        .swal2-popup.agri-swal-popup {
+            width: 86% !important;
+            max-width: 310px !important;
+            border-radius: 18px !important;
+            padding: 16px 14px 14px !important;
+        }
 
-.swal2-popup.swal2-toast .swal2-title.agri-swal-toast-title,
-.swal2-popup.swal2-toast .swal2-title {
-    color: #1E2A24 !important;
-    font-size: 0.875rem !important;
-    font-weight: 600 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.4 !important;
-    text-align: left !important;
-    flex: 1 1 auto !important;
-}
+        .swal2-title.agri-swal-title {
+            font-size: 1.05rem !important;
+            line-height: 1.3 !important;
+            padding-top: 0.1rem !important;
+        }
 
-.swal2-popup.swal2-toast .swal2-timer-progress-bar-container,
-.swal2-popup.swal2-toast .swal2-timer-progress-bar {
-    position: absolute !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    height: 3.5px !important;
-    background: #2FB344 !important;
-}
+        .swal2-html-container.agri-swal-html {
+            font-size: 0.8rem !important;
+            line-height: 1.45 !important;
+            margin: 0.35rem 0 0.85rem !important;
+        }
 
-.swal2-popup.swal2-toast.agri-swal-toast-error .swal2-timer-progress-bar {
-    background: #E4574C !important;
-}
+        .agri-swal-subtitle {
+            font-size: 0.75rem !important;
+            margin-top: 0.2rem !important;
+        }
 
+        .swal2-icon.swal2-warning.agri-swal-icon-warning {
+            width: 44px !important;
+            height: 44px !important;
+            margin: 0.2rem auto 0.5rem !important;
+            border-width: 2.5px !important;
+        }
+
+        .swal2-icon.swal2-warning.agri-swal-icon-warning .swal2-icon-content {
+            font-size: 22px !important;
+        }
+
+        .agri-swal-actions {
+            gap: 8px !important;
+            margin-top: 0.5rem !important;
+        }
+
+        .agri-swal-btn-danger,
+        .agri-swal-btn-cancel {
+            padding: 8px 12px !important;
+            font-size: 0.8rem !important;
+            border-radius: 10px !important;
+        }
+    }
+
+    /* ── Compact Modern Toast ── */
+    .swal2-popup.swal2-toast {
+        position: relative !important;
+        overflow: hidden !important;
+        display: flex !important;
+        align-items: center !important;
+        flex-direction: row !important;
+        width: auto !important;
+        min-width: 280px !important;
+        max-width: 440px !important;
+        padding: 12px 18px !important;
+        border-radius: 14px !important;
+        background: #ffffff !important;
+        box-shadow: 0 10px 30px -4px rgba(15, 45, 25, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+        border: none !important;
+        border-left: 4px solid #2FB344 !important;
+        pointer-events: auto !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .swal2-popup.swal2-toast.agri-swal-toast-error {
+        border-left: 4px solid #E4574C !important;
+    }
+
+    .swal2-popup.swal2-toast .swal2-icon {
+        margin: 0 12px 0 0 !important;
+        transform: scale(0.65) !important;
+        transform-origin: center center !important;
+        flex-shrink: 0 !important;
+    }
+
+    .swal2-popup.swal2-toast .swal2-title.agri-swal-toast-title,
+    .swal2-popup.swal2-toast .swal2-title {
+        color: #1E2A24 !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.4 !important;
+        text-align: left !important;
+        flex: 1 1 auto !important;
+    }
+
+    .swal2-popup.swal2-toast .swal2-timer-progress-bar-container,
+    .swal2-popup.swal2-toast .swal2-timer-progress-bar {
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 3.5px !important;
+        background: #2FB344 !important;
+    }
+
+    .swal2-popup.swal2-toast.agri-swal-toast-error .swal2-timer-progress-bar {
+        background: #E4574C !important;
+    }

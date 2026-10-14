@@ -78,6 +78,7 @@ class MedicineSyncController extends Controller
                         'nama' => $data['nama'] ?? 'Tanpa Nama',
                         'jenis' => $jenis,
                         'cara_kerja' => $data['cara_kerja'] ?? null,
+                        'formulasi' => $data['formulasi'] ?? null,
                         'sasaran_obat' => $data['sasaran_obat'] ?? null,
                         'tanaman_sasaran' => $data['tanaman_sasaran'] ?? '-',
                         'dosis_anjuran' => $data['dosis_anjuran'] ?? null,
@@ -124,6 +125,9 @@ class MedicineSyncController extends Controller
                             }
                             if (array_key_exists('cara_kerja', $data)) {
                                 $updateData['cara_kerja'] = $data['cara_kerja'];
+                            }
+                            if (array_key_exists('formulasi', $data)) {
+                                $updateData['formulasi'] = $data['formulasi'];
                             }
                             if (array_key_exists('sasaran_obat', $data)) {
                                 $updateData['sasaran_obat'] = $data['sasaran_obat'];

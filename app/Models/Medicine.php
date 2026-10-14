@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
     'nama',
     'jenis',
     'cara_kerja',
+    'formulasi',
     'sasaran_obat',
     'tanaman_sasaran',
     'dosis_anjuran',
@@ -26,7 +27,46 @@ use Illuminate\Support\Facades\Storage;
 ])]
 class Medicine extends Model
 {
-    protected $appends = ['formatted_harga', 'foto_url', 'foto_urls'];
+    /**
+     * Daftar formulasi pestisida (Kode => Ciri Fisik).
+     */
+    public const FORMULASI_OPTIONS = [
+        'EC' => 'cairan pekat seperti minyak',
+        'SC' => 'suspensi pekat',
+        'WP' => 'serbuk kering',
+        'SL' => 'cairan larut sempurna',
+        'WG' => 'butiran granul',
+        'OD' => 'dispersi minyak',
+        'SP' => 'serbuk larut air',
+    ];
+
+    protected $appends = ['formatted_harga', 'foto_url', 'foto_urls', 'formulasi_ciri_fisik', 'formulasi_detail'];
+
+    /**
+     * Get ciri fisik dari kode formulasi obat.
+     */
+    public function getFormulasiCiriFisikAttribute(): ?string
+    {
+        if (! $this->formulasi) {
+            return null;
+        }
+
+        return self::FORMULASI_OPTIONS[$this->formulasi] ?? null;
+    }
+
+    /**
+     * Get formulasi lengkap (Kode & Ciri Fisik).
+     */
+    public function getFormulasiDetailAttribute(): ?string
+    {
+        if (! $this->formulasi) {
+            return null;
+        }
+
+        $ciri = $this->formulasi_ciri_fisik;
+
+        return $ciri ? "{$this->formulasi} • {$ciri}" : $this->formulasi;
+    }
 
     /**
      * Get the attributes that should be cast.

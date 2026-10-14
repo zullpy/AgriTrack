@@ -738,4 +738,74 @@ class MedicineTest extends TestCase
         $this->assertNotEquals($color2, $color3);
         $this->assertNotEquals($color1, $color3);
     }
+
+    public function test_can_create_and_update_medicine_with_formulasi_pestisida(): void
+    {
+        $payload = [
+            'nama' => 'Score 250 EC',
+            'jenis' => 'Fungisida',
+            'cara_kerja' => 'Sistemik',
+            'formulasi' => 'EC',
+            'tanaman_sasaran' => 'Bawang Merah',
+            'dosis_anjuran' => '1 ml/l',
+        ];
+
+        $response = $this->post('/data-obat', $payload);
+        $response->assertRedirect('/data-obat');
+
+        $this->assertDatabaseHas('medicines', [
+            'nama' => 'Score 250 EC',
+            'formulasi' => 'EC',
+        ]);
+
+        $medicine = Medicine::where('nama', 'Score 250 EC')->first();
+        $this->assertEquals('EC', $medicine->formulasi);
+        $this->assertEquals('cairan pekat seperti minyak', $medicine->formulasi_ciri_fisik);
+        $this->assertEquals('EC • cairan pekat seperti minyak', $medicine->formulasi_detail);
+
+        // Update to SC
+        $updatePayload = [
+            'nama' => 'Score 250 EC',
+            'jenis' => 'Fungisida',
+            'cara_kerja' => 'Sistemik',
+            'formulasi' => 'SC',
+            'tanaman_sasaran' => 'Bawang Merah',
+            'dosis_anjuran' => '1 ml/l',
+        ];
+
+        $updateResponse = $this->put("/data-obat/{$medicine->id}", $updatePayload);
+        $updateResponse->assertRedirect('/data-obat');
+
+        $medicine->refresh();
+        $this->assertEquals('SC', $medicine->formulasi);
+        $this->assertEquals('suspensi pekat', $medicine->formulasi_ciri_fisik);
+        $this->assertEquals('SC • suspensi pekat', $medicine->formulasi_detail);
+    }
+
+    public function test_can_filter_medicines_by_formulasi(): void
+    {
+        Medicine::create([
+            'nama' => 'Amistar Top 325 SC',
+            'jenis' => 'Fungisida',
+            'formulasi' => 'SC',
+            'tanaman_sasaran' => 'Padi',
+        ]);
+
+        Medicine::create([
+            'nama' => 'Antracol 70 WP',
+            'jenis' => 'Fungisida',
+            'formulasi' => 'WP',
+            'tanaman_sasaran' => 'Cabai',
+        ]);
+
+        $response = $this->get('/data-obat?formulasi=SC');
+        $response->assertStatus(200);
+        $response->assertSee('Amistar Top 325 SC');
+        $response->assertDontSee('Antracol 70 WP');
+
+        $responseWp = $this->get('/data-obat?formulasi=WP');
+        $responseWp->assertStatus(200);
+        $responseWp->assertSee('Antracol 70 WP');
+        $responseWp->assertDontSee('Amistar Top 325 SC');
+    }
 }

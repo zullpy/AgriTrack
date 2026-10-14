@@ -26,6 +26,7 @@ class MedicineController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('formulasi', 'like', "%{$search}%")
                     ->orWhere('sasaran_obat', 'like', "%{$search}%")
                     ->orWhere('tanaman_sasaran', 'like', "%{$search}%")
                     ->orWhere('unsur_bahan', 'like', "%{$search}%")
@@ -42,6 +43,10 @@ class MedicineController extends Controller
 
         if ($caraKerja = $request->input('cara_kerja')) {
             $query->where('cara_kerja', $caraKerja);
+        }
+
+        if ($formulasi = $request->input('formulasi')) {
+            $query->where('formulasi', $formulasi);
         }
 
         if ($fase = $request->input('fase')) {
@@ -96,6 +101,7 @@ class MedicineController extends Controller
             'nama' => 'required|string|max:255',
             'jenis' => 'required|string|max:100',
             'cara_kerja' => 'nullable|string|in:Sistemik,Kontak,Sistemik + Kontak',
+            'formulasi' => 'nullable|string|max:50',
             'sasaran_obat' => 'nullable|string|max:255',
             'tanaman_sasaran' => 'required|string|max:255',
             'dosis_anjuran' => 'nullable|string|max:255',
@@ -204,7 +210,7 @@ class MedicineController extends Controller
 
             // Perbarui data utama obat dengan data terbaru jika ada
             $masterUpdates = [];
-            foreach (['jenis', 'cara_kerja', 'sasaran_obat', 'tanaman_sasaran', 'dosis_anjuran', 'unsur_bahan', 'fase', 'keterangan'] as $field) {
+            foreach (['jenis', 'cara_kerja', 'formulasi', 'sasaran_obat', 'tanaman_sasaran', 'dosis_anjuran', 'unsur_bahan', 'fase', 'keterangan'] as $field) {
                 if (! empty($validated[$field])) {
                     $masterUpdates[$field] = $validated[$field];
                 }
@@ -336,6 +342,7 @@ class MedicineController extends Controller
             'nama' => 'required|string|max:255',
             'jenis' => 'required|string|max:100',
             'cara_kerja' => 'nullable|string|in:Sistemik,Kontak,Sistemik + Kontak',
+            'formulasi' => 'nullable|string|max:50',
             'sasaran_obat' => 'nullable|string|max:255',
             'tanaman_sasaran' => 'required|string|max:255',
             'dosis_anjuran' => 'nullable|string|max:255',

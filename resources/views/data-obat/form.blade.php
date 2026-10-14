@@ -226,6 +226,48 @@
                     @enderror
                 </div>
 
+                {{-- Formulasi Pestisida --}}
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Formulasi Pestisida <span class="text-xs font-normal text-gray-400 lowercase">(opsional)</span>
+                        </label>
+                        <span class="text-[11px] text-gray-400">Klik lagi untuk batal</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5" id="formulasi-group">
+                        @php
+                            $formulasiOptions = \App\Models\Medicine::FORMULASI_OPTIONS;
+                            $formulasiCheckedCard = 'border-amber-500 bg-amber-50/90 text-amber-950 font-bold ring-2 ring-amber-400/25 shadow-sm shadow-amber-500/10';
+                            $formulasiHoverCard = 'hover:border-amber-300 hover:bg-amber-50/50 hover:text-amber-950 hover:shadow-md hover:-translate-y-0.5';
+                        @endphp
+                        @foreach ($formulasiOptions as $fKode => $fCiriFisik)
+                            @php $isFChecked = old('formulasi', $medicine->formulasi ?? '') === $fKode; @endphp
+                            <label class="group formulasi-pill relative flex flex-col items-start p-2.5 sm:p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ease-out select-none active:scale-[0.98] active:translate-y-0 {{ $isFChecked ? $formulasiCheckedCard : 'border-gray-200/90 bg-white text-gray-700 font-medium shadow-2xs ' . $formulasiHoverCard }}"
+                                   data-checked-card="{{ $formulasiCheckedCard }}"
+                                   data-hover-card="{{ $formulasiHoverCard }}">
+                                <input type="radio" name="formulasi" value="{{ $fKode }}" class="sr-only" {{ $isFChecked ? 'checked' : '' }}>
+                                
+                                <div class="w-full flex items-center justify-between gap-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black tracking-wider bg-amber-100 text-amber-900 border border-amber-300/80 group-hover:bg-amber-200/80 transition-colors">
+                                        {{ $fKode }}
+                                    </span>
+                                    <svg class="pill-check w-3.5 h-3.5 text-amber-600 transition-all duration-200 shrink-0 {{ $isFChecked ? 'opacity-100 scale-100' : 'opacity-0 scale-75 hidden' }}" 
+                                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                                    </svg>
+                                </div>
+                                <span class="text-[11px] text-gray-600 group-hover:text-amber-950 mt-1.5 font-normal leading-tight transition-colors">
+                                    {{ $fCiriFisik }}
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('formulasi')
+                        <p class="text-xs text-red-600 mt-1 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 {{-- Sasaran / Fungsi Obat --}}
                 <div>
                     <label for="sasaran_obat" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -1191,6 +1233,15 @@ function applyMedicineAutofill(matched) {
         }
     }
 
+    // 8. Formulasi Pestisida
+    if (matched.formulasi) {
+        const formulasiRadio = document.querySelector(`input[name="formulasi"][value="${matched.formulasi}"]`);
+        if (formulasiRadio) {
+            formulasiRadio.checked = true;
+            formulasiRadio.dispatchEvent(new Event('change'));
+        }
+    }
+
     // 8. Keterangan
     const ketInput = document.getElementById('keterangan');
     if (ketInput && matched.keterangan) {
@@ -1445,6 +1496,7 @@ function updatePurchaseRowLabels() {
 document.addEventListener('DOMContentLoaded', () => {
     setupPillGroup('.kategori-pill', true, false);
     setupPillGroup('.cara-kerja-pill', false, true);
+    setupPillGroup('.formulasi-pill', false, true);
     setupPillGroup('.fase-pill', false, true);
 
     // Bind price formatters

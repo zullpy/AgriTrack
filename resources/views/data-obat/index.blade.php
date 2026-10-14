@@ -69,6 +69,7 @@
         <form method="GET" action="/data-obat" class="flex gap-2 w-full min-w-0" id="search-medicine-form">
             <input type="hidden" name="jenis" value="{{ request('jenis') }}">
             <input type="hidden" name="cara_kerja" value="{{ request('cara_kerja') }}">
+            <input type="hidden" name="formulasi" value="{{ request('formulasi') }}">
             <input type="hidden" name="fase" value="{{ request('fase') }}">
             <div class="relative flex-1 min-w-0">
                 <svg id="search-static-icon" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -174,11 +175,37 @@
                     </a>
                 @endforeach
 
-                @if(request('search') || request('jenis') || request('cara_kerja') || request('fase'))
+                @if(request('search') || request('jenis') || request('cara_kerja') || request('formulasi') || request('fase'))
                     <a href="/data-obat" class="ml-auto text-[11px] font-bold text-rose-600 hover:underline shrink-0 pl-2">
                         Reset Filter
                     </a>
                 @endif
+            </div>
+        </div>
+
+        {{-- Baris 3: Formulasi Pestisida --}}
+        <div class="w-full max-w-full min-w-0 overflow-hidden pt-1.5 border-t border-gray-100">
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar w-full max-w-full">
+                @php
+                    $currentFormulasi = request('formulasi');
+                    $fOptions = \App\Models\Medicine::FORMULASI_OPTIONS;
+                @endphp
+
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-0.5">Formulasi:</span>
+
+                <a href="{{ request()->fullUrlWithQuery(['formulasi' => null, 'page' => null]) }}"
+                   class="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold transition-all shrink-0 {{ empty($currentFormulasi) ? 'bg-amber-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
+                    Semua
+                </a>
+
+                @foreach($fOptions as $fCode => $fCiri)
+                    @php $isActive = ($currentFormulasi === $fCode); @endphp
+                    <a href="{{ request()->fullUrlWithQuery(['formulasi' => $fCode, 'page' => null]) }}"
+                       title="{{ $fCode }} &bull; {{ $fCiri }}"
+                       class="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold transition-all shrink-0 {{ $isActive ? 'bg-amber-600 text-white shadow-xs font-bold' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
+                        {{ $fCode }}
+                    </a>
+                @endforeach
             </div>
         </div>
     </div>
@@ -186,7 +213,7 @@
     {{-- ── Data Listing ── --}}
     @if ($medicines->isEmpty())
         @php
-            $hasActiveFilter = request()->hasAny(['search', 'jenis', 'cara_kerja', 'fase']);
+            $hasActiveFilter = request()->hasAny(['search', 'jenis', 'cara_kerja', 'formulasi', 'fase']);
         @endphp
         {{-- Empty state --}}
         <div class="bg-surface rounded-2xl border border-gray-200 shadow-sm p-8 text-center w-full min-w-0">
@@ -284,6 +311,16 @@
                             @if ($medicine->cara_kerja)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold {{ $ckBadge['bg'] }} {{ $ckBadge['text'] }} shrink-0">
                                     {{ $medicine->cara_kerja }}
+                                </span>
+                            @endif
+
+                            {{-- Formulasi Pestisida --}}
+                            @if ($medicine->formulasi)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200/80 shrink-0" title="{{ $medicine->formulasi_detail }}">
+                                    <span class="font-bold">{{ $medicine->formulasi }}</span>
+                                    @if ($medicine->formulasi_ciri_fisik)
+                                        <span class="text-[10px] text-amber-700 hidden xs:inline">• {{ $medicine->formulasi_ciri_fisik }}</span>
+                                    @endif
                                 </span>
                             @endif
                         </div>
@@ -497,6 +534,7 @@
                             <th class="px-5 py-3.5">Nama Obat</th>
                             <th class="px-4 py-3.5">Kategori</th>
                             <th class="px-4 py-3.5">Cara Kerja</th>
+                            <th class="px-4 py-3.5">Formulasi</th>
                             <th class="px-4 py-3.5">Sasaran</th>
                             <th class="px-5 py-3.5">Tanaman Sasaran</th>
                             <th class="px-4 py-3.5">Dosis</th>
@@ -524,6 +562,22 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold {{ $ckBadge['bg'] }} {{ $ckBadge['text'] }}">
                                             {{ $medicine->cara_kerja }}
                                         </span>
+                                    @else
+                                        <span class="text-gray-400 text-xs">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    @if ($medicine->formulasi)
+                                        <div class="inline-flex flex-col gap-0.5">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200/80 w-fit">
+                                                {{ $medicine->formulasi }}
+                                            </span>
+                                            @if ($medicine->formulasi_ciri_fisik)
+                                                <span class="text-[10px] text-gray-500 leading-tight">
+                                                    {{ $medicine->formulasi_ciri_fisik }}
+                                                </span>
+                                            @endif
+                                        </div>
                                     @else
                                         <span class="text-gray-400 text-xs">—</span>
                                     @endif
@@ -701,6 +755,7 @@
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <span id="modal-jenis-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold"></span>
                         <span id="modal-cara-kerja-badge" class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold"></span>
+                        <span id="modal-formulasi-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 hidden"></span>
                         <span id="modal-fase-badge" class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold hidden"></span>
                     </div>
                 </div>
@@ -720,6 +775,10 @@
                     <div class="p-3 rounded-xl bg-gray-50 border border-gray-200/70 space-y-1">
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Dosis Pemakaian</span>
                         <p id="modal-dosis" class="text-xs font-bold text-gray-800 font-mono break-words"></p>
+                    </div>
+                    <div id="modal-formulasi-container" class="p-3 rounded-xl bg-amber-50/60 border border-amber-200/70 space-y-1 hidden">
+                        <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Formulasi Pestisida</span>
+                        <p id="modal-formulasi" class="text-xs font-bold text-amber-950 break-words"></p>
                     </div>
                     <div id="modal-fase-container" class="p-3 rounded-xl bg-gray-50 border border-gray-200/70 space-y-1 hidden">
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Fase Rekomendasi</span>
@@ -989,6 +1048,25 @@ window.openMedicineDetail = function(id) {
         ckBadge.classList.remove('hidden');
     } else {
         ckBadge.classList.add('hidden');
+    }
+
+    // Formulasi Pestisida
+    const formulasiBadge = document.getElementById('modal-formulasi-badge');
+    const formulasiContainer = document.getElementById('modal-formulasi-container');
+    const formulasiText = document.getElementById('modal-formulasi');
+    if (data.formulasi) {
+        const detailText = data.formulasi_detail || (data.formulasi + (data.formulasi_ciri_fisik ? ' • ' + data.formulasi_ciri_fisik : ''));
+        if (formulasiBadge) {
+            formulasiBadge.textContent = detailText;
+            formulasiBadge.classList.remove('hidden');
+        }
+        if (formulasiContainer && formulasiText) {
+            formulasiText.textContent = detailText;
+            formulasiContainer.classList.remove('hidden');
+        }
+    } else {
+        if (formulasiBadge) formulasiBadge.classList.add('hidden');
+        if (formulasiContainer) formulasiContainer.classList.add('hidden');
     }
 
     // Sasaran / Fungsi Utama
