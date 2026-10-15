@@ -110,8 +110,48 @@
         </div>
     </div>
 
-    {{-- ── Metric Overview Cards (Ringkas & 1 Baris di Mobile) ── --}}
-    <div class="grid grid-cols-3 gap-2 sm:gap-4">
+    {{-- ── Sub Menu Tab Navigasi: Riwayat & Statistik ── --}}
+    @php
+        $activeTab = request()->query('tab', 'riwayat');
+        $isStatistikActive = ($activeTab === 'statistik');
+    @endphp
+
+    <div class="flex items-center gap-2 border-b border-gray-200">
+        {{-- Tombol Sub Menu Riwayat --}}
+        <button type="button"
+                onclick="setKeuanganSubmenu('riwayat')"
+                id="btn-subnav-riwayat"
+                class="subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm transition-all cursor-pointer {{ !$isStatistikActive ? 'font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl' : 'font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent' }}">
+            <svg class="w-4 h-4 {{ !$isStatistikActive ? 'text-emerald-600' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span>Riwayat</span>
+            <span id="subnav-badge-riwayat" class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold {{ !$isStatistikActive ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}">
+                {{ $totalTransaksi }}
+            </span>
+        </button>
+
+        {{-- Tombol Sub Menu Statistik --}}
+        <button type="button"
+                onclick="setKeuanganSubmenu('statistik')"
+                id="btn-subnav-statistik"
+                class="subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm transition-all cursor-pointer {{ $isStatistikActive ? 'font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl' : 'font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent' }}">
+            <svg class="w-4 h-4 {{ $isStatistikActive ? 'text-purple-600' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+            </svg>
+            <span>Statistik</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold {{ $isStatistikActive ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600' }}">
+                Infografis
+            </span>
+        </button>
+    </div>
+
+    {{-- ── KONTEN SUB MENU 1: RIWAYAT ── --}}
+    <div id="submenu-content-riwayat" class="space-y-3.5 sm:space-y-6 {{ $isStatistikActive ? 'hidden' : '' }}">
+
+        {{-- ── Metric Overview Cards (Ringkas & 1 Baris di Mobile) ── --}}
+        <div class="grid grid-cols-3 gap-2 sm:gap-4">
 
         {{-- 1. Total Pemasukan --}}
         <div class="bg-surface rounded-xl sm:rounded-2xl border border-gray-200 p-2.5 sm:p-5 shadow-xs relative overflow-hidden flex flex-col justify-between">
@@ -548,6 +588,156 @@
             </div>
         </div>
     </div>
+    </div>
+    {{-- Akhir Konten Sub Menu 1: Riwayat --}}
+
+    {{-- ── KONTEN SUB MENU 2: STATISTIK ── --}}
+    <div id="submenu-content-statistik" class="space-y-3.5 sm:space-y-6 {{ !$isStatistikActive ? 'hidden' : '' }}">
+        <style>
+            .donut-slice {
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, filter 0.25s ease;
+                transform-origin: 190px 190px;
+            }
+            .donut-slice:hover, .donut-slice.active {
+                transform: scale(1.045);
+                filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.16));
+            }
+            .donut-slice.dimmed {
+                opacity: 0.3;
+            }
+            .category-stat-card {
+                transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+            }
+            .category-stat-card:hover, .category-stat-card.active {
+                transform: translateY(-2px);
+            }
+        </style>
+
+        <div id="section-category-stats" class="bg-surface rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+            {{-- Header Infografis --}}
+            <div class="p-3.5 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-50/70 via-white to-emerald-50/20">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 shrink-0">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                            </svg>
+                        </span>
+                        <h2 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight">
+                            Statistik Distribusi Kategori
+                        </h2>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-0.5 sm:ml-9">
+                        Visualisasi persentase dan proporsi anggaran tani berdasarkan kategori transaksi.
+                    </p>
+                </div>
+
+                {{-- Filter Tipe Chart (Pengeluaran / Pemasukan / Semua) --}}
+                <div class="inline-flex rounded-xl bg-gray-100 p-1 border border-gray-200 self-start sm:self-auto">
+                    <button type="button"
+                            onclick="setChartTypeFilter('pengeluaran')"
+                            id="chart-tab-pengeluaran"
+                            class="chart-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer bg-white text-gray-900 shadow-xs">
+                        Pengeluaran
+                    </button>
+                    <button type="button"
+                            onclick="setChartTypeFilter('pemasukan')"
+                            id="chart-tab-pemasukan"
+                            class="chart-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-gray-600 hover:text-gray-900">
+                        Pemasukan
+                    </button>
+                    <button type="button"
+                            onclick="setChartTypeFilter('semua')"
+                            id="chart-tab-semua"
+                            class="chart-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-gray-600 hover:text-gray-900">
+                        Semua
+                    </button>
+                </div>
+            </div>
+
+            {{-- Empty State (Jika tidak ada transaksi untuk tipe/filter ini) --}}
+            <div id="chart-empty-state" class="p-8 sm:p-12 text-center hidden">
+                <div class="w-14 h-14 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                    </svg>
+                </div>
+                <h3 class="text-xs sm:text-sm font-bold text-gray-800" id="chart-empty-title">Belum Ada Data Transaksi</h3>
+                <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto" id="chart-empty-desc">
+                    Belum ada catatan kategori pada tipe ini untuk menampilkan infografis diagram lingkaran.
+                </p>
+            </div>
+
+            {{-- Area Infografis Utama (Legend Kategori + Donut Chart SVG) --}}
+            <div id="chart-content-area" class="p-4 sm:p-6 space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+
+                    {{-- Sisi Kiri: Daftar Kategori Bergaris Sesuai Referensi Infografis --}}
+                    <div class="lg:col-span-5 space-y-3 order-2 lg:order-1">
+                        <div class="border-b border-gray-100 pb-2 mb-2 flex items-center justify-between">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Daftar Kategori</span>
+                            <span class="text-[11px] font-bold text-gray-400">Persentase</span>
+                        </div>
+                        <div id="chart-category-legend-list" class="space-y-2.5">
+                            {{-- Diisi secara dinamis melalui JavaScript renderCategoryStatsChart() --}}
+                        </div>
+                    </div>
+
+                    {{-- Sisi Kanan: Donut Chart dengan Label Persentase di Luar Slices --}}
+                    <div class="lg:col-span-7 flex flex-col items-center justify-center order-1 lg:order-2">
+                        <div class="relative w-full max-w-[320px] sm:max-w-[370px] aspect-square flex items-center justify-center">
+                            <svg id="donut-chart-svg" viewBox="0 0 380 380" class="w-full h-full overflow-visible select-none">
+                                <defs>
+                                    <filter id="donut-shadow" x="-15%" y="-15%" width="130%" height="130%">
+                                        <feDropShadow dx="0" dy="5" stdDeviation="7" flood-opacity="0.12" flood-color="#0f172a" />
+                                    </filter>
+                                </defs>
+                                {{-- Donut Slices & Callouts --}}
+                                <g id="donut-chart-slices" filter="url(#donut-shadow)"></g>
+                                <g id="donut-chart-labels"></g>
+                                {{-- Center Info Group --}}
+                                <g id="donut-center-group" class="pointer-events-none select-none">
+                                    <circle cx="190" cy="190" r="64" fill="#ffffff" class="transition-all duration-300" />
+                                    <text id="donut-center-title" x="190" y="174" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b" class="font-sans">
+                                        Total
+                                    </text>
+                                    <text id="donut-center-nominal" x="190" y="196" text-anchor="middle" font-size="13.5" font-weight="900" fill="#0f172a" class="font-sans tracking-tight">
+                                        Rp 0
+                                    </text>
+                                    <text id="donut-center-sub" x="190" y="214" text-anchor="middle" font-size="10" font-weight="600" fill="#94a3b8" class="font-sans">
+                                        0 Transaksi
+                                    </text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ── Bagian Bawah: Rincian Persentase dengan Kategori nya ── --}}
+                <div class="border-t border-gray-100 pt-5 mt-4">
+                    <div class="flex items-center justify-between mb-3.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <h3 class="text-xs sm:text-sm font-extrabold text-gray-900 tracking-tight">
+                                Rincian Persentase per Kategori
+                            </h3>
+                        </div>
+                        <span id="chart-category-count-badge" class="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-gray-100 text-gray-600">
+                            0 Kategori
+                        </span>
+                    </div>
+
+                    {{-- Grid Kartu Persentase Kategori --}}
+                    <div id="chart-percentage-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
+                        {{-- Diisi secara dinamis melalui JavaScript renderCategoryStatsChart() --}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{-- Akhir Konten Sub Menu 2: Statistik --}}
 
 </div>
 
@@ -1565,6 +1755,9 @@
         if (tabPemasukan) tabPemasukan.innerText = `Pemasukan (${data.jumlahPemasukan})`;
         if (tabPengeluaran) tabPengeluaran.innerText = `Pengeluaran (${data.jumlahPengeluaran})`;
 
+        const subnavBadge = document.getElementById('subnav-badge-riwayat');
+        if (subnavBadge) subnavBadge.innerText = data.totalTransaksi;
+
         // 3. Update Categories
         if (data.categories) {
             appCategories = data.categories;
@@ -1575,6 +1768,9 @@
         if (data.transaksiList) {
             currentTransaksiList = data.transaksiList;
             renderTransactionsTable(currentTransaksiList);
+            if (typeof renderCategoryStatsChart === 'function') {
+                renderCategoryStatsChart(currentTransaksiList);
+            }
         }
     }
     window.loadKeuanganData = loadKeuanganData;
@@ -1763,6 +1959,436 @@
             </span>
         `;
     }
+
+    // ── Manajemen Sub Menu Keuangan (Riwayat vs Statistik) ──
+    let currentSubmenu = '{{ request()->query("tab", "riwayat") }}';
+
+    function setKeuanganSubmenu(tab) {
+        currentSubmenu = tab;
+        const contentRiwayat = document.getElementById('submenu-content-riwayat');
+        const contentStatistik = document.getElementById('submenu-content-statistik');
+        const btnRiwayat = document.getElementById('btn-subnav-riwayat');
+        const btnStatistik = document.getElementById('btn-subnav-statistik');
+        const sidebarRiwayat = document.getElementById('sidebar-link-keuangan-riwayat');
+        const sidebarStatistik = document.getElementById('sidebar-link-keuangan-statistik');
+
+        if (tab === 'statistik') {
+            if (contentRiwayat) contentRiwayat.classList.add('hidden');
+            if (contentStatistik) contentStatistik.classList.remove('hidden');
+
+            if (btnRiwayat) {
+                btnRiwayat.className = 'subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent transition-all cursor-pointer';
+                const icon = btnRiwayat.querySelector('svg');
+                if (icon) icon.className = 'w-4 h-4 text-gray-400';
+                const badge = document.getElementById('subnav-badge-riwayat');
+                if (badge) badge.className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-gray-100 text-gray-600';
+            }
+            if (btnStatistik) {
+                btnStatistik.className = 'subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl transition-all cursor-pointer';
+                const icon = btnStatistik.querySelector('svg');
+                if (icon) icon.className = 'w-4 h-4 text-purple-600';
+            }
+
+            if (sidebarRiwayat) {
+                sidebarRiwayat.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-text-secondary hover:text-text hover:bg-gray-50';
+                const dot = sidebarRiwayat.querySelector('span');
+                if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-300';
+            }
+            if (sidebarStatistik) {
+                sidebarStatistik.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-primary-dark font-semibold bg-emerald-100';
+                const dot = sidebarStatistik.querySelector('span');
+                if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-primary';
+            }
+
+            if (typeof renderCategoryStatsChart === 'function') {
+                renderCategoryStatsChart(currentTransaksiList);
+            }
+        } else {
+            if (contentRiwayat) contentRiwayat.classList.remove('hidden');
+            if (contentStatistik) contentStatistik.classList.add('hidden');
+
+            if (btnRiwayat) {
+                btnRiwayat.className = 'subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl transition-all cursor-pointer';
+                const icon = btnRiwayat.querySelector('svg');
+                if (icon) icon.className = 'w-4 h-4 text-emerald-600';
+                const badge = document.getElementById('subnav-badge-riwayat');
+                if (badge) badge.className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-100 text-emerald-800';
+            }
+            if (btnStatistik) {
+                btnStatistik.className = 'subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent transition-all cursor-pointer';
+                const icon = btnStatistik.querySelector('svg');
+                if (icon) icon.className = 'w-4 h-4 text-gray-400';
+            }
+
+            if (sidebarRiwayat) {
+                sidebarRiwayat.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-primary-dark font-semibold bg-emerald-100';
+                const dot = sidebarRiwayat.querySelector('span');
+                if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-primary';
+            }
+            if (sidebarStatistik) {
+                sidebarStatistik.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-text-secondary hover:text-text hover:bg-gray-50';
+                const dot = sidebarStatistik.querySelector('span');
+                if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-300';
+            }
+        }
+
+        try {
+            const url = new URL(window.location.href);
+            if (tab === 'statistik') {
+                url.searchParams.set('tab', 'statistik');
+            } else {
+                url.searchParams.delete('tab');
+            }
+            window.history.replaceState(null, '', url.toString());
+        } catch (e) {}
+    }
+    window.setKeuanganSubmenu = setKeuanganSubmenu;
+
+    // ── Palet Warna Infografis Statistik Kategori (Harmonis & Vibrant Sesuai Gambar) ──
+    const CHART_PALETTE = [
+        { bg: '#E11D48', light: '#FFE4E6', text: '#BE123C' },  // A: Vibrant Rose / Pink (Sesuai Referensi)
+        { bg: '#C026D3', light: '#FAE8FF', text: '#A21CAF' },  // B: Magenta / Fuchsia (Sesuai Referensi)
+        { bg: '#6366F1', light: '#EEF2FF', text: '#4F46E5' },  // C: Indigo / Periwinkle (Sesuai Referensi)
+        { bg: '#0EA5E9', light: '#E0F2FE', text: '#0284C7' },  // D: Sky Blue (Sesuai Referensi)
+        { bg: '#14B8A6', light: '#CCFBF1', text: '#0F766E' },  // E: Mint / Cyan (Sesuai Referensi)
+        { bg: '#F59E0B', light: '#FEF3C7', text: '#D97706' },  // F: Amber
+        { bg: '#10B981', light: '#D1FAE5', text: '#047857' },  // G: Emerald
+        { bg: '#8B5CF6', light: '#EDE9FE', text: '#6D28D9' },  // H: Violet
+        { bg: '#EC4899', light: '#FCE7F3', text: '#DB2777' },  // I: Pink
+        { bg: '#0284C7', light: '#E0F2FE', text: '#0369A1' },  // J: Ocean Blue
+        { bg: '#64748B', light: '#F1F5F9', text: '#475569' }   // K: Slate
+    ];
+
+    let currentChartType = 'pengeluaran'; // 'pengeluaran' | 'pemasukan' | 'semua'
+    window._currentCategoryStats = [];
+    window._currentChartSummary = null;
+
+    // ── Switch Tipe Tab Chart (Pengeluaran / Pemasukan / Semua) ──
+    function setChartTypeFilter(type) {
+        currentChartType = type;
+        ['pengeluaran', 'pemasukan', 'semua'].forEach(t => {
+            const btn = document.getElementById('chart-tab-' + t);
+            if (btn) {
+                if (t === type) {
+                    btn.className = 'chart-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer bg-white text-gray-900 shadow-xs';
+                } else {
+                    btn.className = 'chart-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-gray-600 hover:text-gray-900';
+                }
+            }
+        });
+        renderCategoryStatsChart(currentTransaksiList);
+    }
+    window.setChartTypeFilter = setChartTypeFilter;
+
+    // ── Interaksi Hover & Highlight Kategori ──
+    function highlightCategory(idx) {
+        // Highlight slice di SVG Donut
+        const slices = document.querySelectorAll('.donut-slice');
+        slices.forEach(slice => {
+            if (parseInt(slice.dataset.index, 10) === idx) {
+                slice.classList.add('active');
+                slice.classList.remove('dimmed');
+            } else {
+                slice.classList.add('dimmed');
+                slice.classList.remove('active');
+            }
+        });
+
+        // Highlight kartu di grid bawah
+        const cards = document.querySelectorAll('.category-stat-card');
+        cards.forEach(card => {
+            if (parseInt(card.dataset.index, 10) === idx) {
+                card.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-50/40', 'scale-[1.02]');
+            } else {
+                card.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-50/40', 'scale-[1.02]');
+            }
+        });
+
+        // Highlight item legend daftar kategori
+        const legendItems = document.querySelectorAll('.chart-legend-item');
+        legendItems.forEach(item => {
+            if (parseInt(item.dataset.index, 10) === idx) {
+                item.classList.add('bg-slate-100/90');
+            } else {
+                item.classList.remove('bg-slate-100/90');
+            }
+        });
+
+        // Update teks di bagian tengah Donut
+        if (window._currentCategoryStats && window._currentCategoryStats[idx]) {
+            const cat = window._currentCategoryStats[idx];
+            const titleEl = document.getElementById('donut-center-title');
+            const nominalEl = document.getElementById('donut-center-nominal');
+            const subEl = document.getElementById('donut-center-sub');
+            if (titleEl) {
+                titleEl.textContent = cat.name.length > 16 ? cat.name.substring(0, 14) + '…' : cat.name;
+                titleEl.setAttribute('fill', cat.color);
+            }
+            if (nominalEl) {
+                nominalEl.textContent = formatRupiah(cat.total);
+            }
+            if (subEl) {
+                subEl.textContent = `${cat.percentage}% (${cat.count} trx)`;
+                subEl.setAttribute('fill', '#475569');
+            }
+        }
+    }
+    window.highlightCategory = highlightCategory;
+
+    function unhighlightCategory() {
+        const slices = document.querySelectorAll('.donut-slice');
+        slices.forEach(slice => {
+            slice.classList.remove('active', 'dimmed');
+        });
+
+        const cards = document.querySelectorAll('.category-stat-card');
+        cards.forEach(card => {
+            card.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-50/40', 'scale-[1.02]');
+        });
+
+        const legendItems = document.querySelectorAll('.chart-legend-item');
+        legendItems.forEach(item => {
+            item.classList.remove('bg-slate-100/90');
+        });
+
+        resetDonutCenterSummary();
+    }
+    window.unhighlightCategory = unhighlightCategory;
+
+    function resetDonutCenterSummary() {
+        const titleEl = document.getElementById('donut-center-title');
+        const nominalEl = document.getElementById('donut-center-nominal');
+        const subEl = document.getElementById('donut-center-sub');
+        if (window._currentChartSummary) {
+            const s = window._currentChartSummary;
+            if (titleEl) {
+                titleEl.textContent = s.title;
+                titleEl.setAttribute('fill', '#64748b');
+            }
+            if (nominalEl) {
+                nominalEl.textContent = formatRupiah(s.totalAmount);
+            }
+            if (subEl) {
+                subEl.textContent = `${s.totalCount} Transaksi`;
+                subEl.setAttribute('fill', '#94a3b8');
+            }
+        }
+    }
+
+    // ── Render Statistik Infografis & Persentase Kategori ──
+    function renderCategoryStatsChart(list) {
+        if (!list) list = currentTransaksiList || [];
+
+        // Filter berdasarkan currentChartType
+        let filtered = list;
+        if (currentChartType !== 'semua') {
+            filtered = list.filter(t => t.tipe === currentChartType);
+        }
+
+        const emptyState = document.getElementById('chart-empty-state');
+        const contentArea = document.getElementById('chart-content-area');
+        const emptyTitle = document.getElementById('chart-empty-title');
+        const emptyDesc = document.getElementById('chart-empty-desc');
+
+        if (!filtered || filtered.length === 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+            if (contentArea) contentArea.classList.add('hidden');
+            if (emptyTitle) {
+                const label = currentChartType === 'pengeluaran' ? 'Pengeluaran' : (currentChartType === 'pemasukan' ? 'Pemasukan' : 'Transaksi');
+                emptyTitle.textContent = `Belum Ada Data ${label}`;
+            }
+            if (emptyDesc) {
+                emptyDesc.textContent = `Belum ada catatan kategori pada periode ini untuk menampilkan infografis diagram lingkaran.`;
+            }
+            return;
+        }
+
+        if (emptyState) emptyState.classList.add('hidden');
+        if (contentArea) contentArea.classList.remove('hidden');
+
+        // Agregasi transaksi berdasarkan kategori
+        const catMap = {};
+        let totalAmount = 0;
+        let totalCount = 0;
+
+        filtered.forEach(t => {
+            const cat = (t.kategori || 'Lainnya').trim();
+            const nominal = parseFloat(t.nominal) || 0;
+            if (!catMap[cat]) {
+                catMap[cat] = { name: cat, total: 0, count: 0 };
+            }
+            catMap[cat].total += nominal;
+            catMap[cat].count += 1;
+            totalAmount += nominal;
+            totalCount += 1;
+        });
+
+        if (totalAmount <= 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+            if (contentArea) contentArea.classList.add('hidden');
+            return;
+        }
+
+        // Urutkan kategori terbesar ke terkecil (A = kategori terbesar, B = berikutnya, dst)
+        const categories = Object.values(catMap).sort((a, b) => b.total - a.total);
+
+        // Pasang huruf A, B, C, D, E..., warna, dan persentase
+        categories.forEach((cat, idx) => {
+            const letter = String.fromCharCode(65 + (idx % 26));
+            const palette = CHART_PALETTE[idx % CHART_PALETTE.length];
+            const pct = Math.round((cat.total / totalAmount) * 1000) / 10;
+            cat.letter = letter;
+            cat.color = palette.bg;
+            cat.lightColor = palette.light;
+            cat.textColor = palette.text;
+            cat.percentage = pct;
+            cat.index = idx;
+        });
+
+        window._currentCategoryStats = categories;
+        const typeLabel = currentChartType === 'pengeluaran' ? 'Total Pengeluaran' : (currentChartType === 'pemasukan' ? 'Total Pemasukan' : 'Total Transaksi');
+        window._currentChartSummary = {
+            title: typeLabel,
+            totalAmount: totalAmount,
+            totalCount: totalCount
+        };
+
+        // Update badge jumlah kategori
+        const countBadge = document.getElementById('chart-category-count-badge');
+        if (countBadge) countBadge.textContent = `${categories.length} Kategori`;
+
+        // 1. Render Daftar Legend Kategori (Kiri) Sesuai Referensi Gambar Infografis
+        const legendList = document.getElementById('chart-category-legend-list');
+        if (legendList) {
+            legendList.innerHTML = categories.map((cat, i) => `
+                <div class="chart-legend-item flex items-center justify-between gap-3 group cursor-pointer p-1.5 -mx-1.5 rounded-xl transition-all" data-index="${i}" onmouseenter="highlightCategory(${i})" onmouseleave="unhighlightCategory()">
+                    <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                        <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black text-white shrink-0 shadow-xs transition-transform group-hover:scale-110" style="background-color: ${cat.color}">
+                            ${cat.letter}
+                        </span>
+                        <span class="text-xs font-bold text-gray-800 truncate" title="${escapeHtml(cat.name)}">
+                            ${escapeHtml(cat.name)}
+                        </span>
+                        <div class="flex-1 h-0.5 min-w-[20px] rounded-full transition-all group-hover:h-1 opacity-80" style="background: linear-gradient(90deg, ${cat.color} 0%, ${cat.color}33 100%)"></div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-xs font-black text-gray-900">${cat.percentage}%</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 2. Render SVG Donut Chart & Callout Labels
+        const slicesGroup = document.getElementById('donut-chart-slices');
+        const labelsGroup = document.getElementById('donut-chart-labels');
+        resetDonutCenterSummary();
+
+        if (slicesGroup && labelsGroup) {
+            const cx = 190;
+            const cy = 190;
+            const rOuter = 110;
+            const rInner = 68;
+            const rLabel = 148;
+
+            let slicesHtml = '';
+            let labelsHtml = '';
+
+            if (categories.length === 1) {
+                const cat = categories[0];
+                const p1 = `M ${cx} ${cy - rOuter} A ${rOuter} ${rOuter} 0 0 1 ${cx} ${cy + rOuter} L ${cx} ${cy + rInner} A ${rInner} ${rInner} 0 0 0 ${cx} ${cy - rInner} Z`;
+                const p2 = `M ${cx} ${cy + rOuter} A ${rOuter} ${rOuter} 0 0 1 ${cx} ${cy - rOuter} L ${cx} ${cy - rInner} A ${rInner} ${rInner} 0 0 0 ${cx} ${cy + rInner} Z`;
+                slicesHtml = `
+                    <path d="${p1}" fill="${cat.color}" stroke="#ffffff" stroke-width="2.5" class="donut-slice cursor-pointer" data-index="0" onmouseenter="highlightCategory(0)" onmouseleave="unhighlightCategory()"></path>
+                    <path d="${p2}" fill="${cat.color}" stroke="#ffffff" stroke-width="2.5" class="donut-slice cursor-pointer" data-index="0" onmouseenter="highlightCategory(0)" onmouseleave="unhighlightCategory()"></path>
+                `;
+                labelsHtml = `
+                    <text x="${cx}" y="${cy - rLabel}" text-anchor="middle" dominant-baseline="central" class="font-sans select-none pointer-events-none">
+                        <tspan x="${cx}" dy="-6" font-size="12" font-weight="900" fill="${cat.color}">${cat.letter}</tspan>
+                        <tspan x="${cx}" dy="14" font-size="10.5" font-weight="700" fill="#334155">${cat.percentage}%</tspan>
+                    </text>
+                `;
+            } else {
+                let currentAngle = -Math.PI / 2;
+
+                categories.forEach((cat, i) => {
+                    const angleSpan = (cat.total / totalAmount) * 2 * Math.PI;
+                    const startAngle = currentAngle;
+                    const endAngle = currentAngle + angleSpan;
+                    const midAngle = startAngle + angleSpan / 2;
+                    currentAngle = endAngle;
+
+                    const x1 = cx + rOuter * Math.cos(startAngle);
+                    const y1 = cy + rOuter * Math.sin(startAngle);
+                    const x2 = cx + rOuter * Math.cos(endAngle);
+                    const y2 = cy + rOuter * Math.sin(endAngle);
+
+                    const x3 = cx + rInner * Math.cos(endAngle);
+                    const y3 = cy + rInner * Math.sin(endAngle);
+                    const x4 = cx + rInner * Math.cos(startAngle);
+                    const y4 = cy + rInner * Math.sin(startAngle);
+
+                    const largeArc = angleSpan > Math.PI ? 1 : 0;
+                    const d = `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+
+                    slicesHtml += `
+                        <path d="${d}" fill="${cat.color}" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" class="donut-slice cursor-pointer" data-index="${i}" onmouseenter="highlightCategory(${i})" onmouseleave="unhighlightCategory()"></path>
+                    `;
+
+                    // Callout label outside slice (Huruf di atas, persentase di bawah - persis seperti contoh gambar)
+                    const lx = cx + rLabel * Math.cos(midAngle);
+                    const ly = cy + rLabel * Math.sin(midAngle);
+
+                    labelsHtml += `
+                        <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" class="font-sans select-none cursor-pointer" onmouseenter="highlightCategory(${i})" onmouseleave="unhighlightCategory()">
+                            <tspan x="${lx}" dy="-5" font-size="11.5" font-weight="900" fill="${cat.color}">${cat.letter}</tspan>
+                            <tspan x="${lx}" dy="13" font-size="10" font-weight="700" fill="#334155">${cat.percentage}%</tspan>
+                        </text>
+                    `;
+                });
+            }
+
+            slicesGroup.innerHTML = slicesHtml;
+            labelsGroup.innerHTML = labelsHtml;
+        }
+
+        // 3. Render Kartu Rincian Persentase Kategori di Bagian Bawah
+        const cardsGrid = document.getElementById('chart-percentage-cards-grid');
+        if (cardsGrid) {
+            cardsGrid.innerHTML = categories.map((cat, i) => `
+                <div class="category-stat-card group relative bg-white hover:bg-slate-50/90 rounded-2xl p-3.5 border border-gray-200/90 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden" data-index="${i}" onmouseenter="highlightCategory(${i})" onmouseleave="unhighlightCategory()">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black text-white shrink-0 shadow-xs transition-transform group-hover:scale-110" style="background-color: ${cat.color}">
+                                ${cat.letter}
+                            </span>
+                            <div class="min-w-0">
+                                <h4 class="text-xs font-bold text-gray-900 truncate" title="${escapeHtml(cat.name)}">
+                                    ${escapeHtml(cat.name)}
+                                </h4>
+                                <p class="text-[10.5px] text-gray-500 font-medium">
+                                    ${cat.count} transaksi
+                                </p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-black shrink-0" style="background-color: ${cat.lightColor}; color: ${cat.color}">
+                            ${cat.percentage}%
+                        </span>
+                    </div>
+
+                    <div class="mt-3 pt-2.5 border-t border-gray-100">
+                        <div class="flex items-baseline justify-between text-xs mb-1.5">
+                            <span class="text-gray-400 text-[10.5px] font-medium">Nominal</span>
+                            <span class="font-extrabold text-gray-900 text-xs sm:text-[13px]">${formatRupiah(cat.total)}</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div class="h-2 rounded-full transition-all duration-500" style="width: ${cat.percentage}%; background-color: ${cat.color}"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+    window.renderCategoryStatsChart = renderCategoryStatsChart;
 
     // ── Render Tabel & Kartu Transaksi Secara Dinamis (Dikelompokkan per Kategori) ──
     function renderTransactionsTable(list) {
@@ -2389,8 +3015,23 @@
             }
         });
 
-        const newUrl = '/keuangan' + (periode !== 'semua' ? '?periode=' + encodeURIComponent(periode) : '');
-        window.history.pushState(null, '', newUrl);
+        try {
+            const url = new URL(window.location.href);
+            if (periode !== 'semua') {
+                url.searchParams.set('periode', periode);
+            } else {
+                url.searchParams.delete('periode');
+            }
+            if (currentSubmenu === 'statistik') {
+                url.searchParams.set('tab', 'statistik');
+            } else {
+                url.searchParams.delete('tab');
+            }
+            window.history.pushState(null, '', url.toString());
+        } catch (e) {
+            const newUrl = '/keuangan' + (periode !== 'semua' ? '?periode=' + encodeURIComponent(periode) : '') + (currentSubmenu === 'statistik' ? (periode !== 'semua' ? '&tab=statistik' : '?tab=statistik') : '');
+            window.history.pushState(null, '', newUrl);
+        }
 
         loadKeuanganData(periode);
     }
@@ -2399,6 +3040,26 @@
     document.addEventListener('DOMContentLoaded', function() {
         bindRupiahInput(document.getElementById('create-nominal'));
         bindRupiahInput(document.getElementById('edit-nominal'));
+
+        // Inisialisasi Sub Menu aktif berdasarkan URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialTab = urlParams.get('tab') || '{{ request()->query("tab", "riwayat") }}';
+        if (initialTab === 'statistik') {
+            setKeuanganSubmenu('statistik');
+        } else {
+            setKeuanganSubmenu('riwayat');
+        }
+
+        // Inisialisasi Infografis Statistik Kategori
+        if (typeof renderCategoryStatsChart === 'function') {
+            const hasPengeluaran = (currentTransaksiList || []).some(t => t.tipe === 'pengeluaran');
+            const hasPemasukan = (currentTransaksiList || []).some(t => t.tipe === 'pemasukan');
+            if (!hasPengeluaran && hasPemasukan) {
+                setChartTypeFilter('pemasukan');
+            } else {
+                setChartTypeFilter('pengeluaran');
+            }
+        }
 
         // Jika sedang offline saat halaman dibuka, render data dari IndexedDB
         if (!navigator.onLine) {

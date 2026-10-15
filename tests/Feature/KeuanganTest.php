@@ -374,4 +374,45 @@ class KeuanganTest extends TestCase
             ]);
         $this->assertDatabaseMissing('financial_transactions', ['id' => $trx->id]);
     }
+
+    public function test_keuangan_displays_category_statistics_section(): void
+    {
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Olah Lahan Garapan',
+            'judul' => 'Traktor Lahan',
+            'nominal' => 300000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pemeliharaan',
+            'judul' => 'Beli Pupuk Urea',
+            'nominal' => 150000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $response = $this->get('/keuangan');
+
+        $response->assertStatus(200);
+        $response->assertSee('Statistik Distribusi Kategori');
+        $response->assertSee('section-category-stats');
+        $response->assertSee('donut-chart-svg');
+        $response->assertSee('Rincian Persentase per Kategori');
+        $response->assertSee('chart-percentage-cards-grid');
+        $response->assertSee('submenu-content-riwayat');
+        $response->assertSee('submenu-content-statistik');
+        $response->assertSee('btn-subnav-riwayat');
+        $response->assertSee('btn-subnav-statistik');
+    }
+
+    public function test_keuangan_supports_submenu_query_parameter(): void
+    {
+        $response = $this->get('/keuangan?tab=statistik');
+
+        $response->assertStatus(200);
+        $response->assertSee('submenu-content-statistik');
+        $response->assertSee('btn-subnav-statistik');
+    }
 }

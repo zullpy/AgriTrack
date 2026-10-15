@@ -388,20 +388,51 @@
                     @endif
                 </a>
 
-                {{-- 5. Keuangan --}}
-                <a href="/keuangan"
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
-                          {{ request()->is('keuangan*') ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
-                    <span class="w-8 h-8 rounded-lg {{ request()->is('keuangan*') ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                {{-- 5. Keuangan (with submenus) --}}
+                @php
+                    $isKeuanganActive = request()->is('keuangan*');
+                    $activeKeuanganTab = request()->query('tab', 'riwayat');
+                    $isKeuanganStatistik = $isKeuanganActive && $activeKeuanganTab === 'statistik';
+                    $isKeuanganRiwayat = $isKeuanganActive && $activeKeuanganTab !== 'statistik';
+                @endphp
+                <div class="space-y-1" id="keuangan-menu-wrapper">
+                    <button type="button"
+                            onclick="toggleKeuanganSubmenu()"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer
+                                   {{ $isKeuanganActive ? 'nav-active text-primary-dark font-semibold' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-lg {{ $isKeuanganActive ? 'bg-emerald-100 text-primary-dark' : 'bg-gray-100 text-gray-500' }} flex items-center justify-center transition-colors">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </span>
+                            <span>Keuangan</span>
+                        </div>
+                        <svg id="keuangan-chevron" class="w-4 h-4 text-gray-400 transition-transform duration-200 {{ $isKeuanganActive ? 'rotate-180 text-primary' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
-                    </span>
-                    <span>Keuangan</span>
-                    @if(request()->is('keuangan*'))
-                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
-                    @endif
-                </a>
+                    </button>
+
+                    <div id="keuangan-submenu" class="pl-11 pr-2 space-y-1 {{ $isKeuanganActive ? 'block' : 'hidden' }}">
+                        <a href="/keuangan?tab=riwayat"
+                           id="sidebar-link-keuangan-riwayat"
+                           onclick="if (window.location.pathname === '/keuangan' && typeof setKeuanganSubmenu === 'function') { setKeuanganSubmenu('riwayat'); return false; }"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isKeuanganRiwayat ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isKeuanganRiwayat ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Riwayat</span>
+                        </a>
+
+                        <a href="/keuangan?tab=statistik"
+                           id="sidebar-link-keuangan-statistik"
+                           onclick="if (window.location.pathname === '/keuangan' && typeof setKeuanganSubmenu === 'function') { setKeuanganSubmenu('statistik'); return false; }"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isKeuanganStatistik ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isKeuanganStatistik ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Statistik</span>
+                        </a>
+                    </div>
+                </div>
             </nav>
 
             {{-- Connection Indicator (Desktop) --}}
@@ -629,6 +660,19 @@
         window.toggleTahapanSubmenu = function() {
             const submenu = document.getElementById('tahapan-submenu');
             const chevron = document.getElementById('tahapan-chevron');
+            if (submenu) {
+                submenu.classList.toggle('hidden');
+                if (chevron) {
+                    chevron.classList.toggle('rotate-180');
+                    chevron.classList.toggle('text-primary');
+                }
+            }
+        };
+
+        // Toggle Keuangan Submenu in Desktop Sidebar
+        window.toggleKeuanganSubmenu = function() {
+            const submenu = document.getElementById('keuangan-submenu');
+            const chevron = document.getElementById('keuangan-chevron');
             if (submenu) {
                 submenu.classList.toggle('hidden');
                 if (chevron) {
