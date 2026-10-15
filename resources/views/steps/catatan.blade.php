@@ -11,14 +11,14 @@
             <nav class="flex items-center gap-2 text-xs text-gray-500 mb-1">
                 <a href="/steps" class="hover:text-emerald-700 transition-colors font-medium">Tahapan</a>
                 <span>/</span>
-                <span class="text-blue-700 font-semibold">Catatan Penting</span>
+                <span class="text-emerald-700 font-semibold">Catatan Penting</span>
             </nav>
             <div class="flex items-center gap-2.5 flex-wrap">
                 <h1 class="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">Catatan Penting Budidaya</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                     Fase 3: Aturan Lapangan
                 </span>
-                <span id="notes-counter" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                <span id="notes-counter" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
                     {{ count($notes) }} Catatan Tersimpan
                 </span>
             </div>
@@ -28,7 +28,7 @@
         <div class="flex items-center gap-2 self-start sm:self-center shrink-0">
             <button type="button"
                     onclick="openAddNoteModal()"
-                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
@@ -48,7 +48,7 @@
             2. Penanaman Bibit
         </a>
         <a href="/steps/catatan"
-           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-blue-800 shadow-xs whitespace-nowrap transition-all">
+           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-emerald-800 shadow-xs whitespace-nowrap transition-all">
             3. Catatan Penting
         </a>
     </div>
@@ -63,7 +63,7 @@
                    id="search-notes-input"
                    oninput="filterNotesList(this.value)"
                    placeholder="Cari judul atau isi catatan..."
-                   class="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-2xs">
+                   class="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-2xs">
             <button type="button"
                     id="btn-clear-search"
                     onclick="clearSearchNotes()"
@@ -79,7 +79,7 @@
     {{-- ── Daftar Catatan (Grid Card) ── --}}
     <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         @forelse($notes as $note)
-            <div class="note-card bg-surface rounded-2xl border border-gray-200 p-5 shadow-xs hover:border-blue-300 hover:shadow-md transition-all flex flex-col justify-between group"
+            <div class="note-card bg-surface rounded-2xl border border-gray-200 p-5 shadow-xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between group"
                  id="note-card-{{ $note->id }}"
                  data-title="{{ strtolower($note->judul) }}"
                  data-content="{{ strtolower($note->catatan) }}">
@@ -88,13 +88,13 @@
                     {{-- Card Header: Icon, Judul, Action Buttons --}}
                     <div class="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
                         <div class="flex items-start gap-3 min-w-0">
-                            <span class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200 mt-0.5">
+                            <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
                                 </svg>
                             </span>
                             <div class="min-w-0">
-                                <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-blue-900 transition-colors leading-snug">
+                                <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-emerald-900 transition-colors leading-snug">
                                     {{ $note->judul }}
                                 </h3>
                                 <span class="text-[10px] text-gray-400 mt-0.5 block">
@@ -108,7 +108,7 @@
                             <button type="button"
                                     onclick="openEditNoteModal({{ json_encode($note) }})"
                                     title="Edit Catatan"
-                                    class="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer">
+                                    class="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer">
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
                                 </svg>
@@ -133,7 +133,7 @@
 
                 {{-- Card Footer --}}
                 <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                    <span class="flex items-center gap-1 text-blue-700 font-medium">
+                    <span class="flex items-center gap-1 text-emerald-700 font-medium">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -144,7 +144,7 @@
             </div>
         @empty
             <div id="empty-notes-placeholder" class="col-span-full py-12 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.53-4h7.5m-7.5-4h3.75m-6.75-6.75H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                     </svg>
@@ -153,7 +153,7 @@
                 <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto">Tambahkan instruksi teknis, aturan semprot, atau panduan khusus untuk membantu budidaya tanaman Anda.</p>
                 <button type="button"
                         onclick="openAddNoteModal()"
-                        class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer">
+                        class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer">
                     + Buat Catatan Pertama
                 </button>
             </div>
@@ -162,7 +162,7 @@
         {{-- Pesan Hasil Pencarian Tidak Ditemukan --}}
         <div id="no-search-results" class="hidden col-span-full py-10 text-center bg-gray-50 rounded-2xl border border-gray-200">
             <p class="text-sm font-semibold text-gray-700">Tidak ada catatan yang sesuai dengan kata kunci.</p>
-            <button type="button" onclick="clearSearchNotes()" class="mt-2 text-xs font-bold text-blue-600 hover:underline">
+            <button type="button" onclick="clearSearchNotes()" class="mt-2 text-xs font-bold text-emerald-600 hover:underline">
                 Reset Pencarian
             </button>
         </div>
@@ -206,7 +206,7 @@
                            name="judul"
                            required
                            placeholder="Contoh: Waktu Terbaik Aplikasi Fungisida Kontak"
-                           class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs">
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-2xs">
                 </div>
 
                 {{-- Isi Catatan --}}
@@ -219,7 +219,7 @@
                               rows="6"
                               required
                               placeholder="Tuliskan catatan teknis, dosis kehati-hatian, petunjuk cuaca, atau SOP terkait..."
-                              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs leading-relaxed"></textarea>
+                              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-2xs leading-relaxed"></textarea>
                 </div>
             </div>
 
@@ -231,7 +231,7 @@
                     Batal
                 </button>
                 <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
+                        class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
                     Simpan Catatan
                 </button>
             </div>
@@ -275,7 +275,7 @@
                            id="edit-note-judul"
                            name="judul"
                            required
-                           class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs">
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-2xs">
                 </div>
 
                 {{-- Isi Catatan --}}
@@ -287,7 +287,7 @@
                               name="catatan"
                               rows="6"
                               required
-                              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs leading-relaxed"></textarea>
+                              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-2xs leading-relaxed"></textarea>
                 </div>
             </div>
 
@@ -299,7 +299,7 @@
                     Batal
                 </button>
                 <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
+                        class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
                     Simpan Perubahan
                 </button>
             </div>
@@ -342,6 +342,7 @@
     }
 
     function openEditNoteModal(note) {
+        if (!note) return;
         const form = document.getElementById('form-edit-note');
         if (!form) return;
 
@@ -361,33 +362,17 @@
 
         form.action = `/steps/catatan/${id}`;
 
-        if (window.Swal) {
-            Swal.fire({
-                title: 'Hapus Catatan Ini?',
-                html: `Apakah Anda yakin ingin menghapus catatan <strong class="text-rose-600">"${escapeHtml(title)}"</strong>? Tindakan ini tidak dapat dibatalkan.`,
-                icon: 'warning',
-                iconColor: '#e11d48',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal',
-                reverseButtons: true,
-                buttonsStyling: false,
-                customClass: {
-                    popup: 'rounded-2xl p-6 shadow-2xl',
-                    title: 'text-base sm:text-lg font-bold text-gray-900',
-                    htmlContainer: 'text-xs sm:text-sm text-gray-600 mt-2',
-                    confirmButton: 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm cursor-pointer shadow-xs transition-all ml-2',
-                    cancelButton: 'px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-semibold text-xs sm:text-sm cursor-pointer transition-colors'
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        } else {
-            if (confirm(`Hapus catatan "${title}"?`)) {
-                form.submit();
-            }
+        if (window.AgriSwal && typeof window.AgriSwal.confirmDelete === 'function') {
+            window.AgriSwal.confirmDelete(
+                'Hapus Catatan Ini?',
+                title,
+                () => form.submit()
+            );
+            return;
+        }
+
+        if (confirm(`Hapus catatan "${title}"?`)) {
+            form.submit();
         }
     }
 
@@ -443,22 +428,5 @@
         div.textContent = text;
         return div.innerHTML;
     }
-
-    // Flash notification from session
-    @if(session('success'))
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.Swal) {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: "{{ session('success') }}",
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-            }
-        });
-    @endif
 </script>
 @endsection
