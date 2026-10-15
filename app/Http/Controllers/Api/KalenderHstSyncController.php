@@ -70,6 +70,8 @@ class KalenderHstSyncController extends Controller
                     $activity = $crop->activities()->create([
                         'nama_kegiatan' => $data['nama_kegiatan'] ?? 'Kegiatan Offline',
                         'aplikasi_obat' => $data['aplikasi_obat'] ?? null,
+                        'jumlah_tank' => isset($data['jumlah_tank']) ? (float) $data['jumlah_tank'] : 1.0,
+                        'total_biaya_obat' => isset($data['total_biaya_obat']) ? (float) $data['total_biaya_obat'] : null,
                         'sasaran' => $data['sasaran'] ?? null,
                         'target_hst' => $targetHst,
                         'status' => 'Belum',
@@ -96,6 +98,12 @@ class KalenderHstSyncController extends Controller
                             }
                             if (isset($data['aplikasi_obat'])) {
                                 $updateData['aplikasi_obat'] = $data['aplikasi_obat'];
+                            }
+                            if (isset($data['jumlah_tank'])) {
+                                $updateData['jumlah_tank'] = (float) $data['jumlah_tank'];
+                            }
+                            if (isset($data['total_biaya_obat'])) {
+                                $updateData['total_biaya_obat'] = (float) $data['total_biaya_obat'];
                             }
                             if (isset($data['sasaran'])) {
                                 $updateData['sasaran'] = $data['sasaran'];

@@ -362,6 +362,12 @@
                                     Harga: —
                                 </span>
                             @endif
+
+                            @if ($medicine->kemasan_label)
+                                <span class="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 inline-block mt-1">
+                                    {{ $medicine->kemasan_label }}@if ($medicine->formatted_harga_per_base_unit) • {{ $medicine->formatted_harga_per_base_unit }}@endif
+                                </span>
+                            @endif
                         </div>
                     </div>
 
@@ -638,6 +644,12 @@
                                         </div>
                                     @else
                                         <span class="text-gray-400 text-xs font-medium">—</span>
+                                    @endif
+
+                                    @if ($medicine->kemasan_label)
+                                        <span class="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">
+                                            {{ $medicine->kemasan_label }}@if ($medicine->formatted_harga_per_base_unit) • {{ $medicine->formatted_harga_per_base_unit }}@endif
+                                        </span>
                                     @endif
                                 </td>
                                 <td class="px-5 py-4 pr-6 text-right whitespace-nowrap">

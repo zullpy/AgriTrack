@@ -132,6 +132,51 @@ class KalenderHstController extends Controller
             }
         }
 
+        // Ambil tanaman yang memiliki catatan aplikasi obat (aktif maupun riwayat)
+        $cropsWithMedicines = Crop::with(['activities' => function ($query) {
+            $query->where(function ($q) {
+                $q->whereNotNull('aplikasi_obat')->where('aplikasi_obat', '!=', '');
+            })->orderBy('target_hst');
+        }])
+            ->whereHas('activities', function ($query) {
+                $query->whereNotNull('aplikasi_obat')->where('aplikasi_obat', '!=', '');
+            })
+            ->latest('tanggal_tanam')
+            ->get();
+
+        $overallMedicineSummary = [
+            'total_biaya' => 0.0,
+            'formatted_total_biaya' => 'Rp 0',
+            'total_tank' => 0.0,
+            'formatted_total_tank' => '0 Tank',
+            'total_aplikasi' => 0,
+            'total_jenis_obat' => 0,
+            'crop_summaries' => [],
+        ];
+
+        $uniqueMedicinesAll = [];
+        foreach ($cropsWithMedicines as $cropItem) {
+            $sum = $cropItem->medicine_summary;
+            if ($sum['total_aplikasi_count'] > 0 || ! empty($sum['items'])) {
+                $overallMedicineSummary['crop_summaries'][$cropItem->id] = $sum;
+                $overallMedicineSummary['total_biaya'] += $sum['total_biaya'];
+                $overallMedicineSummary['total_tank'] += $sum['total_tank_count'];
+                $overallMedicineSummary['total_aplikasi'] += $sum['total_aplikasi_count'];
+                foreach ($sum['items'] as $item) {
+                    $uniqueMedicinesAll[strtolower($item['nama'])] = true;
+                }
+            }
+        }
+
+        $overallMedicineSummary['total_jenis_obat'] = count($uniqueMedicinesAll);
+        $overallMedicineSummary['formatted_total_biaya'] = $overallMedicineSummary['total_biaya'] > 0
+            ? 'Rp '.number_format($overallMedicineSummary['total_biaya'], 0, ',', '.')
+            : 'Rp 0';
+        $fmtOverallTank = (float) $overallMedicineSummary['total_tank'] == (int) $overallMedicineSummary['total_tank']
+            ? (string) (int) $overallMedicineSummary['total_tank']
+            : (string) round($overallMedicineSummary['total_tank'], 1);
+        $overallMedicineSummary['formatted_total_tank'] = $fmtOverallTank.' Tank';
+
         return view('kalender-hst.index', compact(
             'calendarWeeks',
             'currentMonth',
@@ -141,7 +186,9 @@ class KalenderHstController extends Controller
             'cropsWithHarvests',
             'totalHarvestCount',
             'harvestedCrops',
-            'dueThisWeekCount'
+            'dueThisWeekCount',
+            'cropsWithMedicines',
+            'overallMedicineSummary'
         ));
     }
 
@@ -330,8 +377,8 @@ class KalenderHstController extends Controller
         $currentHst = $crop->current_hst;
         $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
 
-        // Ambil data obat untuk kemudahan input aplikasi obat
-        $medicines = Medicine::orderBy('nama')->get(['id', 'nama', 'jenis', 'dosis_anjuran', 'sasaran_obat']);
+        // Ambil data obat untuk kemudahan input aplikasi obat & konversi dosis
+        $medicines = Medicine::orderBy('nama')->get(['id', 'nama', 'jenis', 'dosis_anjuran', 'sasaran_obat', 'harga', 'kemasan_jumlah', 'kemasan_satuan']);
 
         $activitiesByHst = $crop->activities->groupBy('target_hst');
         $harvestsByHst = $crop->harvests->groupBy('hst_saat_panen');
@@ -403,12 +450,21 @@ class KalenderHstController extends Controller
         $pendingActivities = $totalActivities - $completedActivities;
         $completionRate = $totalActivities > 0 ? (int) round(($completedActivities / $totalActivities) * 100) : 0;
 
+        $otherActiveCrops = Crop::active()
+            ->where('id', '!=', $crop->id)
+            ->orderBy('nama_tanaman')
+            ->get();
+
+        $medicineSummary = $crop->medicine_summary;
+
         return view('kalender-hst.show', compact(
             'crop',
             'currentHst',
             'maxRowHst',
             'tableRows',
             'medicines',
+            'medicineSummary',
+            'otherActiveCrops',
             'totalActivities',
             'completedActivities',
             'pendingActivities',
@@ -421,6 +477,8 @@ class KalenderHstController extends Controller
         $validated = $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
             'aplikasi_obat' => 'nullable|string|max:2000',
+            'jumlah_tank' => 'nullable|numeric|min:0.1|max:999',
+            'total_biaya_obat' => 'nullable|numeric|min:0',
             'sasaran' => 'nullable|string|max:500',
             'keterangan' => 'nullable|string|max:1000',
             'target_hst' => 'nullable|integer|min:0',
@@ -428,6 +486,8 @@ class KalenderHstController extends Controller
             'catatan' => 'nullable|string|max:1000',
             'foto_kegiatan' => 'nullable',
             'foto_kegiatan.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'other_crop_ids' => 'nullable|array',
+            'other_crop_ids.*' => 'integer|exists:crops,id',
         ]);
 
         $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
@@ -443,6 +503,8 @@ class KalenderHstController extends Controller
         }
 
         $keteranganFinal = $validated['keterangan'] ?? $validated['catatan'] ?? null;
+        $jumlahTank = $request->filled('jumlah_tank') ? (float) $request->input('jumlah_tank') : 1.0;
+        $totalBiayaObat = $request->filled('total_biaya_obat') ? (float) $request->input('total_biaya_obat') : null;
 
         // Ambil dan validasi jumlah file foto (maksimal 5 foto)
         $fotoFiles = [];
@@ -480,6 +542,8 @@ class KalenderHstController extends Controller
         $crop->activities()->create([
             'nama_kegiatan' => $validated['nama_kegiatan'],
             'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
+            'jumlah_tank' => $jumlahTank,
+            'total_biaya_obat' => $totalBiayaObat,
             'sasaran' => $validated['sasaran'] ?? null,
             'target_hst' => $targetHst,
             'status' => 'Belum',
@@ -488,7 +552,48 @@ class KalenderHstController extends Controller
             'foto_kegiatan' => ! empty($uploadedPhotos) ? $uploadedPhotos : null,
         ]);
 
-        $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat pada HST {$targetHst}.";
+        // Terapkan kegiatan ke tanaman lain yang dipilih
+        $appliedOtherCrops = [];
+        $otherCropIds = array_filter(
+            (array) $request->input('other_crop_ids', []),
+            fn ($id) => (int) $id !== (int) $crop->id
+        );
+
+        if (! empty($otherCropIds)) {
+            $otherCrops = Crop::active()->whereIn('id', $otherCropIds)->get();
+            $activityDate = $request->filled('tanggal_kegiatan')
+                ? Carbon::parse($request->input('tanggal_kegiatan'))->startOfDay()
+                : ($request->filled('target_hst')
+                    ? $plantDate->copy()->addDays((int) $request->input('target_hst'))
+                    : now()->startOfDay());
+
+            foreach ($otherCrops as $otherCrop) {
+                $otherPlantDate = Carbon::parse($otherCrop->tanggal_tanam)->startOfDay();
+                $otherHst = max(0, (int) $otherPlantDate->diffInDays($activityDate, false));
+
+                $otherCrop->activities()->create([
+                    'nama_kegiatan' => $validated['nama_kegiatan'],
+                    'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
+                    'jumlah_tank' => $jumlahTank,
+                    'total_biaya_obat' => $totalBiayaObat,
+                    'sasaran' => $validated['sasaran'] ?? null,
+                    'target_hst' => $otherHst,
+                    'status' => 'Belum',
+                    'keterangan' => $keteranganFinal,
+                    'catatan' => $keteranganFinal,
+                    'foto_kegiatan' => ! empty($uploadedPhotos) ? $uploadedPhotos : null,
+                ]);
+
+                $appliedOtherCrops[] = $otherCrop->nama_tanaman;
+            }
+        }
+
+        if (! empty($appliedOtherCrops)) {
+            $otherNames = implode(', ', $appliedOtherCrops);
+            $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat untuk {$crop->nama_tanaman} dan diterapkan juga ke: {$otherNames}.";
+        } else {
+            $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat pada HST {$targetHst}.";
+        }
 
         if ($request->input('redirect_to') === 'show') {
             return redirect('/kalender-hst/tanaman/'.$crop->id)->with('success', $msg);
@@ -502,6 +607,8 @@ class KalenderHstController extends Controller
         $validated = $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
             'aplikasi_obat' => 'nullable|string|max:2000',
+            'jumlah_tank' => 'nullable|numeric|min:0.1|max:999',
+            'total_biaya_obat' => 'nullable|numeric|min:0',
             'sasaran' => 'nullable|string|max:500',
             'keterangan' => 'nullable|string|max:1000',
             'target_hst' => 'required|integer|min:0',
@@ -513,6 +620,8 @@ class KalenderHstController extends Controller
         ]);
 
         $keteranganFinal = $validated['keterangan'] ?? $validated['catatan'] ?? null;
+        $jumlahTank = $request->filled('jumlah_tank') ? (float) $request->input('jumlah_tank') : ($activity->jumlah_tank ?? 1.0);
+        $totalBiayaObat = $request->filled('total_biaya_obat') ? (float) $request->input('total_biaya_obat') : $activity->total_biaya_obat;
 
         // Tangani foto yang ditandai untuk dihapus dan hapus file fisiknya
         $existingPhotos = is_array($activity->foto_kegiatan) ? $activity->foto_kegiatan : [];
@@ -576,6 +685,8 @@ class KalenderHstController extends Controller
         $activity->update([
             'nama_kegiatan' => $validated['nama_kegiatan'],
             'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
+            'jumlah_tank' => $jumlahTank,
+            'total_biaya_obat' => $totalBiayaObat,
             'sasaran' => $validated['sasaran'] ?? null,
             'target_hst' => (int) $validated['target_hst'],
             'keterangan' => $keteranganFinal,

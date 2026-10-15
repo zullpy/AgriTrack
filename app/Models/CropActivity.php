@@ -12,6 +12,8 @@ class CropActivity extends Model
         'crop_id',
         'nama_kegiatan',
         'aplikasi_obat',
+        'jumlah_tank',
+        'total_biaya_obat',
         'sasaran',
         'target_hst',
         'status',
@@ -25,6 +27,8 @@ class CropActivity extends Model
     {
         return [
             'target_hst' => 'integer',
+            'jumlah_tank' => 'float',
+            'total_biaya_obat' => 'float',
             'tanggal_selesai' => 'date',
             'foto_kegiatan' => 'array',
         ];
@@ -107,5 +111,26 @@ class CropActivity extends Model
         }
 
         return $this->crop->current_hst >= $this->target_hst;
+    }
+
+    public function getFormattedTotalBiayaObatAttribute(): ?string
+    {
+        if ($this->total_biaya_obat === null || $this->total_biaya_obat <= 0) {
+            return null;
+        }
+
+        return 'Rp '.number_format($this->total_biaya_obat, 0, ',', '.');
+    }
+
+    public function getFormattedJumlahTankAttribute(): ?string
+    {
+        if ($this->jumlah_tank === null || $this->jumlah_tank <= 0) {
+            return null;
+        }
+
+        $val = (float) $this->jumlah_tank;
+        $valStr = (int) $val == $val ? (string) (int) $val : (string) $val;
+
+        return $valStr.' Tank';
     }
 }

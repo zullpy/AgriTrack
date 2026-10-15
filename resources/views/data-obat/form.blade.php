@@ -321,33 +321,83 @@
                     </div>
                 </div>
 
-                {{-- Harga Obat --}}
-                <div>
-                    <label for="harga" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                        Harga Obat (Rupiah)
-                    </label>
-                    <div class="relative">
-                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500 select-none">Rp</span>
-                        @php
-                            $rawHarga = old('harga', $medicine->harga ?? '');
-                            $initialHarga = '';
-                            if ($rawHarga !== '' && $rawHarga !== null) {
-                                $cleanDigits = preg_replace('/\D/', '', (string) $rawHarga);
-                                $initialHarga = $cleanDigits !== '' ? number_format((float) $cleanDigits, 0, ',', '.') : '';
-                            }
-                        @endphp
-                        <input type="text"
-                               inputmode="numeric"
-                               id="harga"
-                               name="harga"
-                               value="{{ $initialHarga }}"
-                               placeholder="Contoh: 65.000"
-                               class="field-input w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder:text-gray-400 font-semibold transition-all">
+                {{-- Grid 2 Kolom: Harga Obat & Ukuran Kemasan --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {{-- Harga Obat --}}
+                    <div>
+                        <label for="harga" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Harga Obat (Rupiah)
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500 select-none">Rp</span>
+                            @php
+                                $rawHarga = old('harga', $medicine->harga ?? '');
+                                $initialHarga = '';
+                                if ($rawHarga !== '' && $rawHarga !== null) {
+                                    $cleanDigits = preg_replace('/\D/', '', (string) $rawHarga);
+                                    $initialHarga = $cleanDigits !== '' ? number_format((float) $cleanDigits, 0, ',', '.') : '';
+                                }
+                            @endphp
+                            <input type="text"
+                                   inputmode="numeric"
+                                   id="harga"
+                                   name="harga"
+                                   value="{{ $initialHarga }}"
+                                   placeholder="Contoh: 65.000"
+                                   class="field-input w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder:text-gray-400 font-semibold transition-all">
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1">Format otomatis Rupiah (contoh: 65000 jadi 65.000).</p>
+                        @error('harga')
+                            <p class="text-xs text-red-600 mt-1 font-semibold">{{ $message }}</p>
+                        @enderror
                     </div>
-                    <p class="text-[11px] text-gray-500 mt-1">Format otomatis Rupiah (contoh: ketik 65000 otomatis menjadi 65.000).</p>
-                    @error('harga')
-                        <p class="text-xs text-red-600 mt-1 font-semibold">{{ $message }}</p>
-                    @enderror
+
+                    {{-- Ukuran Kemasan & Satuan --}}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Ukuran & Satuan Kemasan
+                        </label>
+                        @php
+                            $currentJumlah = old('kemasan_jumlah', isset($medicine) && $medicine->kemasan_jumlah !== null ? ((float)$medicine->kemasan_jumlah == (int)$medicine->kemasan_jumlah ? (int)$medicine->kemasan_jumlah : (float)$medicine->kemasan_jumlah) : '');
+                            $currentSatuan = old('kemasan_satuan', $medicine->kemasan_satuan ?? 'kg');
+                        @endphp
+                        <div class="flex items-center gap-2">
+                            <input type="number"
+                                   step="any"
+                                   min="0"
+                                   id="kemasan_jumlah"
+                                   name="kemasan_jumlah"
+                                   value="{{ $currentJumlah }}"
+                                   placeholder="Contoh: 1 atau 500"
+                                   class="field-input w-1/2 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 font-semibold transition-all">
+                            <select id="kemasan_satuan"
+                                    name="kemasan_satuan"
+                                    class="field-input w-1/2 px-3 py-2.5 rounded-xl border border-gray-300 bg-white text-sm font-bold text-gray-700 transition-all">
+                                <option value="kg" {{ $currentSatuan === 'kg' ? 'selected' : '' }}>kg (Kilogram)</option>
+                                <option value="gram" {{ $currentSatuan === 'gram' ? 'selected' : '' }}>gram (gr)</option>
+                                <option value="liter" {{ in_array($currentSatuan, ['liter', 'l']) ? 'selected' : '' }}>liter (L)</option>
+                                <option value="ml" {{ $currentSatuan === 'ml' ? 'selected' : '' }}>ml (Mililiter)</option>
+                                <option value="sachet" {{ $currentSatuan === 'sachet' ? 'selected' : '' }}>sachet</option>
+                                <option value="pcs" {{ $currentSatuan === 'pcs' ? 'selected' : '' }}>pcs / butir</option>
+                            </select>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1">Dikonversi otomatis ke gram/ml untuk dosis.</p>
+                        @error('kemasan_jumlah')
+                            <p class="text-xs text-red-600 mt-1 font-semibold">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                {{-- Live Conversion & Price Rate Banner --}}
+                <div id="kemasan-conversion-banner" class="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200/90 text-xs text-emerald-950 flex items-center justify-between flex-wrap gap-2 transition-all">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span class="font-bold text-emerald-900">Konversi Satuan:</span>
+                        <span class="text-emerald-800 font-medium" id="conversion-detail-text">1 kg = 1.000 gram</span>
+                    </div>
+                    <div class="font-bold text-emerald-900 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs" id="conversion-rate-text">
+                        Estimasi: Rp 0 / gram
+                    </div>
                 </div>
             </div>
         </div>
@@ -1248,6 +1298,17 @@ function applyMedicineAutofill(matched) {
         ketInput.value = matched.keterangan;
     }
 
+    // 9. Kemasan & Satuan
+    if (matched.kemasan_jumlah !== undefined && matched.kemasan_jumlah !== null) {
+        const kjInput = document.getElementById('kemasan_jumlah');
+        if (kjInput) kjInput.value = matched.kemasan_jumlah;
+    }
+    if (matched.kemasan_satuan) {
+        const ksInput = document.getElementById('kemasan_satuan');
+        if (ksInput) ksInput.value = matched.kemasan_satuan;
+    }
+    updateKemasanConversionPreview();
+
     // 9. Foto-foto yang tersimpan di master obat
     const autofillPhotos = document.getElementById('autofill-photos-container');
     if (autofillPhotos) {
@@ -1493,6 +1554,65 @@ function updatePurchaseRowLabels() {
     });
 }
 
+function updateKemasanConversionPreview() {
+    const hargaInput = document.getElementById('harga');
+    const jumlahInput = document.getElementById('kemasan_jumlah');
+    const satuanSelect = document.getElementById('kemasan_satuan');
+    const detailText = document.getElementById('conversion-detail-text');
+    const rateText = document.getElementById('conversion-rate-text');
+
+    if (!hargaInput || !jumlahInput || !satuanSelect || !detailText || !rateText) return;
+
+    const rawHarga = hargaInput.value.replace(/\D/g, '');
+    const harga = rawHarga ? parseFloat(rawHarga) : 0;
+    const jumlah = parseFloat(jumlahInput.value) || 0;
+    const satuan = (satuanSelect.value || '').toLowerCase().trim();
+
+    if (jumlah <= 0) {
+        detailText.textContent = 'Masukkan ukuran kemasan obat (misal 1 kg atau 500 gram).';
+        rateText.textContent = 'Estimasi: Rp —';
+        return;
+    }
+
+    let baseUnit = 'gram';
+    let baseTotal = jumlah;
+    let detailMsg = '';
+
+    if (satuan === 'kg') {
+        baseUnit = 'gram';
+        baseTotal = jumlah * 1000;
+        detailMsg = `${jumlah} kg = ${Number(baseTotal).toLocaleString('id-ID')} gram`;
+    } else if (satuan === 'gram') {
+        baseUnit = 'gram';
+        baseTotal = jumlah;
+        detailMsg = `${Number(jumlah).toLocaleString('id-ID')} gram`;
+    } else if (satuan === 'liter' || satuan === 'l') {
+        baseUnit = 'ml';
+        baseTotal = jumlah * 1000;
+        detailMsg = `${jumlah} liter = ${Number(baseTotal).toLocaleString('id-ID')} ml`;
+    } else if (satuan === 'ml') {
+        baseUnit = 'ml';
+        baseTotal = jumlah;
+        detailMsg = `${Number(jumlah).toLocaleString('id-ID')} ml`;
+    } else {
+        baseUnit = satuan;
+        baseTotal = jumlah;
+        detailMsg = `${jumlah} ${satuan}`;
+    }
+
+    detailText.textContent = detailMsg;
+
+    if (harga > 0 && baseTotal > 0) {
+        const rate = harga / baseTotal;
+        const formattedRate = rate < 10 && (rate % 1 !== 0)
+            ? rate.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : Math.round(rate).toLocaleString('id-ID');
+        rateText.textContent = `Estimasi: Rp ${formattedRate} / ${baseUnit}`;
+    } else {
+        rateText.textContent = `Estimasi: Rp 0 / ${baseUnit}`;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     setupPillGroup('.kategori-pill', true, false);
     setupPillGroup('.cara-kerja-pill', false, true);
@@ -1502,6 +1622,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bind price formatters
     const hargaInput = document.getElementById('harga');
     if (hargaInput) bindRupiahInput(hargaInput);
+
+    // Kemasan conversion preview listeners
+    const kemasanJumlahInput = document.getElementById('kemasan_jumlah');
+    const kemasanSatuanSelect = document.getElementById('kemasan_satuan');
+    if (kemasanJumlahInput) {
+        kemasanJumlahInput.addEventListener('input', updateKemasanConversionPreview);
+        kemasanJumlahInput.addEventListener('change', updateKemasanConversionPreview);
+    }
+    if (kemasanSatuanSelect) {
+        kemasanSatuanSelect.addEventListener('change', updateKemasanConversionPreview);
+    }
+    if (hargaInput) {
+        hargaInput.addEventListener('input', updateKemasanConversionPreview);
+        hargaInput.addEventListener('change', updateKemasanConversionPreview);
+    }
+    updateKemasanConversionPreview();
 
     document.querySelectorAll('.purchase-harga-input').forEach(el => {
         bindRupiahInput(el);

@@ -940,6 +940,31 @@ class MedicineSeeder extends Seeder
         ];
 
         foreach ($medicines as $item) {
+            if (! isset($item['kemasan_jumlah']) || ! isset($item['kemasan_satuan'])) {
+                $nama = $item['nama'];
+                if (preg_match('/(\d+(?:[.,]\d+)?)\s*(kg|kilogram|gram|gr|g|liter|ltr|lt|l|ml|sachet|bungkus)\b/i', $nama, $matches)) {
+                    $item['kemasan_jumlah'] = (float) str_replace(',', '.', $matches[1]);
+                    $rawSat = strtolower($matches[2]);
+                    if (in_array($rawSat, ['kg', 'kilogram'], true)) {
+                        $item['kemasan_satuan'] = 'kg';
+                    } elseif (in_array($rawSat, ['liter', 'ltr', 'lt', 'l'], true)) {
+                        $item['kemasan_satuan'] = 'liter';
+                    } elseif (in_array($rawSat, ['gram', 'gr', 'g'], true)) {
+                        $item['kemasan_satuan'] = 'gram';
+                    } elseif ($rawSat === 'ml') {
+                        $item['kemasan_satuan'] = 'ml';
+                    } elseif (in_array($rawSat, ['sachet', 'bungkus'], true)) {
+                        $item['kemasan_satuan'] = 'sachet';
+                    }
+                } elseif (stripos($nama, 'sachet') !== false) {
+                    $item['kemasan_jumlah'] = 1.0;
+                    $item['kemasan_satuan'] = 'sachet';
+                } elseif (($item['jenis'] ?? '') === 'Pupuk') {
+                    $item['kemasan_jumlah'] = 1.0;
+                    $item['kemasan_satuan'] = 'kg';
+                }
+            }
+
             $medicine = Medicine::create($item);
 
             // Buat record pembelian awal di medicine_purchases

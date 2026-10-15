@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
     'dosis_anjuran',
     'interval_aplikasi',
     'harga',
+    'kemasan_jumlah',
+    'kemasan_satuan',
     'unsur_bahan',
     'fase',
     'foto_nota',
@@ -40,7 +42,109 @@ class Medicine extends Model
         'SP' => 'serbuk larut air',
     ];
 
-    protected $appends = ['formatted_harga', 'foto_url', 'foto_urls', 'formulasi_ciri_fisik', 'formulasi_detail'];
+    protected $appends = [
+        'formatted_harga',
+        'foto_url',
+        'foto_urls',
+        'formulasi_ciri_fisik',
+        'formulasi_detail',
+        'kemasan_label',
+        'base_unit_label',
+        'base_total_unit',
+        'harga_per_base_unit',
+        'formatted_harga_per_base_unit',
+    ];
+
+    /**
+     * Label kemasan (e.g. "1 kg", "500 gram", "100 ml").
+     */
+    public function getKemasanLabelAttribute(): ?string
+    {
+        if ($this->kemasan_jumlah === null || ! $this->kemasan_satuan) {
+            return null;
+        }
+
+        $formattedJumlah = (float) $this->kemasan_jumlah == (int) $this->kemasan_jumlah
+            ? (string) (int) $this->kemasan_jumlah
+            : (string) (float) $this->kemasan_jumlah;
+
+        return "{$formattedJumlah} {$this->kemasan_satuan}";
+    }
+
+    /**
+     * Satuan dasar untuk dosis (e.g. "gram" untuk kg/gram, "ml" untuk liter/ml).
+     */
+    public function getBaseUnitLabelAttribute(): string
+    {
+        $satuan = strtolower(trim((string) $this->kemasan_satuan));
+        if (in_array($satuan, ['kg', 'kilogram', 'gram', 'gr', 'g'], true)) {
+            return 'gram';
+        }
+        if (in_array($satuan, ['liter', 'ltr', 'lt', 'l', 'ml'], true)) {
+            return 'ml';
+        }
+        if (in_array($satuan, ['sachet', 'bungkus'], true)) {
+            return 'sachet';
+        }
+
+        return $satuan !== '' ? $satuan : 'gram';
+    }
+
+    /**
+     * Total kapasitas kemasan dalam satuan dasar dosis (e.g. 1 kg -> 1000 gram).
+     */
+    public function getBaseTotalUnitAttribute(): float
+    {
+        $jumlah = (float) ($this->kemasan_jumlah ?? 0);
+        $satuan = strtolower(trim((string) $this->kemasan_satuan));
+
+        // Jika data kemasan belum tersimpan di kolom, coba deteksi dari nama obat
+        if ($jumlah <= 0) {
+            if (preg_match('/(\d+(?:[.,]\d+)?)\s*(kg|kilogram|gram|gr|g|liter|ltr|lt|l|ml|sachet)\b/i', $this->nama, $m)) {
+                $jumlah = (float) str_replace(',', '.', $m[1]);
+                $satuan = strtolower($m[2]);
+            } else {
+                $jumlah = 1.0;
+                $satuan = 'gram';
+            }
+        }
+
+        if (in_array($satuan, ['kg', 'kilogram', 'liter', 'ltr', 'lt', 'l'], true)) {
+            return $jumlah * 1000.0;
+        }
+
+        return max(1.0, $jumlah);
+    }
+
+    /**
+     * Estimasi harga per satuan dosis dasar (e.g. Rp / gram atau Rp / ml).
+     */
+    public function getHargaPerBaseUnitAttribute(): float
+    {
+        $totalBase = $this->base_total_unit;
+        if ($totalBase <= 0 || ! $this->harga) {
+            return 0.0;
+        }
+
+        return round((float) $this->harga / $totalBase, 2);
+    }
+
+    /**
+     * Format Rupiah harga per satuan dosis dasar (e.g. "Rp 25 / gram").
+     */
+    public function getFormattedHargaPerBaseUnitAttribute(): ?string
+    {
+        $rate = $this->harga_per_base_unit;
+        if ($rate <= 0) {
+            return null;
+        }
+
+        $formattedRate = $rate < 10 && (fmod($rate, 1.0) !== 0.0)
+            ? number_format($rate, 2, ',', '.')
+            : number_format(round($rate), 0, ',', '.');
+
+        return "Rp {$formattedRate} / {$this->base_unit_label}";
+    }
 
     /**
      * Get ciri fisik dari kode formulasi obat.
@@ -77,6 +181,7 @@ class Medicine extends Model
     {
         return [
             'harga' => 'integer',
+            'kemasan_jumlah' => 'float',
             'tanggal_beli' => 'date',
         ];
     }

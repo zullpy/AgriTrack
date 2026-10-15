@@ -142,7 +142,7 @@ class KalenderHstTest extends TestCase
         $showResponse1 = $this->get("/kalender-hst/tanaman/{$crop->id}");
         $showResponse1->assertStatus(200);
         $showResponse1->assertSee('Panen ke-2');
-        $showResponse1->assertSee('🌾 1x Panen');
+        $showResponse1->assertSee('1x Panen');
 
         // 2. Panen kedua (ke-2)
         $secondHarvestDate = Carbon::now()->toDateString();
@@ -169,7 +169,7 @@ class KalenderHstTest extends TestCase
         $showResponse2 = $this->get("/kalender-hst/tanaman/{$crop->id}");
         $showResponse2->assertStatus(200);
         $showResponse2->assertSee('Panen ke-3');
-        $showResponse2->assertSee('🌾 2x Panen');
+        $showResponse2->assertSee('2x Panen');
 
         // 3. Akhiri Tanaman Ini
         $endResponse = $this->post("/kalender-hst/tanaman/{$crop->id}/akhiri", [

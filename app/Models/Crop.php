@@ -211,4 +211,166 @@ class Crop extends Model
     {
         return $query->whereIn('status', ['Sudah Dipanen', 'Diakhiri']);
     }
+
+    /**
+     * Rangkuman akumulasi pemakaian obat untuk tanaman ini.
+     *
+     * @return array{
+     *     total_biaya: float,
+     *     formatted_total_biaya: string,
+     *     total_aplikasi_count: int,
+     *     total_tank_count: float,
+     *     formatted_total_tank: string,
+     *     total_jenis_obat: int,
+     *     items: array<int, array<string, mixed>>
+     * }
+     */
+    public function getMedicineSummaryAttribute(): array
+    {
+        $activities = $this->relationLoaded('activities')
+            ? $this->activities
+            : $this->activities()->orderBy('target_hst')->get();
+
+        static $allMedicines = null;
+        if ($allMedicines === null) {
+            $allMedicines = Medicine::all(['id', 'nama', 'jenis', 'harga', 'kemasan_jumlah', 'kemasan_satuan']);
+        }
+
+        $aggregated = [];
+        $totalAplikasiCount = 0;
+        $totalTankCount = 0.0;
+        $totalBiayaAkumulasi = 0.0;
+
+        foreach ($activities as $act) {
+            if (empty($act->aplikasi_obat)) {
+                continue;
+            }
+
+            $totalAplikasiCount++;
+            $tanks = (float) ($act->jumlah_tank ?? 1.0);
+            if ($tanks <= 0) {
+                $tanks = 1.0;
+            }
+            $totalTankCount += $tanks;
+
+            $rowExplicitBiaya = (float) ($act->total_biaya_obat ?? 0);
+
+            // Parse obat dari string aplikasi_obat
+            $rawItems = array_filter(array_map('trim', explode(',', $act->aplikasi_obat)));
+            $rowParsedBiayaTotal = 0.0;
+
+            foreach ($rawItems as $rawItem) {
+                $itemBiaya = 0.0;
+                if (preg_match('/\(Rp\s*([\d.,]+)\)/i', $rawItem, $mPrice)) {
+                    $itemBiaya = (float) preg_replace('/[^\d]/', '', $mPrice[1]);
+                    $rawItem = trim(preg_replace('/\(Rp\s*[\d.,]+\)/i', '', $rawItem));
+                }
+
+                $medName = '';
+                $doseText = '';
+                $doseQty = 0.0;
+                $doseUnit = '';
+
+                if (str_contains($rawItem, ':')) {
+                    [$namePart, $dPart] = explode(':', $rawItem, 2);
+                    $medName = trim($namePart);
+                    $doseText = trim($dPart);
+                } elseif (preg_match('/^(.*?)\s*(\d+(?:[.,]\d+)?\s*(?:ml|liter|ltr|lt|l|gram|gr|g|kg|sachet|bungkus|sendok|sdm|sdt)\b.*)$/i', $rawItem, $mDose)) {
+                    $medName = trim($mDose[1]);
+                    $doseText = trim($mDose[2]);
+                } else {
+                    $medName = $rawItem;
+                }
+
+                if (! empty($doseText) && preg_match('/^(\d+(?:[.,]\d+)?)\s*(.*)$/i', $doseText, $mUnit)) {
+                    $doseQty = (float) str_replace(',', '.', $mUnit[1]);
+                    $doseUnit = strtolower(trim($mUnit[2]));
+                }
+
+                $matched = $allMedicines->first(function ($m) use ($medName) {
+                    return strcasecmp($m->nama, $medName) === 0 || str_contains(strtolower($medName), strtolower($m->nama));
+                });
+
+                $canonicalName = $matched ? $matched->nama : $medName;
+                $jenis = $matched ? $matched->jenis : null;
+                $baseUnit = $doseUnit ?: ($matched ? $matched->base_unit_label : 'satuan');
+
+                if ($itemBiaya <= 0 && $doseQty > 0 && $matched && $matched->harga_per_base_unit > 0) {
+                    $multiplier = 1.0;
+                    if (in_array($doseUnit, ['kg', 'kilogram', 'liter', 'ltr', 'lt', 'l'])) {
+                        $multiplier = 1000.0;
+                    }
+                    $itemBiaya = round($doseQty * $multiplier * $matched->harga_per_base_unit * $tanks);
+                }
+
+                $rowParsedBiayaTotal += $itemBiaya;
+                $totalDoseInField = $doseQty > 0 ? ($doseQty * $tanks) : 0.0;
+
+                $normKey = strtolower($canonicalName);
+                if (! isset($aggregated[$normKey])) {
+                    $aggregated[$normKey] = [
+                        'nama' => $canonicalName,
+                        'jenis' => $jenis,
+                        'frekuensi' => 0,
+                        'total_tank' => 0.0,
+                        'total_dosis_qty' => [],
+                        'total_biaya' => 0.0,
+                        'riwayat' => [],
+                    ];
+                }
+
+                $aggregated[$normKey]['frekuensi']++;
+                $aggregated[$normKey]['total_tank'] += $tanks;
+                $aggregated[$normKey]['total_biaya'] += $itemBiaya;
+
+                if ($totalDoseInField > 0) {
+                    $aggregated[$normKey]['total_dosis_qty'][$baseUnit] = ($aggregated[$normKey]['total_dosis_qty'][$baseUnit] ?? 0.0) + $totalDoseInField;
+                }
+
+                $fmtTotalDose = $totalDoseInField > 0
+                    ? (((float) $totalDoseInField == (int) $totalDoseInField ? (string) (int) $totalDoseInField : (string) round($totalDoseInField, 1)).' '.$baseUnit)
+                    : '—';
+
+                $aggregated[$normKey]['riwayat'][] = [
+                    'hst' => $act->target_hst,
+                    'tanggal' => $act->target_date ? $act->target_date->translatedFormat('d M Y') : null,
+                    'nama_kegiatan' => $act->nama_kegiatan,
+                    'dosis_per_tank_text' => $doseQty > 0 ? (((float) $doseQty == (int) $doseQty ? (string) (int) $doseQty : (string) $doseQty).' '.$baseUnit.'/tank') : '—',
+                    'jumlah_tank' => $tanks,
+                    'total_dosis_text' => $fmtTotalDose,
+                    'biaya' => $itemBiaya,
+                    'formatted_biaya' => $itemBiaya > 0 ? 'Rp '.number_format($itemBiaya, 0, ',', '.') : '—',
+                ];
+            }
+
+            $totalBiayaAkumulasi += ($rowExplicitBiaya > 0 ? $rowExplicitBiaya : $rowParsedBiayaTotal);
+        }
+
+        foreach ($aggregated as &$item) {
+            $doseParts = [];
+            foreach ($item['total_dosis_qty'] as $u => $qty) {
+                $fmtQty = (float) $qty == (int) $qty ? (string) (int) $qty : (string) round($qty, 1);
+                $doseParts[] = "{$fmtQty} {$u}";
+            }
+            $item['total_dosis_text'] = ! empty($doseParts) ? implode(', ', $doseParts) : '—';
+            $item['formatted_total_biaya'] = $item['total_biaya'] > 0 ? 'Rp '.number_format($item['total_biaya'], 0, ',', '.') : '—';
+            $fmtTank = (float) $item['total_tank'] == (int) $item['total_tank'] ? (string) (int) $item['total_tank'] : (string) $item['total_tank'];
+            $item['formatted_total_tank'] = $fmtTank.' Tank';
+        }
+        unset($item);
+
+        uasort($aggregated, fn ($a, $b) => $b['total_biaya'] <=> $a['total_biaya'] ?: $b['frekuensi'] <=> $a['frekuensi']);
+
+        $fmtOverallTank = (float) $totalTankCount == (int) $totalTankCount ? (string) (int) $totalTankCount : (string) round($totalTankCount, 1);
+
+        return [
+            'total_biaya' => $totalBiayaAkumulasi,
+            'formatted_total_biaya' => $totalBiayaAkumulasi > 0 ? 'Rp '.number_format($totalBiayaAkumulasi, 0, ',', '.') : 'Rp 0',
+            'total_aplikasi_count' => $totalAplikasiCount,
+            'total_tank_count' => $totalTankCount,
+            'formatted_total_tank' => $fmtOverallTank.' Tank',
+            'total_jenis_obat' => count($aggregated),
+            'items' => array_values($aggregated),
+        ];
+    }
 }

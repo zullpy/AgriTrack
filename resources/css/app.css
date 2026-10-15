@@ -150,7 +150,7 @@
         margin-top: 0.35rem;
     }
 
-    /* Custom Warning Icon */
+    /* Custom Icons */
     .swal2-icon.swal2-warning.agri-swal-icon-warning {
         border-color: #FED7AA !important;
         color: #E4574C !important;
@@ -166,15 +166,90 @@
         font-weight: 600 !important;
     }
 
+    .swal2-icon.swal2-question.agri-swal-icon-question {
+        border-color: #A7F3D0 !important;
+        color: #059669 !important;
+        background: #ECFDF5 !important;
+        width: 60px !important;
+        height: 60px !important;
+        margin: 0.5rem auto 1rem !important;
+        border-width: 3px !important;
+    }
+
+    .swal2-icon.swal2-question.agri-swal-icon-question .swal2-icon-content {
+        font-size: 32px !important;
+        color: #059669 !important;
+        font-weight: 700 !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+
     /* Buttons container */
     .agri-swal-actions {
         display: flex !important;
-        gap: 10px !important;
+        gap: 8px !important;
         width: 100% !important;
-        margin-top: 0.75rem !important;
+        margin-top: 0.85rem !important;
+        justify-content: center !important;
+        align-items: center !important;
     }
 
     /* Action Buttons */
+    .agri-swal-btn-primary {
+        flex: 1.25 1 auto !important;
+        background-color: #059669 !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        padding: 10px 14px !important;
+        font-size: 0.8125rem !important;
+        font-weight: 600 !important;
+        border: none !important;
+        cursor: pointer !important;
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28) !important;
+        transition: all 0.15s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important;
+    }
+
+    .agri-swal-btn-primary:hover {
+        background-color: #047857 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(5, 150, 105, 0.35) !important;
+    }
+
+    .agri-swal-btn-primary:active {
+        transform: scale(0.97) !important;
+    }
+
+    .agri-swal-btn-secondary {
+        flex: 1 1 auto !important;
+        background-color: #ECFDF5 !important;
+        color: #065F46 !important;
+        border: 1.5px solid #A7F3D0 !important;
+        border-radius: 12px !important;
+        padding: 10px 14px !important;
+        font-size: 0.8125rem !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important;
+    }
+
+    .agri-swal-btn-secondary:hover {
+        background-color: #D1FAE5 !important;
+        border-color: #6EE7B7 !important;
+        color: #064E3B !important;
+        transform: translateY(-1px) !important;
+    }
+
+    .agri-swal-btn-secondary:active {
+        transform: scale(0.97) !important;
+    }
+
     .agri-swal-btn-danger {
         flex: 1 !important;
         background-color: #E4574C !important;
@@ -203,19 +278,20 @@
     }
 
     .agri-swal-btn-cancel {
-        flex: 1 !important;
+        flex: 0.85 1 auto !important;
         background-color: #F3F5F4 !important;
         color: #4A5B53 !important;
         border: 1px solid #E2E8E5 !important;
         border-radius: 12px !important;
-        padding: 10px 18px !important;
-        font-size: 0.875rem !important;
+        padding: 10px 14px !important;
+        font-size: 0.8125rem !important;
         font-weight: 500 !important;
         cursor: pointer !important;
         transition: all 0.15s ease !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
+        white-space: nowrap !important;
     }
 
     .agri-swal-btn-cancel:hover {
@@ -230,10 +306,14 @@
     /* ── Responsive Mobile SweetAlert: Compact & Proporsional ── */
     @media (max-width: 640px) {
         .swal2-popup.agri-swal-popup {
-            width: 86% !important;
-            max-width: 310px !important;
+            width: 88% !important;
+            max-width: 320px !important;
             border-radius: 18px !important;
             padding: 16px 14px 14px !important;
+        }
+
+        .swal2-popup.agri-swal-popup.agri-swal-popup-wide {
+            max-width: 380px !important;
         }
 
         .swal2-title.agri-swal-title {
@@ -253,26 +333,30 @@
             margin-top: 0.2rem !important;
         }
 
-        .swal2-icon.swal2-warning.agri-swal-icon-warning {
+        .swal2-icon.swal2-warning.agri-swal-icon-warning,
+        .swal2-icon.swal2-question.agri-swal-icon-question {
             width: 44px !important;
             height: 44px !important;
             margin: 0.2rem auto 0.5rem !important;
             border-width: 2.5px !important;
         }
 
-        .swal2-icon.swal2-warning.agri-swal-icon-warning .swal2-icon-content {
+        .swal2-icon.swal2-warning.agri-swal-icon-warning .swal2-icon-content,
+        .swal2-icon.swal2-question.agri-swal-icon-question .swal2-icon-content {
             font-size: 22px !important;
         }
 
         .agri-swal-actions {
-            gap: 8px !important;
+            gap: 6px !important;
             margin-top: 0.5rem !important;
         }
 
+        .agri-swal-btn-primary,
+        .agri-swal-btn-secondary,
         .agri-swal-btn-danger,
         .agri-swal-btn-cancel {
-            padding: 8px 12px !important;
-            font-size: 0.8rem !important;
+            padding: 8px 10px !important;
+            font-size: 0.75rem !important;
             border-radius: 10px !important;
         }
     }

@@ -126,6 +126,21 @@
         <span>Riwayat Tanaman</span>
         <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-text-secondary">{{ $harvestedCrops->total() }}</span>
     </button>
+
+    <button type="button"
+            onclick="switchTab('obat')"
+            id="tab-btn-obat"
+            class="tab-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ $currentTab === 'obat' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
+        <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="6" width="18" height="15" rx="3"/>
+            <path d="M8 2h8v4H8z"/>
+            <path d="M12 10v7m-3.5-3.5h7"/>
+        </svg>
+        <span>Rangkuman Obat</span>
+        <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+            {{ $overallMedicineSummary['total_jenis_obat'] }} Obat
+        </span>
+    </button>
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
@@ -211,7 +226,13 @@
                                         <span class="w-1.5 h-1.5 rounded-full {{ $item['activity']->status === 'Selesai' ? 'bg-gray-400' : 'bg-amber-500' }} shrink-0"></span>
                                         <span class="truncate flex-1">{{ $item['activity']->nama_kegiatan }}</span>
                                         @if ($item['activity']->foto_count > 0)
-                                            <span class="text-[9px] font-bold text-amber-700 bg-amber-100/90 px-1 py-0.2 rounded shrink-0">📷{{ $item['activity']->foto_count }}</span>
+                                            <span class="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-700 bg-amber-100/90 px-1 py-0.2 rounded shrink-0">
+                                                <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/>
+                                                </svg>
+                                                {{ $item['activity']->foto_count }}
+                                            </span>
                                         @endif
                                     </div>
                                 @endforeach
@@ -314,7 +335,12 @@
                         <div class="pt-3 mt-3 border-t border-gray-100 space-y-2">
                             @if ($crop->harvest_count > 0)
                                 <div class="flex items-center justify-between text-[11px] font-semibold text-emerald-800 bg-emerald-50/80 border border-emerald-200/80 px-2.5 py-1 rounded-lg">
-                                    <span>🌾 Sudah {{ $crop->harvest_count }}x Panen</span>
+                                    <span class="inline-flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c-2 2-3 5-3 9 0 3.5 1 6.5 3 9m0-18c2 2 3 5 3 9 0 3.5-1 6.5-3 9M6.5 7.5c2 1 4.5 1.5 5.5 1.5m-5.5 5c2 1 4.5 1.5 5.5 1.5m11-6.5c-2 1-4.5 1.5-5.5 1.5m5.5 5c-2 1-4.5 1.5-5.5 1.5"/>
+                                        </svg>
+                                        Sudah {{ $crop->harvest_count }}x Panen
+                                    </span>
                                     @if ($crop->total_pendapatan_kotor > 0)
                                         <span class="text-emerald-900 font-bold">Total Kotor: {{ $crop->formatted_total_pendapatan_kotor }}</span>
                                     @elseif ($crop->total_panen)
@@ -429,11 +455,17 @@
 
                         <div class="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
                             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold shadow-xs">
-                                🌾 {{ $crop->harvests->count() }}x Panen
+                                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c-2 2-3 5-3 9 0 3.5 1 6.5 3 9m0-18c2 2 3 5 3 9 0 3.5-1 6.5-3 9M6.5 7.5c2 1 4.5 1.5 5.5 1.5m-5.5 5c2 1 4.5 1.5 5.5 1.5m11-6.5c-2 1-4.5 1.5-5.5 1.5m5.5 5c-2 1-4.5 1.5-5.5 1.5"/>
+                                </svg>
+                                {{ $crop->harvests->count() }}x Panen
                             </span>
                             @if ($crop->total_pendapatan_kotor > 0)
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold shadow-xs">
-                                    💰 Total Kotor: {{ $crop->formatted_total_pendapatan_kotor }}
+                                    <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Total Kotor: {{ $crop->formatted_total_pendapatan_kotor }}
                                 </span>
                             @endif
                             <a href="/kalender-hst/tanaman/{{ $crop->id }}"
@@ -465,8 +497,11 @@
                                 @foreach ($crop->harvests as $hrv)
                                     <tr class="hover:bg-amber-50/20 transition-colors">
                                         <td class="py-3.5 px-4 font-bold text-gray-900 whitespace-nowrap">
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-xs">
-                                                🌾 Panen ke-{{ $hrv->panen_ke }}
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-xs">
+                                                <svg class="w-3.5 h-3.5 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c-2 2-3 5-3 9 0 3.5 1 6.5 3 9m0-18c2 2 3 5 3 9 0 3.5-1 6.5-3 9M6.5 7.5c2 1 4.5 1.5 5.5 1.5m-5.5 5c2 1 4.5 1.5 5.5 1.5m11-6.5c-2 1-4.5 1.5-5.5 1.5m5.5 5c-2 1-4.5 1.5-5.5 1.5"/>
+                                                </svg>
+                                                Panen ke-{{ $hrv->panen_ke }}
                                             </span>
                                         </td>
                                         <td class="py-3.5 px-4 font-semibold text-gray-800 whitespace-nowrap">
@@ -607,14 +642,25 @@
                         @if ($crop->total_panen || $crop->harga_panen)
                             <div class="flex flex-wrap items-center gap-3 my-3 p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-xs">
                                 @if ($crop->total_panen)
-                                    <div class="flex items-center gap-1 font-semibold text-emerald-900">
-                                        <span>⚖️ Total Panen:</span>
+                                    <div class="flex items-center gap-1.5 font-semibold text-emerald-900">
+                                        <span class="inline-flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z"/>
+                                            </svg>
+                                            Total Panen:
+                                        </span>
                                         <span class="font-bold text-emerald-950">{{ $crop->total_panen }}</span>
                                     </div>
                                 @endif
                                 @if ($crop->harga_panen)
-                                    <div class="flex items-center gap-1 font-semibold text-emerald-900">
-                                        <span>🏷️ Harga Hari Ini:</span>
+                                    <div class="flex items-center gap-1.5 font-semibold text-emerald-900">
+                                        <span class="inline-flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.386l3.992-2.348c.827-.486 1.171-1.503.746-2.348l-4.5-8.918A2.25 2.25 0 0013.987 6.75H9.568z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/>
+                                            </svg>
+                                            Harga Hari Ini:
+                                        </span>
                                         <span class="font-bold text-emerald-950">{{ str_starts_with($crop->harga_panen, 'Rp') ? $crop->harga_panen : 'Rp ' . $crop->harga_panen }}</span>
                                     </div>
                                 @endif
@@ -719,6 +765,190 @@
                 {{ $harvestedCrops->links() }}
             </div>
         @endif
+    @endif
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════════════════ --}}
+{{-- TAB 5: RANGKUMAN PEMAKAIAN OBAT                                           --}}
+{{-- ══════════════════════════════════════════════════════════════════════════ --}}
+<div id="tab-content-obat" class="tab-pane {{ $currentTab === 'obat' ? '' : 'hidden' }}">
+    {{-- Top 4 KPI Metrics --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {{-- 1. Total Biaya Obat --}}
+        <div class="bg-surface rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-text-muted font-medium">Total Estimasi Biaya</p>
+                <p class="text-xl font-black text-emerald-950 mt-1">{{ $overallMedicineSummary['formatted_total_biaya'] }}</p>
+                <p class="text-[10px] text-emerald-700 font-medium mt-0.5">Seluruh tanaman aktif & riwayat</p>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        {{-- 2. Total Tangki Semprot --}}
+        <div class="bg-surface rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-text-muted font-medium">Tangki Disemprot</p>
+                <p class="text-xl font-black text-blue-950 mt-1">{{ $overallMedicineSummary['formatted_total_tank'] }}</p>
+                <p class="text-[10px] text-blue-700 font-medium mt-0.5">Akumulasi volume semprot</p>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                </svg>
+            </div>
+        </div>
+
+        {{-- 3. Total Aplikasi Kegiatan --}}
+        <div class="bg-surface rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-text-muted font-medium">Aplikasi Perawatan</p>
+                <p class="text-xl font-black text-amber-950 mt-1">{{ $overallMedicineSummary['total_aplikasi'] }} Kali</p>
+                <p class="text-[10px] text-amber-700 font-medium mt-0.5">Penyemprotan / pemupukan</p>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        {{-- 4. Total Jenis Obat --}}
+        <div class="bg-surface rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-text-muted font-medium">Jenis Obat Terpakai</p>
+                <p class="text-xl font-black text-purple-950 mt-1">{{ $overallMedicineSummary['total_jenis_obat'] }} Jenis</p>
+                <p class="text-[10px] text-purple-700 font-medium mt-0.5">Formulasi terdaftar</p>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-purple-50 border border-purple-200 text-purple-600 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="6" width="18" height="15" rx="3"/>
+                    <path d="M8 2h8v4H8z"/>
+                    <path d="M12 10v7m-3.5-3.5h7"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    {{-- Daftar Rangkuman Obat Per Tanaman --}}
+    @if ($cropsWithMedicines->isEmpty())
+        <div class="bg-surface rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-3">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="6" width="18" height="15" rx="3"/>
+                    <path d="M8 2h8v4H8z"/>
+                    <path d="M12 10v7m-3.5-3.5h7"/>
+                </svg>
+            </div>
+            <h3 class="text-base font-bold text-gray-900">Belum Ada Rangkuman Pemakaian Obat</h3>
+            <p class="text-xs text-gray-500 max-w-md mx-auto mt-1 leading-relaxed">
+                Ketika Anda mencatat kegiatan perawatan tanaman dengan memilih dosis obat dan tangki semprot, rekapitulasi otomatis akan ditampilkan di sini per tanaman.
+            </p>
+            <div class="mt-5">
+                <button type="button" onclick="switchTab('aktif')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-dark transition-all shadow-xs">
+                    <span>Buka Tanaman Aktif</span>
+                </button>
+            </div>
+        </div>
+    @else
+        <div class="space-y-6">
+            @foreach ($cropsWithMedicines as $cropItem)
+                @php
+                    $cSum = $overallMedicineSummary['crop_summaries'][$cropItem->id] ?? null;
+                @endphp
+                @if ($cSum && !empty($cSum['items']))
+                    <div class="bg-surface rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                        {{-- Crop Header Card --}}
+                        <div class="p-4 sm:p-5 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-2xl bg-white border border-gray-200/80 shadow-xs flex items-center justify-center text-2xl shrink-0">
+                                    {{ $cropItem->emoji }}
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="text-base font-bold text-gray-900 leading-tight">
+                                            {{ $cropItem->nama_tanaman }}
+                                        </h3>
+                                        @if ($cropItem->varietas)
+                                            <span class="text-xs text-gray-500">({{ $cropItem->varietas }})</span>
+                                        @endif
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $cropItem->status === 'Sedang Ditanam' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700' }}">
+                                            {{ $cropItem->status === 'Sedang Ditanam' ? 'Aktif (HST ' . $cropItem->current_hst . ')' : 'Selesai Panen' }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        Tanam: {{ $cropItem->tanggal_tanam->translatedFormat('d M Y') }} • {{ $cSum['total_aplikasi_count'] }}x aplikasi tercatat
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3 self-end sm:self-auto shrink-0 flex-wrap">
+                                <div class="text-right">
+                                    <span class="text-[10px] text-gray-500 block uppercase font-bold tracking-wider">Subtotal Biaya</span>
+                                    <span class="text-sm font-black text-emerald-900">{{ $cSum['formatted_total_biaya'] }}</span>
+                                </div>
+                                <div class="text-right border-l border-gray-200 pl-3">
+                                    <span class="text-[10px] text-gray-500 block uppercase font-bold tracking-wider">Volume Tangki</span>
+                                    <span class="text-sm font-black text-blue-900">{{ $cSum['formatted_total_tank'] }}</span>
+                                </div>
+                                <a href="/kalender-hst/tanaman/{{ $cropItem->id }}?tab=obat"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:bg-emerald-50 hover:text-emerald-800 text-xs font-semibold text-gray-700 transition-all shadow-xs">
+                                    <span>Buka Rangkuman Lengkap</span>
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        {{-- Table of Medicines for this Crop --}}
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50/70 border-b border-gray-100 text-gray-500 font-bold uppercase text-[10px] tracking-wider">
+                                        <th class="py-2.5 px-4">Nama Obat</th>
+                                        <th class="py-2.5 px-4">Kategori</th>
+                                        <th class="py-2.5 px-4 text-center">Frekuensi & Tangki</th>
+                                        <th class="py-2.5 px-4 text-center">Total Dosis</th>
+                                        <th class="py-2.5 px-4 text-right">Estimasi Biaya</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach ($cSum['items'] as $item)
+                                        <tr class="hover:bg-gray-50/50 transition-colors">
+                                            <td class="py-3 px-4 font-bold text-gray-900 whitespace-nowrap">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                                    <span>{{ $item['nama'] }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="py-3 px-4 text-gray-600 whitespace-nowrap">
+                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 text-gray-700">
+                                                    {{ $item['jenis'] ?? 'Obat Pertanian' }}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 text-center whitespace-nowrap">
+                                                <span class="font-bold text-gray-900">{{ $item['frekuensi'] }}x</span>
+                                                <span class="text-blue-700 font-semibold ml-1 text-[11px]">({{ $item['formatted_total_tank'] }})</span>
+                                            </td>
+                                            <td class="py-3 px-4 text-center font-mono font-bold text-emerald-800 whitespace-nowrap">
+                                                {{ $item['total_dosis_text'] }}
+                                            </td>
+                                            <td class="py-3 px-4 text-right font-black text-emerald-950 whitespace-nowrap">
+                                                {{ $item['formatted_total_biaya'] }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+            @endforeach
+        </div>
     @endif
 </div>
 

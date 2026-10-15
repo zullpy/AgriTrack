@@ -111,12 +111,18 @@
 
                 <div class="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
                     @if ($crop->harvest_count > 0)
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                            🌾 {{ $crop->harvest_count }}x Panen
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            <svg class="w-3.5 h-3.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c-2 2-3 5-3 9 0 3.5 1 6.5 3 9m0-18c2 2 3 5 3 9 0 3.5-1 6.5-3 9M6.5 7.5c2 1 4.5 1.5 5.5 1.5m-5.5 5c2 1 4.5 1.5 5.5 1.5m11-6.5c-2 1-4.5 1.5-5.5 1.5m5.5 5c-2 1-4.5 1.5-5.5 1.5"/>
+                            </svg>
+                            <span>{{ $crop->harvest_count }}x Panen</span>
                         </span>
                         @if ($crop->total_pendapatan_kotor > 0)
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-600 text-white shadow-xs">
-                                💰 Total Kotor: {{ $crop->formatted_total_pendapatan_kotor }}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-600 text-white shadow-xs">
+                                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Total Kotor: {{ $crop->formatted_total_pendapatan_kotor }}</span>
                             </span>
                         @endif
                     @endif
@@ -142,7 +148,7 @@
             </div>
 
             {{-- Bottom Row: Key Information Cards / Grid --}}
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3.5">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3.5">
                 <div class="p-3 rounded-xl bg-gray-50/80 border border-gray-100">
                     <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Benih yang Ditanam</span>
                     <span class="text-xs sm:text-sm font-bold text-gray-900 mt-0.5 block truncate" title="{{ $crop->varietas ?: ($crop->nama_tanaman ?? '-') }}">
@@ -157,11 +163,25 @@
                     </span>
                 </div>
 
-                <div class="col-span-2 sm:col-span-1 p-3 rounded-xl bg-gray-50/80 border border-gray-100">
+                <div class="p-3 rounded-xl bg-gray-50/80 border border-gray-100">
                     <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Tanggal Menanam</span>
                     <span class="text-xs sm:text-sm font-bold text-gray-900 mt-0.5 block">
                         {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->locale('id')->isoFormat('dddd') }}, {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->format('d-m-Y') }}
                     </span>
+                </div>
+
+                <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col justify-between">
+                    <span class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">Biaya Obat</span>
+                    <div class="flex items-center justify-between gap-1 mt-0.5">
+                        <span class="text-xs sm:text-sm font-black text-emerald-950 truncate">
+                            {{ $medicineSummary['formatted_total_biaya'] }}
+                        </span>
+                        <button type="button"
+                                onclick="switchDetailTab('obat')"
+                                class="text-[10px] text-emerald-800 bg-emerald-200/60 hover:bg-emerald-200 px-2 py-0.5 rounded-md font-extrabold transition-colors shrink-0 cursor-pointer">
+                            {{ $medicineSummary['total_jenis_obat'] }} Obat
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -175,28 +195,251 @@
 
         {{-- ── Action Bar ── --}}
         <div class="p-3 sm:p-4 bg-gray-50/90 border-t border-gray-200 flex items-center justify-between gap-3 text-xs">
-            <span class="font-bold text-gray-700 uppercase tracking-wider text-[11px]">Log Kegiatan Per HST</span>
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-gray-700 uppercase tracking-wider text-[11px]">Log Kegiatan Per HST</span>
+                @if ($medicineSummary['total_aplikasi_count'] > 0)
+                    <button type="button"
+                            onclick="switchDetailTab('obat')"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors cursor-pointer">
+                        <svg class="w-3 h-3 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="6" width="18" height="15" rx="3"/>
+                            <path d="M8 2h8v4H8z"/>
+                            <path d="M12 10v7m-3.5-3.5h7"/>
+                        </svg>
+                        <span>{{ $medicineSummary['total_jenis_obat'] }} Obat ({{ $medicineSummary['formatted_total_tank'] }})</span>
+                    </button>
+                @endif
+            </div>
             @if ($crop->status === 'Sedang Ditanam')
                 <button type="button"
                         onclick="openAddActivityModal({{ $currentHst }})"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0">
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0 cursor-pointer">
                     <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                     </svg>
                     <span>Catat Kegiatan</span>
                 </button>
             @else
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-gray-100 border border-gray-200 text-text-secondary font-medium text-[11px]">
-                    🔒 Arsip Log HST (Riwayat)
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gray-100 border border-gray-200 text-text-secondary font-medium text-[11px]">
+                    <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                    </svg>
+                    <span>Arsip Log HST (Riwayat)</span>
                 </span>
             @endif
         </div>
     </div>
 
-        {{-- ══════════════════════════════════════════════════════════════════════ --}}
-        {{-- ── TABEL LOG HST PER TANAMAN (PERSIS SESUAI DESAIN GAMBAR)          ── --}}
-        {{-- ══════════════════════════════════════════════════════════════════════ --}}
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+    {{-- ── Sub-Tab Navigation Bar (Log Kalender HST vs Rangkuman Obat) ── --}}
+    @php
+        $detailTab = request('tab', 'kalender');
+    @endphp
+    <div class="flex items-center gap-2 mb-6 border-b border-gray-200/80 pb-3 overflow-x-auto">
+        <button type="button"
+                onclick="switchDetailTab('kalender')"
+                id="btn-detail-tab-kalender"
+                class="detail-tab-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ $detailTab === 'kalender' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+            </svg>
+            <span>Log Kalender HST</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700">{{ count($tableRows) }} Hari</span>
+        </button>
+
+        <button type="button"
+                onclick="switchDetailTab('obat')"
+                id="btn-detail-tab-obat"
+                class="detail-tab-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ $detailTab === 'obat' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
+            <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="6" width="18" height="15" rx="3"/>
+                <path d="M8 2h8v4H8z"/>
+                <path d="M12 10v7m-3.5-3.5h7"/>
+            </svg>
+            <span>Rangkuman Pemakaian Obat</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                {{ $medicineSummary['total_jenis_obat'] }} Obat ({{ $medicineSummary['formatted_total_biaya'] }})
+            </span>
+        </button>
+    </div>
+
+    {{-- ══════════════════════════════════════════════════════════════════════════ --}}
+    {{-- ── TAB PANE: RANGKUMAN OBAT                                            ── --}}
+    {{-- ══════════════════════════════════════════════════════════════════════════ --}}
+    <div id="detail-pane-obat" class="detail-pane {{ $detailTab === 'obat' ? '' : 'hidden' }}">
+        <div id="section-rangkuman-obat" class="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden mb-6 transition-all scroll-mt-6">
+            <div class="p-4 sm:p-5">
+                {{-- Top Row: Identity & Action --}}
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shrink-0 shadow-2xs">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="6" width="18" height="15" rx="3"/>
+                                <path d="M8 2h8v4H8z"/>
+                                <path d="M12 10v7m-3.5-3.5h7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 leading-tight">
+                                    Rangkuman Pemakaian Obat
+                                </h3>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    {{ $crop->emoji }} {{ $crop->nama_tanaman }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                                Akumulasi total dosis, frekuensi aplikasi, tangki semprot, dan estimasi biaya obat untuk tanaman ini.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button type="button" 
+                                onclick="toggleMedicineSummarySection()" 
+                                id="btn-toggle-med-summary"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50 text-xs font-semibold text-gray-700 hover:text-emerald-800 transition-all cursor-pointer shadow-2xs">
+                            <span id="label-toggle-med-summary">Ciutkan</span>
+                            <svg id="icon-toggle-med-summary" class="w-3.5 h-3.5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+            <div id="body-rangkuman-obat" class="space-y-4 pt-3.5">
+                {{-- 3 Key Summary Metric Cards --}}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {{-- 1. Total Biaya Obat --}}
+                    <div class="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-emerald-100/40 border border-emerald-200/80 flex items-center justify-between shadow-2xs">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800/90 block">Total Biaya Obat</span>
+                            <span class="text-lg sm:text-xl font-black text-emerald-950 mt-0.5 block">
+                                {{ $medicineSummary['formatted_total_biaya'] }}
+                            </span>
+                            <span class="text-[10px] text-emerald-700 font-medium">Estimasi pengeluaran obat</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    {{-- 2. Total Tangki & Aplikasi --}}
+                    <div class="p-3.5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-amber-100/40 border border-amber-200/80 flex items-center justify-between shadow-2xs">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-800/90 block">Tangki & Frekuensi</span>
+                            <span class="text-lg sm:text-xl font-black text-amber-950 mt-0.5 block">
+                                {{ $medicineSummary['formatted_total_tank'] }}
+                            </span>
+                            <span class="text-[10px] text-amber-700 font-medium">{{ $medicineSummary['total_aplikasi_count'] }}x Penyemprotan / Aplikasi</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    {{-- 3. Jenis Obat Digunakan --}}
+                    <div class="p-3.5 rounded-2xl bg-gradient-to-br from-sky-50/80 to-sky-100/40 border border-sky-200/80 flex items-center justify-between shadow-2xs">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-sky-800/90 block">Jenis Obat Terpakai</span>
+                            <span class="text-lg sm:text-xl font-black text-sky-950 mt-0.5 block">
+                                {{ $medicineSummary['total_jenis_obat'] }} Obat
+                            </span>
+                            <span class="text-[10px] text-sky-700 font-medium">Bahan & formulasi terdaftar</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="6" width="18" height="15" rx="3"/>
+                                <path d="M8 2h8v4H8z"/>
+                                <path d="M12 10v7m-3.5-3.5h7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Table of Medicines Breakdown --}}
+                @if (empty($medicineSummary['items']))
+                    <div class="p-6 rounded-2xl border border-dashed border-gray-200 text-center bg-gray-50/50">
+                        <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-2">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7.58 8.42 4 4 4c0 4.42 3.58 8 8 8zm0 0c0-4.42 3.58-8 8-8 0 4.42-3.58 8-8 8z"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs font-semibold text-gray-700">Belum ada pemakaian obat yang dicatat untuk {{ $crop->nama_tanaman }}</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">Obat, dosis, dan jumlah tangki yang Anda masukkan saat mencatat kegiatan perawatan akan otomatis terakumulasi di sini.</p>
+                    </div>
+                @else
+                    <div class="rounded-2xl border border-gray-200 overflow-hidden shadow-2xs">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50/90 border-b border-gray-200 text-gray-600 font-bold uppercase text-[10px] tracking-wider">
+                                        <th class="py-2.5 px-3.5">Nama Obat</th>
+                                        <th class="py-2.5 px-3.5">Kategori</th>
+                                        <th class="py-2.5 px-3.5 text-center">Frekuensi & Tangki</th>
+                                        <th class="py-2.5 px-3.5 text-center">Total Dosis</th>
+                                        <th class="py-2.5 px-3.5 text-right">Total Estimasi Biaya</th>
+                                        <th class="py-2.5 px-3.5 text-center">Riwayat HST</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach ($medicineSummary['items'] as $idx => $item)
+                                        <tr class="hover:bg-emerald-50/30 transition-colors">
+                                            <td class="py-3 px-3.5 font-bold text-gray-900">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                                    <span>{{ $item['nama'] }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="py-3 px-3.5">
+                                                @if ($item['jenis'])
+                                                    <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold {{ str_contains(strtolower($item['jenis']), 'insek') ? 'bg-amber-100 text-amber-800' : (str_contains(strtolower($item['jenis']), 'fungi') ? 'bg-blue-100 text-blue-800' : (str_contains(strtolower($item['jenis']), 'herbi') ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800')) }}">
+                                                        {{ $item['jenis'] }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-gray-400 text-[11px]">—</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-3 px-3.5 text-center">
+                                                <span class="font-bold text-gray-900">{{ $item['frekuensi'] }}x</span>
+                                                <span class="text-gray-400 mx-1">•</span>
+                                                <span class="text-emerald-700 font-semibold">{{ $item['formatted_total_tank'] }}</span>
+                                            </td>
+                                            <td class="py-3 px-3.5 text-center font-bold text-gray-900">
+                                                <span class="px-2 py-0.5 rounded-lg bg-gray-100 font-mono text-[11px] text-gray-800">{{ $item['total_dosis_text'] }}</span>
+                                            </td>
+                                            <td class="py-3 px-3.5 text-right font-black text-emerald-800">
+                                                {{ $item['formatted_total_biaya'] }}
+                                            </td>
+                                            <td class="py-3 px-3.5 text-center">
+                                                <div class="flex items-center justify-center gap-1 flex-wrap max-w-xs mx-auto">
+                                                    @foreach ($item['riwayat'] as $r)
+                                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-800" 
+                                                              title="{{ $r['nama_kegiatan'] }} ({{ $r['tanggal'] ?? 'HST '.$r['hst'] }}): {{ $r['dosis_per_tank_text'] }} ({{ $r['jumlah_tank'] }} Tank = {{ $r['total_dosis_text'] }}, {{ $r['formatted_biaya'] }})">
+                                                            HST {{ $r['hst'] }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+    {{-- ══════════════════════════════════════════════════════════════════════════ --}}
+    {{-- ── TAB PANE: LOG KALENDER HST                                          ── --}}
+    {{-- ══════════════════════════════════════════════════════════════════════════ --}}
+    <div id="detail-pane-kalender" class="detail-pane {{ $detailTab === 'kalender' ? '' : 'hidden' }}">
+        {{-- ── TABEL LOG HST PER TANAMAN ── --}}
+        <div id="section-kalender-table" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-separate border-spacing-0 font-sans text-xs sm:text-sm">
                     {{-- Table Header --}}
@@ -253,15 +496,21 @@
                                     {{ $row['date']->locale('id')->isoFormat('dddd') }}, {{ $row['date']->format('d-m-Y') }}
                                 </div>
                                 @if ($isPlantingDay)
-                                    <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                                        🌱 Hari Pertama Tanam
+                                    <div class="text-[11px] text-emerald-700 font-semibold mt-0.5 inline-flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7.58 8.42 4 4 4c0 4.42 3.58 8 8 8zm0 0c0-4.42 3.58-8 8-8 0 4.42-3.58 8-8 8z"/>
+                                        </svg>
+                                        <span>Hari Pertama Tanam</span>
                                     </div>
                                 @endif
                                 @if (!empty($row['harvests']) && $row['harvests']->isNotEmpty())
                                     <div class="mt-1 space-y-1">
                                         @foreach ($row['harvests'] as $hrv)
                                             <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold">
-                                                <span>🌾 Panen ke-{{ $hrv->panen_ke }}</span>
+                                                <svg class="w-3 h-3 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c-2 2-3 5-3 9 0 3.5 1 6.5 3 9m0-18c2 2 3 5 3 9 0 3.5-1 6.5-3 9M6.5 7.5c2 1 4.5 1.5 5.5 1.5m-5.5 5c2 1 4.5 1.5 5.5 1.5m11-6.5c-2 1-4.5 1.5-5.5 1.5m5.5 5c-2 1-4.5 1.5-5.5 1.5"/>
+                                                </svg>
+                                                <span>Panen ke-{{ $hrv->panen_ke }}</span>
                                                 @if ($hrv->total_panen)
                                                     <span class="text-amber-800 font-medium">({{ $hrv->total_panen }})</span>
                                                 @endif
@@ -289,7 +538,7 @@
                                                 {{-- Tombol Edit / Hapus Kegiatan --}}
                                                 <div class="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
                                                     <button type="button"
-                                                            onclick="openEditActivityModal({{ $act->id }}, '{{ addslashes($act->nama_kegiatan) }}', {{ $act->target_hst }}, '{{ $row['date']->toDateString() }}', `{{ addslashes($act->aplikasi_obat ?? '') }}`, `{{ addslashes($act->sasaran ?? '') }}`, `{{ addslashes($act->keterangan ?? $act->catatan ?? '') }}`, {{ json_encode($act->foto_urls) }})"
+                                                            onclick="openEditActivityModal({{ $act->id }}, '{{ addslashes($act->nama_kegiatan) }}', {{ $act->target_hst }}, '{{ $row['date']->toDateString() }}', `{{ addslashes($act->aplikasi_obat ?? '') }}`, `{{ addslashes($act->sasaran ?? '') }}`, `{{ addslashes($act->keterangan ?? $act->catatan ?? '') }}`, {{ json_encode($act->foto_urls) }}, {{ (float) ($act->jumlah_tank ?? 1) }}, {{ (float) ($act->total_biaya_obat ?? 0) }})"
                                                             title="Edit kegiatan"
                                                             class="p-1 rounded hover:bg-gray-200 text-text-secondary">
                                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -311,10 +560,30 @@
                                                 </div>
                                             </div>
                                         @endforeach
+                                        @if ($crop->status === 'Sedang Ditanam')
+                                            <button type="button"
+                                                    onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
+                                                    class="mt-1 text-[11px] font-semibold text-primary hover:underline inline-flex items-center gap-0.5 opacity-80 hover:opacity-100 cursor-pointer">
+                                                <span>Catat lagi</span>
+                                            </button>
+                                        @endif
                                     </div>
                                 @elseif ($isPlantingDay)
-                                    <div class="text-emerald-800 font-bold flex items-center gap-1.5">
-                                        <span>Menanam Bibit</span>
+                                    <div class="space-y-1.5">
+                                        <div class="text-emerald-800 font-bold flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7.58 8.42 4 4 4c0 4.42 3.58 8 8 8zm0 0c0-4.42 3.58-8 8-8 0 4.42-3.58 8-8 8z"/>
+                                            </svg>
+                                            <span>Menanam Bibit</span>
+                                        </div>
+                                        @if ($crop->status === 'Sedang Ditanam')
+                                            {{-- <button type="button"
+                                                    onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                                <span>Catat Kegiatan / Obat</span>
+                                            </button> --}}
+                                        @endif
                                     </div>
                                 @endif
 
@@ -323,10 +592,13 @@
                                         @foreach ($row['harvests'] as $hrv)
                                             <div class="p-2 rounded-lg bg-amber-50/90 border border-amber-200 text-xs text-amber-950">
                                                 <div class="font-bold flex items-center justify-between gap-2 flex-wrap">
-                                                    <span class="flex items-center gap-1">
-                                                        <span>🌾 Panen ke-{{ $hrv->panen_ke }}</span>
+                                                    <span class="flex items-center gap-1.5">
+                                                        <svg class="w-3.5 h-3.5 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c-2 2-3 5-3 9 0 3.5 1 6.5 3 9m0-18c2 2 3 5 3 9 0 3.5-1 6.5-3 9M6.5 7.5c2 1 4.5 1.5 5.5 1.5m-5.5 5c2 1 4.5 1.5 5.5 1.5m11-6.5c-2 1-4.5 1.5-5.5 1.5m5.5 5c-2 1-4.5 1.5-5.5 1.5"/>
+                                                        </svg>
+                                                        <span>Panen ke-{{ $hrv->panen_ke }}</span>
                                                         @if ($hrv->total_panen)
-                                                            <span class="text-amber-800 font-semibold">: {{ $hrv->total_panen }}</span>
+                                                             <span class="text-amber-800 font-semibold">: {{ $hrv->total_panen }}</span>
                                                         @endif
                                                     </span>
                                                     <div class="flex items-center gap-1.5 text-[11px]">
@@ -350,8 +622,9 @@
                                 @if ($crop->status === 'Sedang Ditanam' && ! $hasAct && ! $isPlantingDay)
                                     <button type="button"
                                             onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
-                                            class="{{ $isToday ? 'inline-flex font-bold text-emerald-800 bg-white/90 px-2.5 py-1 rounded-md border border-emerald-300 shadow-xs' : 'opacity-0 group-hover:opacity-100 focus:opacity-100 inline-flex' }} items-center gap-1 text-xs text-primary font-semibold hover:underline transition-opacity {{ !empty($row['harvests']) && $row['harvests']->isNotEmpty() ? 'mt-2' : '' }}">
-                                        <span>+ Catat</span>
+                                            class="{{ $isToday ? 'inline-flex font-bold text-emerald-800 bg-white px-2.5 py-1 rounded-md border border-emerald-300 shadow-xs' : 'inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 shadow-2xs transition-colors' }} cursor-pointer {{ !empty($row['harvests']) && $row['harvests']->isNotEmpty() ? 'mt-2' : '' }}">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                        <span>Catat</span>
                                     </button>
                                 @endif
                             </td>
@@ -369,11 +642,24 @@
                                                         $obatItems = array_filter(array_map('trim', explode(',', $rawObat)));
                                                     @endphp
                                                     @if (count($obatItems) > 1)
-                                                        <div class="space-y-1 obat-group-container">
+                                                        <div class="space-y-1.5 obat-group-container">
                                                             @foreach ($obatItems as $oIdx => $oItem)
+                                                                @php
+                                                                    $itemText = $oItem;
+                                                                    $itemPrice = null;
+                                                                    if (preg_match('/^(.*?)\s*\((Rp\s*[\d.,]+)\)$/i', $oItem, $mPrice)) {
+                                                                        $itemText = trim($mPrice[1]);
+                                                                        $itemPrice = trim($mPrice[2]);
+                                                                    }
+                                                                @endphp
                                                                 <div class="text-xs leading-snug flex items-start gap-1.5 {{ $oIdx >= 2 ? 'obat-extra-item hidden' : '' }}">
                                                                     <span class="text-emerald-600 font-bold shrink-0 mt-0.5">•</span>
-                                                                    <span class="font-medium {{ $isToday ? 'text-emerald-950 font-semibold' : 'text-gray-900' }} break-words">{{ $oItem }}</span>
+                                                                    <div class="min-w-0 flex flex-wrap items-center gap-1">
+                                                                        <span class="font-medium {{ $isToday ? 'text-emerald-950 font-semibold' : 'text-gray-900' }} break-words">{{ $itemText }}</span>
+                                                                        @if ($itemPrice)
+                                                                            <span class="inline-block px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100/90 text-emerald-800 border border-emerald-300 whitespace-nowrap">{{ $itemPrice }}</span>
+                                                                        @endif
+                                                                    </div>
                                                                 </div>
                                                             @endforeach
                                                             @if (count($obatItems) > 2)
@@ -385,8 +671,40 @@
                                                             @endif
                                                         </div>
                                                     @else
-                                                        <div class="text-xs font-medium leading-relaxed {{ $isToday ? 'text-emerald-950 font-semibold' : 'text-gray-900' }} break-words">
-                                                            {{ $rawObat }}
+                                                        @php
+                                                            $singleText = $rawObat;
+                                                            $singlePrice = null;
+                                                            if (preg_match('/^(.*?)\s*\((Rp\s*[\d.,]+)\)$/i', $rawObat, $mPrice)) {
+                                                                $singleText = trim($mPrice[1]);
+                                                                $singlePrice = trim($mPrice[2]);
+                                                            }
+                                                        @endphp
+                                                        <div class="text-xs font-medium leading-relaxed {{ $isToday ? 'text-emerald-950 font-semibold' : 'text-gray-900' }} break-words flex flex-wrap items-center gap-1">
+                                                            <span>{{ $singleText }}</span>
+                                                            @if ($singlePrice)
+                                                                <span class="inline-block px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100/90 text-emerald-800 border border-emerald-300 whitespace-nowrap">{{ $singlePrice }}</span>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+
+                                                    @if (($act->jumlah_tank && $act->jumlah_tank > 1) || $act->total_biaya_obat)
+                                                        <div class="flex items-center gap-1.5 flex-wrap mt-1.5 pt-1 border-t border-emerald-100/60">
+                                                            @if ($act->jumlah_tank)
+                                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200" title="Jumlah tank semprot">
+                                                                    <svg class="w-3 h-3 text-blue-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                                                    </svg>
+                                                                    <span>{{ $act->formatted_jumlah_tank }}</span>
+                                                                </span>
+                                                            @endif
+                                                            @if ($act->total_biaya_obat)
+                                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100/90 text-emerald-900 border border-emerald-300" title="Total biaya obat kegiatan ini">
+                                                                    <svg class="w-3 h-3 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                                    </svg>
+                                                                    <span>Total: {{ $act->formatted_total_biaya_obat }}</span>
+                                                                </span>
+                                                            @endif
                                                         </div>
                                                     @endif
                                                 @else
@@ -396,7 +714,16 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    <span class="{{ $isToday ? 'text-emerald-500' : 'text-gray-300' }}">-</span>
+                                    @if ($crop->status === 'Sedang Ditanam')
+                                        <button type="button"
+                                                onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
+                                                class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                                title="Catat aplikasi obat pada HST ini">
+                                            <span>+ Tambah Obat</span>
+                                        </button>
+                                    @else
+                                        <span class="{{ $isToday ? 'text-emerald-500' : 'text-gray-300' }}">-</span>
+                                    @endif
                                 @endif
                             </td>
 
@@ -548,6 +875,7 @@
             </div>
         </div>
     </div>
+</div>
 
 </div>
 
@@ -623,18 +951,95 @@
                 </div>
             </div>
 
-            {{-- Aplikasi Obat --}}
-            <div>
-                <div class="flex items-center justify-between mb-1">
-                    <label for="add-aplikasi-obat" class="block text-xs font-semibold text-gray-900">
-                        Aplikasi Obat (Opsional)
-                    </label>
+            {{-- Aplikasi Obat & Dosis Terintegrasi --}}
+            <div class="rounded-2xl border border-emerald-200/90 bg-emerald-50/40 p-3 sm:p-4 space-y-3" id="add-obat-section">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        <div>
+                            <label class="block text-xs font-bold text-emerald-950 uppercase tracking-wider">
+                                Aplikasi Obat & Dosis (Terintegrasi)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button"
+                                onclick="addObatRow('add')"
+                                id="add-btn-add-mix"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            <span>Tambah Obat</span>
+                        </button>
+                    </div>
                 </div>
-                <textarea id="add-aplikasi-obat"
-                          name="aplikasi_obat"
-                          rows="2"
-                          placeholder="Contoh: Fungisida : Dithane 2 sendok (16 liter), Insektisida : Curacron 15 ml (16 liter), Vitamin : Gandasil D 2 sendok (16 liter)"
-                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary font-mono text-xs"></textarea>
+
+                {{-- Interactive Rows Container --}}
+                <div id="add-obat-rows-container" class="space-y-2.5"></div>
+
+                {{-- Kontrol Jumlah Tank & Total Estimasi Biaya Obat --}}
+                <div class="rounded-xl border border-emerald-200 bg-white p-3 space-y-2.5 shadow-2xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="space-y-0.5">
+                            <label for="add-jumlah-tank" class="block text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                </svg>
+                                <span>Jumlah Tank Semprot</span>
+                            </label>
+                            <p class="text-[11px] text-gray-500">
+                                Takaran dosis per baris obat di atas dihitung untuk 1 tangki semprot (±16 Liter).
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div class="inline-flex items-center rounded-xl border border-gray-300 bg-gray-50 p-1 shadow-2xs">
+                                <button type="button"
+                                        onclick="stepTank('add', -1)"
+                                        class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-bold border border-gray-200 text-sm cursor-pointer transition-colors shadow-2xs"
+                                        title="Kurangi 1 tank">
+                                    −
+                                </button>
+                                <input type="number"
+                                       id="add-jumlah-tank"
+                                       name="jumlah_tank"
+                                       value="1"
+                                       min="0.1"
+                                       step="any"
+                                       class="w-14 text-center font-black text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none p-0"
+                                       oninput="updateObatSummary('add')">
+                                <span class="text-xs font-bold text-gray-500 pr-2">Tank</span>
+                                <button type="button"
+                                        onclick="stepTank('add', 1)"
+                                        class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-bold border border-gray-200 text-sm cursor-pointer transition-colors shadow-2xs"
+                                        title="Tambah 1 tank">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Total Summary Bar --}}
+                    <div id="add-obat-total-bar" class="p-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 text-xs flex-wrap">
+                                <span class="text-gray-600 font-medium">Subtotal Dosis / Tank:</span>
+                                <span id="add-obat-subtotal-display" class="font-bold text-gray-900">Rp 0</span>
+                                <span id="add-obat-tank-display" class="text-xs font-bold text-emerald-800">x 1 Tank</span>
+                                <span class="text-gray-400">•</span>
+                                <span class="text-[10px] text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full font-bold" id="add-obat-count-badge">
+                                    0 Obat
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-emerald-200/60">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Total Biaya Obat</span>
+                            <span id="add-obat-total-display" class="font-black text-emerald-700 text-base sm:text-lg">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Input tersembunyi untuk menyimpan rincian aplikasi_obat dan total_biaya_obat saat submit --}}
+                <input type="hidden" id="add-aplikasi-obat" name="aplikasi_obat" value="">
+                <input type="hidden" id="add-total-biaya-obat" name="total_biaya_obat" value="0">
             </div>
 
             {{-- Sasaran --}}
@@ -775,16 +1180,95 @@
                        class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
             </div>
 
-            <div>
-                <div class="flex items-center justify-between mb-1">
-                    <label for="edit-aplikasi-obat" class="block text-xs font-semibold text-gray-900">
-                        Aplikasi Obat
-                    </label>    
+            {{-- Aplikasi Obat & Dosis Terintegrasi (Edit Mode) --}}
+            <div class="rounded-2xl border border-emerald-200/90 bg-emerald-50/40 p-3 sm:p-4 space-y-3" id="edit-obat-section">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        <div>
+                            <label class="block text-xs font-bold text-emerald-950 uppercase tracking-wider">
+                                Aplikasi Obat & Dosis (Terintegrasi)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button"
+                                onclick="addObatRow('edit')"
+                                id="edit-btn-add-mix"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            <span>Tambah Obat</span>
+                        </button>
+                    </div>
                 </div>
-                <textarea id="edit-aplikasi-obat"
-                          name="aplikasi_obat"
-                          rows="2"
-                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary font-mono text-xs"></textarea>
+
+                {{-- Interactive Rows Container --}}
+                <div id="edit-obat-rows-container" class="space-y-2.5"></div>
+
+                {{-- Kontrol Jumlah Tank & Total Estimasi Biaya Obat (Edit Mode) --}}
+                <div class="rounded-xl border border-emerald-200 bg-white p-3 space-y-2.5 shadow-2xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="space-y-0.5">
+                            <label for="edit-jumlah-tank" class="block text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                </svg>
+                                <span>Jumlah Tank Semprot</span>
+                            </label>
+                            <p class="text-[11px] text-gray-500">
+                                Takaran dosis per baris obat di atas dihitung untuk 1 tangki semprot (±16 Liter).
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div class="inline-flex items-center rounded-xl border border-gray-300 bg-gray-50 p-1 shadow-2xs">
+                                <button type="button"
+                                        onclick="stepTank('edit', -1)"
+                                        class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-bold border border-gray-200 text-sm cursor-pointer transition-colors shadow-2xs"
+                                        title="Kurangi 1 tank">
+                                    −
+                                </button>
+                                <input type="number"
+                                       id="edit-jumlah-tank"
+                                       name="jumlah_tank"
+                                       value="1"
+                                       min="0.1"
+                                       step="any"
+                                       class="w-14 text-center font-black text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none p-0"
+                                       oninput="updateObatSummary('edit')">
+                                <span class="text-xs font-bold text-gray-500 pr-2">Tank</span>
+                                <button type="button"
+                                        onclick="stepTank('edit', 1)"
+                                        class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-bold border border-gray-200 text-sm cursor-pointer transition-colors shadow-2xs"
+                                        title="Tambah 1 tank">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Total Summary Bar --}}
+                    <div id="edit-obat-total-bar" class="p-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 text-xs flex-wrap">
+                                <span class="text-gray-600 font-medium">Subtotal Dosis / Tank:</span>
+                                <span id="edit-obat-subtotal-display" class="font-bold text-gray-900">Rp 0</span>
+                                <span id="edit-obat-tank-display" class="text-xs font-bold text-emerald-800">x 1 Tank</span>
+                                <span class="text-gray-400">•</span>
+                                <span class="text-[10px] text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full font-bold" id="edit-obat-count-badge">
+                                    0 Obat
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-emerald-200/60">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Total Biaya Obat</span>
+                            <span id="edit-obat-total-display" class="font-black text-emerald-700 text-base sm:text-lg">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Input tersembunyi untuk menyimpan rincian aplikasi_obat dan total_biaya_obat saat submit --}}
+                <input type="hidden" id="edit-aplikasi-obat" name="aplikasi_obat" value="">
+                <input type="hidden" id="edit-total-biaya-obat" name="total_biaya_obat" value="0">
             </div>
 
             <div>
@@ -1274,34 +1758,573 @@
         if (input) input.value = nama;
     }
 
-    function insertMedicineToTextarea(prefix, selectEl) {
-        const opt = selectEl.selectedOptions[0];
-        if (!opt || !opt.value) return;
+    const ALL_MEDICINES = @json($medicines);
+    const OTHER_ACTIVE_CROPS = @json($otherActiveCrops ?? []);
+    let isAddActivityConfirmed = false;
 
-        const textarea = document.getElementById(`${prefix}-aplikasi-obat`);
-        const sasaranInput = document.getElementById(`${prefix}-sasaran`);
-        if (!textarea) return;
-
-        const medName = opt.value;
-        const jenis = opt.dataset.jenis || 'Obat';
-        const dosis = opt.dataset.dosis || '1-2 ml';
-        const sasaran = opt.dataset.sasaran || '';
-
-        const itemStr = `${jenis} : ${medName} ${dosis} (16 liter)`;
-
-        if (textarea.value.trim() === '') {
-            textarea.value = itemStr;
-        } else {
-            textarea.value += `, ${itemStr}`;
-        }
-
-        if (sasaran && sasaranInput && !sasaranInput.value) {
-            sasaranInput.value = sasaran;
-        }
-
-        // Reset selector
-        selectEl.value = '';
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
+
+    function highlightMatch(text, query) {
+        if (!text) return '';
+        if (!query) return escapeHtml(text);
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedQuery})`, 'gi');
+        const safeText = escapeHtml(text);
+        return safeText.replace(regex, '<span class="text-emerald-700 bg-emerald-100 font-extrabold px-0.5 rounded-xs">$1</span>');
+    }
+
+    function addObatRow(prefix, medId = '', initialDose = '', customName = '') {
+        const container = document.getElementById(`${prefix}-obat-rows-container`);
+        if (!container) return;
+
+        let selectedMed = null;
+        if (medId) {
+            selectedMed = ALL_MEDICINES.find(m => String(m.id) === String(medId));
+        }
+        if (!selectedMed && customName) {
+            selectedMed = ALL_MEDICINES.find(m => m.nama.toLowerCase() === customName.trim().toLowerCase());
+        }
+
+        const medName = selectedMed ? selectedMed.nama : (customName || '');
+        const medUnit = selectedMed ? (selectedMed.base_unit_label || 'gram') : 'gram';
+        const medRate = selectedMed ? (selectedMed.harga_per_base_unit || 0) : 0;
+        const medDosis = selectedMed ? (selectedMed.dosis_anjuran || '') : '';
+        const medSasaran = selectedMed ? (selectedMed.sasaran_obat || '') : '';
+        const medJenis = selectedMed ? (selectedMed.jenis || '') : '';
+
+        const row = document.createElement('div');
+        row.className = 'obat-row bg-white rounded-xl p-3 border border-emerald-100 shadow-2xs space-y-2 transition-all';
+        
+        row.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0 relative obat-combobox-wrapper">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Nama Obat (Ketik untuk mencari)
+                        </label>
+                        <span class="selected-med-badge text-[10px] font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full ${medJenis ? '' : 'hidden'}">
+                            ${escapeHtml(medJenis)}
+                        </span>
+                    </div>
+                    <div class="relative flex items-center">
+                        <div class="absolute left-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none text-gray-400 z-10">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <input type="text"
+                               class="obat-search-input field-input w-full rounded-xl border border-gray-300 text-xs font-bold text-gray-900 bg-white placeholder:text-gray-400 focus:border-primary focus:ring-1 focus:ring-emerald-500"
+                               style="padding-left: 2.75rem !important; padding-right: 2.25rem !important; padding-top: 0.6rem; padding-bottom: 0.6rem;"
+                               placeholder="Ketik nama obat (misal: Decis, Dithane, NPK...)"
+                               value="${escapeHtml(medName)}"
+                               autocomplete="off">
+                        <button type="button" 
+                                class="btn-clear-obat absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 cursor-pointer z-10 ${medName ? '' : 'hidden'}"
+                                title="Hapus / Cari Ulang">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    {{-- Hidden attributes --}}
+                    <input type="hidden" class="obat-id-val" value="${selectedMed ? selectedMed.id : ''}">
+                    <input type="hidden" class="obat-name-val" value="${escapeHtml(medName)}">
+                    <input type="hidden" class="obat-unit-val" value="${escapeHtml(medUnit)}">
+                    <input type="hidden" class="obat-rate-val" value="${medRate}">
+                    <input type="hidden" class="obat-dosis-val" value="${escapeHtml(medDosis)}">
+                    <input type="hidden" class="obat-sasaran-val" value="${escapeHtml(medSasaran)}">
+
+                    {{-- Dropdown Container for search suggestions --}}
+                    <div class="obat-dropdown-results absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-200 z-50 hidden divide-y divide-gray-100" style="box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);"></div>
+                </div>
+
+                <button type="button" 
+                        onclick="removeObatRow(this, '${prefix}')" 
+                        class="btn-remove-obat-row p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer shrink-0" 
+                        style="margin-top: 1.15rem;"
+                        title="Hapus baris obat">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-end pt-1.5 border-t border-gray-100">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Dosis Obat
+                        </label>
+                        <span class="dosis-hint text-[10px] text-emerald-800 font-medium truncate max-w-[150px]">
+                            ${medDosis ? 'Anjuran: ' + escapeHtml(medDosis) : ''}
+                        </span>
+                    </div>
+                    <div class="relative flex items-center">
+                        <input type="number" 
+                               step="any" 
+                               min="0" 
+                               value="${initialDose}" 
+                               placeholder="Misal: 5" 
+                               class="dosis-input field-input w-full rounded-xl border border-gray-300 text-xs font-bold text-gray-900 focus:border-primary"
+                               style="padding-left: 0.875rem !important; padding-right: 4.5rem !important; padding-top: 0.6rem; padding-bottom: 0.6rem;">
+                        <span class="dosis-unit-badge absolute right-2.5 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-[10px] font-black tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-200 select-none z-10">
+                            ${escapeHtml(medUnit)}
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                        Perkiraan Biaya Dosis
+                    </label>
+                    <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 font-bold text-xs" style="min-height: 38px;">
+                        <span class="cost-calc-detail text-[11px] text-emerald-800 font-medium truncate max-w-[150px]">0 ${escapeHtml(medUnit)} × Rp 0</span>
+                        <span class="cost-amount font-black text-emerald-900 text-sm whitespace-nowrap ml-2">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(row);
+
+        const searchInput = row.querySelector('.obat-search-input');
+        const clearBtn = row.querySelector('.btn-clear-obat');
+        const doseInput = row.querySelector('.dosis-input');
+
+        // Typing in search input: filter medicines and show dropdown
+        searchInput.addEventListener('focus', () => {
+            renderObatSuggestions(row, searchInput.value, prefix);
+        });
+
+        searchInput.addEventListener('input', () => {
+            const val = searchInput.value;
+            const nameInput = row.querySelector('.obat-name-val');
+            if (nameInput) nameInput.value = val;
+
+            if (val.trim()) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            // Check if exact match
+            const exactMatch = ALL_MEDICINES.find(m => m.nama.toLowerCase() === val.trim().toLowerCase());
+            if (exactMatch) {
+                bindObatDataToRow(row, exactMatch, prefix, false);
+            } else {
+                const idInput = row.querySelector('.obat-id-val');
+                const rateInput = row.querySelector('.obat-rate-val');
+                const badge = row.querySelector('.selected-med-badge');
+                if (idInput) idInput.value = '';
+                if (rateInput) rateInput.value = 0;
+                if (badge) badge.classList.add('hidden');
+            }
+
+            renderObatSuggestions(row, val, prefix);
+            calculateObatRowCost(row);
+            updateObatSummary(prefix);
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const dropdown = row.querySelector('.obat-dropdown-results');
+                if (dropdown) dropdown.classList.add('hidden');
+            }
+        });
+
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.classList.add('hidden');
+            const idInput = row.querySelector('.obat-id-val');
+            const nameInput = row.querySelector('.obat-name-val');
+            const unitInput = row.querySelector('.obat-unit-val');
+            const rateInput = row.querySelector('.obat-rate-val');
+            const dosisInputVal = row.querySelector('.obat-dosis-val');
+            const sasaranInputVal = row.querySelector('.obat-sasaran-val');
+            const badge = row.querySelector('.selected-med-badge');
+            const unitBadge = row.querySelector('.dosis-unit-badge');
+            const dosisHint = row.querySelector('.dosis-hint');
+
+            if (idInput) idInput.value = '';
+            if (nameInput) nameInput.value = '';
+            if (unitInput) unitInput.value = 'gram';
+            if (rateInput) rateInput.value = 0;
+            if (dosisInputVal) dosisInputVal.value = '';
+            if (sasaranInputVal) sasaranInputVal.value = '';
+            if (badge) badge.classList.add('hidden');
+            if (unitBadge) unitBadge.textContent = 'gram';
+            if (dosisHint) dosisHint.textContent = '';
+
+            calculateObatRowCost(row);
+            updateObatSummary(prefix);
+            renderObatSuggestions(row, '', prefix);
+            searchInput.focus();
+        });
+
+        // Dosage input
+        doseInput.addEventListener('input', () => {
+            calculateObatRowCost(row);
+            updateObatSummary(prefix);
+        });
+
+        calculateObatRowCost(row);
+        updateObatSummary(prefix);
+    }
+
+    function renderObatSuggestions(row, query, prefix) {
+        const dropdown = row.querySelector('.obat-dropdown-results');
+        if (!dropdown) return;
+
+        const q = (query || '').trim().toLowerCase();
+        let filtered = [];
+
+        if (!q) {
+            filtered = ALL_MEDICINES;
+        } else {
+            filtered = ALL_MEDICINES.filter(m => {
+                const name = (m.nama || '').toLowerCase();
+                const jenis = (m.jenis || '').toLowerCase();
+                const sasaran = (m.sasaran_obat || '').toLowerCase();
+                const bahan = (m.bahan_aktif || '').toLowerCase();
+                return name.includes(q) || jenis.includes(q) || sasaran.includes(q) || bahan.includes(q);
+            });
+        }
+
+        if (filtered.length === 0) {
+            dropdown.innerHTML = `
+                <div class="p-3 text-center text-xs text-gray-500">
+                    <p class="font-medium text-gray-700">Tidak ada obat dengan nama "<b>${escapeHtml(query)}</b>"</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">Teks yang diketik tetap akan disimpan sebagai catatan obat.</p>
+                </div>
+            `;
+            dropdown.classList.remove('hidden');
+            return;
+        }
+
+        let itemsHtml = '';
+        filtered.forEach(m => {
+            const rateStr = m.formatted_harga_per_base_unit 
+                ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-200">${escapeHtml(m.formatted_harga_per_base_unit)}</span>` 
+                : '';
+            const kemasanStr = m.kemasan_label ? `<span class="text-[10px] text-gray-500">Kemasan: ${escapeHtml(m.kemasan_label)}</span>` : '';
+            const jenisStr = m.jenis ? `<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-gray-100 text-gray-700">${escapeHtml(m.jenis)}</span>` : '';
+            const highlightedName = highlightMatch(m.nama, q);
+
+            itemsHtml += `
+                <div class="obat-suggestion-item px-3 py-2 hover:bg-emerald-50 cursor-pointer transition-colors flex items-center justify-between gap-2"
+                     data-id="${m.id}"
+                     data-nama="${escapeHtml(m.nama)}"
+                     data-jenis="${escapeHtml(m.jenis || '')}"
+                     data-unit="${escapeHtml(m.base_unit_label || 'gram')}"
+                     data-rate="${m.harga_per_base_unit || 0}"
+                     data-rate-formatted="${escapeHtml(m.formatted_harga_per_base_unit || '')}"
+                     data-dosis="${escapeHtml(m.dosis_anjuran || '')}"
+                     data-sasaran="${escapeHtml(m.sasaran_obat || '')}">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-gray-900 truncate">${highlightedName}</span>
+                            ${jenisStr}
+                        </div>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            ${kemasanStr}
+                            ${m.sasaran_obat ? `<span class="text-[10px] text-gray-500 truncate max-w-[180px]">Sasaran: ${escapeHtml(m.sasaran_obat)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="shrink-0 text-right">
+                        ${rateStr}
+                    </div>
+                </div>
+            `;
+        });
+
+        dropdown.innerHTML = itemsHtml;
+        dropdown.classList.remove('hidden');
+
+        dropdown.querySelectorAll('.obat-suggestion-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bindObatDataToRow(row, item.dataset, prefix, true);
+            });
+        });
+    }
+
+    function bindObatDataToRow(row, data, prefix, autoFocusDose = false) {
+        const searchInput = row.querySelector('.obat-search-input');
+        const clearBtn = row.querySelector('.btn-clear-obat');
+        const dropdown = row.querySelector('.obat-dropdown-results');
+        const badge = row.querySelector('.selected-med-badge');
+        const unitBadge = row.querySelector('.dosis-unit-badge');
+        const dosisHint = row.querySelector('.dosis-hint');
+        const doseInput = row.querySelector('.dosis-input');
+
+        const idInput = row.querySelector('.obat-id-val');
+        const nameInput = row.querySelector('.obat-name-val');
+        const unitInput = row.querySelector('.obat-unit-val');
+        const rateInput = row.querySelector('.obat-rate-val');
+        const dosisInputVal = row.querySelector('.obat-dosis-val');
+        const sasaranInputVal = row.querySelector('.obat-sasaran-val');
+
+        const nama = data.nama || '';
+        const unit = data.base_unit_label || data.unit || 'gram';
+        const rate = data.harga_per_base_unit || data.rate || 0;
+        const dosis = data.dosis_anjuran || data.dosis || '';
+        const sasaran = data.sasaran_obat || data.sasaran || '';
+        const jenis = data.jenis || '';
+
+        if (searchInput) searchInput.value = nama;
+        if (idInput) idInput.value = data.id || '';
+        if (nameInput) nameInput.value = nama;
+        if (unitInput) unitInput.value = unit;
+        if (rateInput) rateInput.value = rate;
+        if (dosisInputVal) dosisInputVal.value = dosis;
+        if (sasaranInputVal) sasaranInputVal.value = sasaran;
+
+        if (unitBadge) unitBadge.textContent = unit;
+        if (dosisHint) dosisHint.textContent = dosis ? `Anjuran: ${dosis}` : '';
+        if (clearBtn) clearBtn.classList.remove('hidden');
+
+        if (badge) {
+            badge.textContent = jenis || 'Obat Terdaftar';
+            badge.classList.remove('hidden');
+        }
+
+        if (sasaran) {
+            const sasaranModalInput = document.getElementById(`${prefix}-sasaran`);
+            if (sasaranModalInput && !sasaranModalInput.value.trim()) {
+                sasaranModalInput.value = sasaran;
+            }
+        }
+
+        if (dropdown) dropdown.classList.add('hidden');
+
+        calculateObatRowCost(row);
+        updateObatSummary(prefix);
+
+        if (autoFocusDose && doseInput) {
+            doseInput.focus();
+            if (!doseInput.value) doseInput.select();
+        }
+    }
+
+    function calculateObatRowCost(row) {
+        const doseInput = row.querySelector('.dosis-input');
+        const costCalc = row.querySelector('.cost-calc-detail');
+        const costAmount = row.querySelector('.cost-amount');
+        const rateInput = row.querySelector('.obat-rate-val');
+        const unitInput = row.querySelector('.obat-unit-val');
+        const nameInput = row.querySelector('.obat-name-val');
+        const searchInput = row.querySelector('.obat-search-input');
+
+        const medName = (nameInput?.value || searchInput?.value || '').trim();
+        if (!medName) {
+            if (costCalc) costCalc.textContent = 'Ketik & pilih obat';
+            if (costAmount) costAmount.textContent = 'Rp 0';
+            return 0;
+        }
+
+        const rate = parseFloat(rateInput?.value || '0');
+        const unit = unitInput?.value || 'gram';
+        const dose = parseFloat(doseInput?.value || '0');
+
+        if (dose > 0 && rate > 0) {
+            const cost = Math.round(dose * rate);
+            const formattedCost = 'Rp ' + Number(cost).toLocaleString('id-ID');
+            const formattedRate = 'Rp ' + (rate < 10 && rate % 1 !== 0 ? rate.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(rate).toLocaleString('id-ID'));
+            if (costCalc) costCalc.textContent = `${dose} ${unit} × ${formattedRate}/${unit}`;
+            if (costAmount) costAmount.textContent = formattedCost;
+            return cost;
+        } else if (dose > 0) {
+            if (costCalc) costCalc.textContent = `${dose} ${unit} (Harga belum diset)`;
+            if (costAmount) costAmount.textContent = 'Rp —';
+            return 0;
+        } else {
+            const formattedRate = rate > 0 ? `Rp ${Math.round(rate).toLocaleString('id-ID')}/${unit}` : 'Rp 0';
+            if (costCalc) costCalc.textContent = `0 ${unit} × ${formattedRate}`;
+            if (costAmount) costAmount.textContent = 'Rp 0';
+            return 0;
+        }
+    }
+
+    function stepTank(prefix, step) {
+        const input = document.getElementById(`${prefix}-jumlah-tank`);
+        if (!input) return;
+        let val = parseFloat(input.value) || 1;
+        val = Math.max(0.1, Math.round((val + step) * 10) / 10);
+        input.value = val;
+        updateObatSummary(prefix);
+    }
+
+    function setTank(prefix, val) {
+        const input = document.getElementById(`${prefix}-jumlah-tank`);
+        if (!input) return;
+        input.value = val;
+        updateObatSummary(prefix);
+    }
+
+    function removeObatRow(btn, prefix) {
+        const row = btn.closest('.obat-row');
+        if (row) {
+            row.remove();
+            updateObatSummary(prefix);
+        }
+    }
+
+    function updateObatSummary(prefix) {
+        const container = document.getElementById(`${prefix}-obat-rows-container`);
+        const totalBar = document.getElementById(`${prefix}-obat-total-bar`);
+        const subtotalDisplay = document.getElementById(`${prefix}-obat-subtotal-display`);
+        const tankDisplay = document.getElementById(`${prefix}-obat-tank-display`);
+        const totalDisplay = document.getElementById(`${prefix}-obat-total-display`);
+        const countBadge = document.getElementById(`${prefix}-obat-count-badge`);
+        const breakdownText = document.getElementById(`${prefix}-obat-calc-breakdown`);
+        const hiddenAplikasiObat = document.getElementById(`${prefix}-aplikasi-obat`);
+        const hiddenTotalBiaya = document.getElementById(`${prefix}-total-biaya-obat`);
+        const tankInput = document.getElementById(`${prefix}-jumlah-tank`);
+
+        if (!container) return;
+
+        let jumlahTank = parseFloat(tankInput?.value || '1');
+        if (isNaN(jumlahTank) || jumlahTank <= 0) {
+            jumlahTank = 1;
+        }
+
+        const rows = container.querySelectorAll('.obat-row');
+        let subtotalPerTank = 0;
+        const summaryItems = [];
+
+        rows.forEach(r => {
+            const searchInput = r.querySelector('.obat-search-input');
+            const nameInput = r.querySelector('.obat-name-val');
+            const unitInput = r.querySelector('.obat-unit-val');
+            const rateInput = r.querySelector('.obat-rate-val');
+            const doseInput = r.querySelector('.dosis-input');
+
+            const medName = (nameInput?.value || searchInput?.value || '').trim();
+            if (medName) {
+                const unit = unitInput?.value || 'gram';
+                const dose = parseFloat(doseInput?.value || '0');
+                const rate = parseFloat(rateInput?.value || '0');
+
+                let itemCostPerTank = 0;
+                if (dose > 0 && rate > 0) {
+                    itemCostPerTank = Math.round(dose * rate);
+                    subtotalPerTank += itemCostPerTank;
+                }
+
+                const itemGrandTotal = Math.round(itemCostPerTank * jumlahTank);
+
+                if (dose > 0) {
+                    if (itemGrandTotal > 0) {
+                        summaryItems.push(`${medName}: ${dose} ${unit} (Rp ${itemGrandTotal.toLocaleString('id-ID')})`);
+                    } else {
+                        summaryItems.push(`${medName}: ${dose} ${unit}`);
+                    }
+                } else {
+                    summaryItems.push(`${medName}`);
+                }
+            }
+        });
+
+        const grandTotal = Math.round(subtotalPerTank * jumlahTank);
+        const fmtTank = (Math.round(jumlahTank * 100) / 100).toString().replace('.', ',');
+
+        if (subtotalDisplay) subtotalDisplay.textContent = 'Rp ' + subtotalPerTank.toLocaleString('id-ID');
+        if (tankDisplay) tankDisplay.textContent = `x ${fmtTank} Tank`;
+        if (totalDisplay) totalDisplay.textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
+        if (countBadge) countBadge.textContent = `${summaryItems.length} Obat`;
+
+        if (hiddenTotalBiaya) {
+            hiddenTotalBiaya.value = grandTotal;
+        }
+
+        if (hiddenAplikasiObat) {
+            hiddenAplikasiObat.value = summaryItems.join(', ');
+        }
+    }
+
+    function parseObatItems(rawText) {
+        if (!rawText || !rawText.trim()) return [];
+        const parts = rawText.split(',').map(s => s.trim()).filter(Boolean);
+        const parsed = [];
+
+        parts.forEach(part => {
+            let matchedMed = null;
+            let foundDose = '';
+
+            for (const m of ALL_MEDICINES) {
+                if (part.toLowerCase().includes(m.nama.toLowerCase())) {
+                    matchedMed = m;
+                    break;
+                }
+            }
+
+            const doseMatch = part.match(/(\d+(?:[.,]\d+)?)\s*(?:gram|gr|g|ml|liter|kg|sachet|sendok)/i);
+            if (doseMatch) {
+                foundDose = doseMatch[1].replace(',', '.');
+            }
+
+            if (matchedMed) {
+                parsed.push({
+                    medId: matchedMed.id,
+                    medName: matchedMed.nama,
+                    dose: foundDose
+                });
+            } else {
+                let customName = part;
+                if (part.includes(':')) {
+                    customName = part.split(':')[0].trim();
+                } else if (doseMatch) {
+                    customName = part.substring(0, doseMatch.index).trim();
+                }
+                parsed.push({
+                    medId: '',
+                    medName: customName || part,
+                    dose: foundDose
+                });
+            }
+        });
+
+        return parsed;
+    }
+
+    function initObatBuilder(prefix, existingText = '', initialTank = 1) {
+        const container = document.getElementById(`${prefix}-obat-rows-container`);
+        const hiddenAplikasiObat = document.getElementById(`${prefix}-aplikasi-obat`);
+        const tankInput = document.getElementById(`${prefix}-jumlah-tank`);
+
+        if (tankInput) tankInput.value = initialTank || 1;
+
+        if (!container || !hiddenAplikasiObat) return;
+
+        container.innerHTML = '';
+        hiddenAplikasiObat.value = existingText || '';
+
+        if (existingText && existingText.trim()) {
+            const parsed = parseObatItems(existingText);
+            if (parsed.length > 0) {
+                parsed.forEach(item => {
+                    addObatRow(prefix, item.medId, item.dose, item.medName);
+                });
+            } else {
+                addObatRow(prefix, '', '', existingText.trim());
+            }
+        } else {
+            addObatRow(prefix, '', '', '');
+        }
+
+        updateObatSummary(prefix);
+    }
+
+    // Global listener to close suggestions on click outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.obat-combobox-wrapper')) {
+            document.querySelectorAll('.obat-dropdown-results').forEach(el => el.classList.add('hidden'));
+        }
+    });
 
     // ── Manajemen Upload Foto Tambah Kegiatan ──
     let addSelectedFiles = [];
@@ -1368,14 +2391,22 @@
         const hstInput = document.getElementById('add-target-hst');
         const dateInput = document.getElementById('add-tanggal-kegiatan');
         const namaInput = document.getElementById('add-nama-kegiatan');
-        const obatInput = document.getElementById('add-aplikasi-obat');
         const sasaranInput = document.getElementById('add-sasaran');
         const ketInput = document.getElementById('add-keterangan');
+        const tankInput = document.getElementById('add-jumlah-tank');
+
+        isAddActivityConfirmed = false;
+        const addForm = document.getElementById('form-add-activity');
+        if (addForm) {
+            addForm.querySelectorAll('input[name="other_crop_ids[]"]').forEach(el => el.remove());
+        }
 
         if (namaInput) namaInput.value = '';
-        if (obatInput) obatInput.value = '';
         if (sasaranInput) sasaranInput.value = '';
         if (ketInput) ketInput.value = '';
+        if (tankInput) tankInput.value = '1';
+
+        initObatBuilder('add', '', 1);
 
         // Reset foto
         addSelectedFiles = [];
@@ -1401,7 +2432,7 @@
     let editExistingPhotos = [];
     let editNewFiles = [];
 
-    function openEditActivityModal(id, nama, targetHst, targetDate, obat, sasaran, ket, existingPhotos = []) {
+    function openEditActivityModal(id, nama, targetHst, targetDate, obat, sasaran, ket, existingPhotos = [], jumlahTank = 1, totalBiaya = 0) {
         currentEditActivityId = id;
         editExistingPhotos = Array.isArray(existingPhotos) ? [...existingPhotos] : [];
         editNewFiles = [];
@@ -1412,9 +2443,13 @@
         document.getElementById('edit-nama-kegiatan').value = nama;
         document.getElementById('edit-target-hst').value = targetHst;
         document.getElementById('edit-tanggal-kegiatan').value = targetDate;
-        document.getElementById('edit-aplikasi-obat').value = obat || '';
         document.getElementById('edit-sasaran').value = sasaran || '';
         document.getElementById('edit-keterangan').value = ket || '';
+
+        const tankInput = document.getElementById('edit-jumlah-tank');
+        if (tankInput) tankInput.value = jumlahTank || 1;
+
+        initObatBuilder('edit', obat || '', jumlahTank || 1);
 
         const deletedContainer = document.getElementById('edit-deleted-photos-container');
         if (deletedContainer) deletedContainer.innerHTML = '';
@@ -2021,7 +3056,59 @@
             totalInput.addEventListener('input', autoCalcGross);
             priceInput.addEventListener('input', autoCalcGross);
         }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'obat') {
+            switchDetailTab('obat');
+        }
     });
+
+    // Sub-Tab detail switching (Log Kalender HST vs Rangkuman Obat)
+    function switchDetailTab(tabKey) {
+        const paneKalender = document.getElementById('detail-pane-kalender');
+        const paneObat = document.getElementById('detail-pane-obat');
+        const btnKalender = document.getElementById('btn-detail-tab-kalender');
+        const btnObat = document.getElementById('btn-detail-tab-obat');
+
+        if (tabKey === 'obat') {
+            if (paneKalender) paneKalender.classList.add('hidden');
+            if (paneObat) paneObat.classList.remove('hidden');
+            if (btnKalender) {
+                btnKalender.className = btnKalender.className
+                    .replace(/bg-white text-primary-dark shadow-sm border border-gray-200/, 'text-text-secondary hover:text-text hover:bg-gray-100/60');
+            }
+            if (btnObat) {
+                btnObat.className = btnObat.className
+                    .replace('text-text-secondary hover:text-text hover:bg-gray-100/60', 'bg-white text-primary-dark shadow-sm border border-gray-200');
+            }
+        } else {
+            if (paneObat) paneObat.classList.add('hidden');
+            if (paneKalender) paneKalender.classList.remove('hidden');
+            if (btnObat) {
+                btnObat.className = btnObat.className
+                    .replace(/bg-white text-primary-dark shadow-sm border border-gray-200/, 'text-text-secondary hover:text-text hover:bg-gray-100/60');
+            }
+            if (btnKalender) {
+                btnKalender.className = btnKalender.className
+                    .replace('text-text-secondary hover:text-text hover:bg-gray-100/60', 'bg-white text-primary-dark shadow-sm border border-gray-200');
+            }
+        }
+
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabKey);
+        window.history.replaceState({}, '', url);
+    }
+
+    // Toggle collapse/expand section rangkuman obat
+    function toggleMedicineSummarySection() {
+        const body = document.getElementById('body-rangkuman-obat');
+        const label = document.getElementById('label-toggle-med-summary');
+        const icon = document.getElementById('icon-toggle-med-summary');
+        if (!body) return;
+        const isHidden = body.classList.toggle('hidden');
+        if (label) label.textContent = isHidden ? 'Buka' : 'Ciutkan';
+        if (icon) icon.style.transform = isHidden ? 'rotate(180deg)' : '';
+    }
 
     // Toggle long list of obat items in table
     function toggleObatItems(btn) {
@@ -2087,13 +3174,14 @@
             draftCard.innerHTML = `
                 <div class="flex items-center justify-between gap-1 mb-1">
                     <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-300">
-                        ⚡ Draft Offline
+                        <svg class="w-3 h-3 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+                        Draft Offline
                     </span>
                     <button type="button"
                             onclick="deleteOfflineActivityDraft('${act.client_id}', '${escapeHtml(act.nama_kegiatan)}')"
                             class="text-amber-700 hover:text-red-600 p-0.5 text-xs font-bold leading-none cursor-pointer"
                             title="Hapus Draft Offline">
-                        ✕
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
                 <div class="font-bold text-xs sm:text-sm text-gray-900 break-words">${escapeHtml(act.nama_kegiatan)}</div>
@@ -2108,7 +3196,14 @@
                 const draftObat = document.createElement('div');
                 draftObat.id = 'draft-obat-' + act.client_id;
                 draftObat.className = 'mt-2 p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-xs font-mono text-amber-900';
-                draftObat.innerHTML = `<span class="font-bold text-[10px] uppercase text-amber-800 block">⚡ Draft Obat:</span>${escapeHtml(act.aplikasi_obat)}`;
+                let extraBadges = '';
+                if (act.jumlah_tank || act.total_biaya_obat) {
+                    extraBadges = '<div class="mt-1 flex items-center gap-1 flex-wrap">';
+                    if (act.jumlah_tank) extraBadges += `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-200"><svg class="w-2.5 h-2.5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>${act.jumlah_tank} Tank</span>`;
+                    if (act.total_biaya_obat) extraBadges += `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200"><svg class="w-2.5 h-2.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Rp ${Number(act.total_biaya_obat).toLocaleString('id-ID')}</span>`;
+                    extraBadges += '</div>';
+                }
+                draftObat.innerHTML = `<span class="font-bold text-[10px] uppercase text-amber-800 flex items-center gap-1"><svg class="w-2.5 h-2.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>Draft Obat:</span>${escapeHtml(act.aplikasi_obat)}${extraBadges}`;
                 colObat.appendChild(draftObat);
             }
         }
@@ -2120,7 +3215,7 @@
                 const draftSasaran = document.createElement('div');
                 draftSasaran.id = 'draft-sasaran-' + act.client_id;
                 draftSasaran.className = 'mt-2 text-xs font-medium text-amber-900';
-                draftSasaran.innerHTML = `<span class="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 text-[11px]">⚡ ${escapeHtml(act.sasaran)}</span>`;
+                draftSasaran.innerHTML = `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 text-[11px]"><svg class="w-2.5 h-2.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>${escapeHtml(act.sasaran)}</span>`;
                 colSasaran.appendChild(draftSasaran);
             }
         }
@@ -2192,10 +3287,140 @@
             }
         }
 
-        // Intercept form tambah kegiatan saat offline
+        // Intercept form tambah kegiatan: SweetAlert konfirmasi tanaman & offline handling
         const addForm = document.getElementById('form-add-activity');
         if (addForm) {
             addForm.addEventListener('submit', async (e) => {
+                // 1. Tahap Konfirmasi Pilihan Tanaman (Sebelum Simpan)
+                if (!isAddActivityConfirmed) {
+                    e.preventDefault();
+
+                    if (!addForm.checkValidity()) {
+                        addForm.reportValidity();
+                        return;
+                    }
+
+                    const namaKegiatan = document.getElementById('add-nama-kegiatan')?.value || 'Kegiatan';
+
+                    // Jika tidak ada tanaman aktif lain di kebun
+                    if (!OTHER_ACTIVE_CROPS || OTHER_ACTIVE_CROPS.length === 0) {
+                        isAddActivityConfirmed = true;
+                        addForm.requestSubmit();
+                        return;
+                    }
+
+                    // Susun tampilan pilihan tanaman dengan SweetAlert
+                    let cropsListHtml = `
+                        <div class="mt-1 text-left">
+                            <p class="agri-swal-subtitle text-xs text-gray-600 leading-relaxed mb-3 text-center sm:text-left">
+                                Apakah kegiatan <strong class="text-gray-900 font-semibold">"${escapeHtml(namaKegiatan)}"</strong> ini juga ingin dicatat untuk tanaman aktif lainnya?
+                            </p>
+
+                            <!-- Tanaman Saat Ini (Terkunci) -->
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80 mb-3">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="text-xl leading-none shrink-0">{{ $crop->emoji }}</span>
+                                    <div class="min-w-0 truncate">
+                                        <div class="text-xs font-bold text-emerald-950 truncate">{{ $crop->nama_tanaman }}</div>
+                                        <div class="text-[10px] text-emerald-700 font-medium">{{ $crop->varietas ? $crop->varietas . ' • ' : '' }}HST {{ $currentHst }}</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-200/70 px-2 py-0.5 rounded-md shrink-0 ml-2">
+                                    Tanaman Ini
+                                </span>
+                            </div>
+
+                            <!-- Opsi Tanaman Lainnya -->
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                    Pilih Tanaman Tambahan:
+                                </label>
+                                <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    `;
+
+                    OTHER_ACTIVE_CROPS.forEach(c => {
+                        cropsListHtml += `
+                            <label class="flex items-center justify-between p-2.5 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/40 has-[:checked]:border-emerald-400 has-[:checked]:bg-emerald-50/50 cursor-pointer transition-all group select-none">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <input type="checkbox" 
+                                           class="swal-crop-checkbox w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 cursor-pointer accent-emerald-600" 
+                                           value="${c.id}" 
+                                           id="swal-crop-${c.id}">
+                                    <div class="min-w-0 truncate">
+                                        <div class="text-xs font-bold text-gray-900 group-hover:text-emerald-950 truncate">${c.emoji || '🌱'} ${escapeHtml(c.nama_tanaman)}</div>
+                                        <div class="text-[10px] text-gray-500 font-medium">${c.varietas ? escapeHtml(c.varietas) + ' • ' : ''}HST ${c.current_hst}</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-gray-400 font-medium group-hover:text-emerald-700 shrink-0 ml-2">Terapkan</span>
+                            </label>
+                        `;
+                    });
+
+                    cropsListHtml += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (window.Swal) {
+                        Swal.fire({
+                            title: 'Terapkan Kegiatan Ini?',
+                            html: cropsListHtml,
+                            icon: 'question',
+                            iconColor: '#059669',
+                            showCancelButton: true,
+                            showDenyButton: true,
+                            confirmButtonText: 'Terapkan ke Pilihan',
+                            denyButtonText: 'Hanya Ini',
+                            cancelButtonText: 'Batal',
+                            reverseButtons: true,
+                            focusConfirm: false,
+                            buttonsStyling: false,
+                            customClass: {
+                                popup: 'agri-swal-popup agri-swal-popup-wide',
+                                title: 'agri-swal-title',
+                                htmlContainer: 'agri-swal-html',
+                                actions: 'agri-swal-actions',
+                                confirmButton: 'agri-swal-btn-primary',
+                                denyButton: 'agri-swal-btn-secondary',
+                                cancelButton: 'agri-swal-btn-cancel',
+                                icon: 'agri-swal-icon-question'
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Terapkan ke pilihan: kumpulkan ID tanaman lain yang dicentang
+                                const checkedBoxes = document.querySelectorAll('.swal-crop-checkbox:checked');
+                                const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+                                
+                                addForm.querySelectorAll('input[name="other_crop_ids[]"]').forEach(el => el.remove());
+                                selectedIds.forEach(id => {
+                                    const inp = document.createElement('input');
+                                    inp.type = 'hidden';
+                                    inp.name = 'other_crop_ids[]';
+                                    inp.value = id;
+                                    addForm.appendChild(inp);
+                                });
+
+                                isAddActivityConfirmed = true;
+                                addForm.requestSubmit();
+                            } else if (result.isDenied) {
+                                // Hanya Ini: simpan hanya untuk tanaman saat ini
+                                addForm.querySelectorAll('input[name="other_crop_ids[]"]').forEach(el => el.remove());
+                                isAddActivityConfirmed = true;
+                                addForm.requestSubmit();
+                            }
+                        });
+                    } else {
+                        isAddActivityConfirmed = true;
+                        addForm.requestSubmit();
+                    }
+
+                    return;
+                }
+
+                // 2. Tahap Eksekusi Simpan (Reset flag untuk aksi berikutnya)
+                isAddActivityConfirmed = false;
+
                 if (!navigator.onLine) {
                     e.preventDefault();
                     const submitBtn = addForm.querySelector('button[type="submit"]');
@@ -2221,6 +3446,8 @@
                             target_hst: hstVal,
                             tanggal_kegiatan: fd.get('tanggal_kegiatan') || '',
                             aplikasi_obat: fd.get('aplikasi_obat') || null,
+                            jumlah_tank: fd.get('jumlah_tank') ? parseFloat(fd.get('jumlah_tank')) : 1.0,
+                            total_biaya_obat: fd.get('total_biaya_obat') ? parseFloat(fd.get('total_biaya_obat')) : null,
                             sasaran: fd.get('sasaran') || null,
                             keterangan: fd.get('keterangan') || null,
                             photos_base64: photosBase64
@@ -2229,11 +3456,20 @@
                         const record = await window.AgriOfflineStore.addCropActivityOffline({{ $crop->id }}, data);
                         renderDraftActivityInRow(record);
 
+                        // Simpan juga untuk tanaman lain jika ada
+                        const otherCropIds = Array.from(fd.getAll('other_crop_ids[]'));
+                        if (otherCropIds.length > 0) {
+                            for (const otherId of otherCropIds) {
+                                await window.AgriOfflineStore.addCropActivityOffline(parseInt(otherId, 10), data);
+                            }
+                        }
+
                         // Reset input form
                         addSelectedFiles = [];
                         syncAddFileInput();
                         renderAddPhotoPreviews();
                         addForm.reset();
+                        addForm.querySelectorAll('input[name="other_crop_ids[]"]').forEach(el => el.remove());
                         closeModal('modal-add-activity');
 
                         if (window.AgriSwal) {

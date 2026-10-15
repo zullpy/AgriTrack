@@ -107,6 +107,8 @@ class MedicineController extends Controller
             'dosis_anjuran' => 'nullable|string|max:255',
             'interval_aplikasi' => 'nullable|string|max:255',
             'harga' => 'nullable|integer|min:0',
+            'kemasan_jumlah' => 'nullable|numeric|min:0',
+            'kemasan_satuan' => 'nullable|string|max:50',
             'unsur_bahan' => 'nullable|string|max:255',
             'fase' => 'nullable|string|in:Vegetatif,Generatif,Semua Fase',
             'foto_nota' => 'nullable',
@@ -210,7 +212,7 @@ class MedicineController extends Controller
 
             // Perbarui data utama obat dengan data terbaru jika ada
             $masterUpdates = [];
-            foreach (['jenis', 'cara_kerja', 'formulasi', 'sasaran_obat', 'tanaman_sasaran', 'dosis_anjuran', 'unsur_bahan', 'fase', 'keterangan'] as $field) {
+            foreach (['jenis', 'cara_kerja', 'formulasi', 'sasaran_obat', 'tanaman_sasaran', 'dosis_anjuran', 'kemasan_jumlah', 'kemasan_satuan', 'unsur_bahan', 'fase', 'keterangan'] as $field) {
                 if (! empty($validated[$field])) {
                     $masterUpdates[$field] = $validated[$field];
                 }
@@ -348,6 +350,8 @@ class MedicineController extends Controller
             'dosis_anjuran' => 'nullable|string|max:255',
             'interval_aplikasi' => 'nullable|string|max:255',
             'harga' => 'nullable|integer|min:0',
+            'kemasan_jumlah' => 'nullable|numeric|min:0',
+            'kemasan_satuan' => 'nullable|string|max:50',
             'unsur_bahan' => 'nullable|string|max:255',
             'fase' => 'nullable|string|in:Vegetatif,Generatif,Semua Fase',
             'foto_nota' => 'nullable',
