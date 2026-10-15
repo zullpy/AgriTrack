@@ -615,4 +615,46 @@ class KalenderHstTest extends TestCase
         $showResponse->assertStatus(200);
         $showResponse->assertSee('Total Kotor: Rp 500.000');
     }
+
+    public function test_medicine_cost_divided_by_population_calculation_and_display(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'Tomat Servo',
+            'varietas' => 'F1',
+            'populasi' => '1.250 Tanaman',
+            'tanggal_tanam' => Carbon::now()->subDays(10)->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        $this->assertEquals(1250.0, $crop->numeric_populasi);
+        $this->assertEquals('tanaman', $crop->populasi_unit_label);
+        $this->assertEquals('1.250 Tanaman', $crop->formatted_populasi_label);
+
+        // Buat kegiatan dengan total_biaya_obat = 25.000 (2 tank x 12.500)
+        // 25.000 / 1250 = 20 / tanaman
+        $activity = CropActivity::create([
+            'crop_id' => $crop->id,
+            'target_hst' => 5,
+            'nama_kegiatan' => 'Penyemprotan Fungisida',
+            'aplikasi_obat' => 'Antracol: 20 gram (Rp 25.000)',
+            'jumlah_tank' => 2,
+            'total_biaya_obat' => 25000,
+            'status' => 'Selesai',
+        ]);
+
+        $this->assertEquals(20.0, $activity->biaya_per_populasi);
+        $this->assertEquals('Rp 20 / tanaman', $activity->formatted_biaya_per_populasi);
+
+        // Medicine summary
+        $summary = $crop->medicine_summary;
+        $this->assertEquals(25000.0, $summary['total_biaya']);
+        $this->assertEquals(20.0, $summary['biaya_per_populasi']);
+        $this->assertEquals('Rp 20 / tanaman', $summary['formatted_biaya_per_populasi']);
+
+        // Check show page output
+        $response = $this->get("/kalender-hst/tanaman/{$crop->id}");
+        $response->assertStatus(200);
+        $response->assertSee('Biaya per Populasi:');
+        $response->assertSee('Rp 20 / tanaman');
+    }
 }

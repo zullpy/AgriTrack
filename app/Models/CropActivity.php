@@ -133,4 +133,31 @@ class CropActivity extends Model
 
         return $valStr.' Tank';
     }
+
+    public function getBiayaPerPopulasiAttribute(): ?float
+    {
+        $totalBiaya = (float) ($this->total_biaya_obat ?? 0);
+        if ($totalBiaya <= 0) {
+            return null;
+        }
+
+        $populasi = (float) ($this->crop?->numeric_populasi ?? 0);
+        if ($populasi <= 0) {
+            return null;
+        }
+
+        return round($totalBiaya / $populasi, 2);
+    }
+
+    public function getFormattedBiayaPerPopulasiAttribute(): ?string
+    {
+        $val = $this->biaya_per_populasi;
+        if ($val === null || $val <= 0) {
+            return null;
+        }
+
+        $unit = $this->crop?->populasi_unit_label ?? 'tanaman';
+
+        return Crop::formatRupiahPerUnit($val, $unit);
+    }
 }

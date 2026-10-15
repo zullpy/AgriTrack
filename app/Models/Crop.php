@@ -30,6 +30,9 @@ class Crop extends Model
         'harvest_count',
         'total_pendapatan_kotor',
         'formatted_total_pendapatan_kotor',
+        'numeric_populasi',
+        'populasi_unit_label',
+        'formatted_populasi_label',
     ];
 
     protected function casts(): array
@@ -116,6 +119,90 @@ class Crop extends Model
         }
 
         return (int) $plantDate->diffInDays($targetDate);
+    }
+
+    /**
+     * Parsing angka populasi dari string (misal: "2.500 Pohon" -> 2500, "1250" -> 1250).
+     */
+    public function getNumericPopulasiAttribute(): float
+    {
+        if (empty($this->populasi)) {
+            return 0.0;
+        }
+
+        $raw = (string) $this->populasi;
+
+        // Ambil bagian angka pertama termasuk pemisah ribuan/desimal
+        if (! preg_match('/([\d]+(?:[.,]\d+)*)/', $raw, $matches)) {
+            return 0.0;
+        }
+
+        $numStr = $matches[1];
+
+        // Format Indonesia ribuan dengan titik (misal "2.500", "10.000", "1.250.000")
+        if (str_contains($numStr, '.') && ! str_contains($numStr, ',')) {
+            if (preg_match('/^\d{1,3}(\.\d{3})+$/', $numStr)) {
+                $numStr = str_replace('.', '', $numStr);
+            }
+        } elseif (str_contains($numStr, '.') && str_contains($numStr, ',')) {
+            // misal 1.250,5
+            $numStr = str_replace('.', '', $numStr);
+            $numStr = str_replace(',', '.', $numStr);
+        } elseif (str_contains($numStr, ',')) {
+            // misal 1250,5 atau 2,5
+            $numStr = str_replace(',', '.', $numStr);
+        }
+
+        return (float) $numStr;
+    }
+
+    /**
+     * Dapatkan label satuan populasi (misal: "tanaman", "pohon", "polybag", "bibit").
+     */
+    public function getPopulasiUnitLabelAttribute(): string
+    {
+        if (empty($this->populasi)) {
+            return 'tanaman';
+        }
+
+        $raw = strtolower((string) $this->populasi);
+        if (preg_match('/\b(pohon|tanaman|batang|bibit|polybag|rumpun|pokok|ha|hektar)\b/i', $raw, $m)) {
+            return strtolower($m[1]);
+        }
+
+        return 'tanaman';
+    }
+
+    /**
+     * Label populasi rapi untuk ditampilkan.
+     */
+    public function getFormattedPopulasiLabelAttribute(): string
+    {
+        $num = $this->numeric_populasi;
+        $unit = $this->populasi_unit_label;
+        if ($num <= 0) {
+            return ! empty($this->populasi) ? $this->populasi : 'Populasi belum diatur';
+        }
+
+        $formattedNum = number_format($num, 0, ',', '.');
+
+        return "{$formattedNum} ".ucfirst($unit);
+    }
+
+    /**
+     * Format nilai rupiah per satuan populasi secara rapi.
+     */
+    public static function formatRupiahPerUnit(float $amount, string $unit = 'tanaman'): string
+    {
+        if ($amount <= 0) {
+            return 'Rp 0 / '.$unit;
+        }
+
+        $fmt = $amount == (int) $amount
+            ? number_format($amount, 0, ',', '.')
+            : ($amount >= 100 ? number_format($amount, 1, ',', '.') : number_format($amount, 2, ',', '.'));
+
+        return 'Rp '.$fmt.' / '.$unit;
     }
 
     /**
@@ -346,6 +433,9 @@ class Crop extends Model
             $totalBiayaAkumulasi += ($rowExplicitBiaya > 0 ? $rowExplicitBiaya : $rowParsedBiayaTotal);
         }
 
+        $numPop = $this->numeric_populasi;
+        $unitLabel = $this->populasi_unit_label;
+
         foreach ($aggregated as &$item) {
             $doseParts = [];
             foreach ($item['total_dosis_qty'] as $u => $qty) {
@@ -356,16 +446,26 @@ class Crop extends Model
             $item['formatted_total_biaya'] = $item['total_biaya'] > 0 ? 'Rp '.number_format($item['total_biaya'], 0, ',', '.') : '—';
             $fmtTank = (float) $item['total_tank'] == (int) $item['total_tank'] ? (string) (int) $item['total_tank'] : (string) $item['total_tank'];
             $item['formatted_total_tank'] = $fmtTank.' Tank';
+
+            // Biaya per populasi untuk tiap jenis obat
+            $itemPerPop = ($numPop > 0 && $item['total_biaya'] > 0) ? round($item['total_biaya'] / $numPop, 2) : 0.0;
+            $item['biaya_per_populasi'] = $itemPerPop;
+            $item['formatted_biaya_per_populasi'] = $itemPerPop > 0 ? self::formatRupiahPerUnit($itemPerPop, $unitLabel) : '—';
         }
         unset($item);
 
         uasort($aggregated, fn ($a, $b) => $b['total_biaya'] <=> $a['total_biaya'] ?: $b['frekuensi'] <=> $a['frekuensi']);
 
         $fmtOverallTank = (float) $totalTankCount == (int) $totalTankCount ? (string) (int) $totalTankCount : (string) round($totalTankCount, 1);
+        $biayaPerPopulasiAkumulasi = ($numPop > 0 && $totalBiayaAkumulasi > 0) ? round($totalBiayaAkumulasi / $numPop, 2) : 0.0;
 
         return [
             'total_biaya' => $totalBiayaAkumulasi,
             'formatted_total_biaya' => $totalBiayaAkumulasi > 0 ? 'Rp '.number_format($totalBiayaAkumulasi, 0, ',', '.') : 'Rp 0',
+            'biaya_per_populasi' => $biayaPerPopulasiAkumulasi,
+            'formatted_biaya_per_populasi' => $biayaPerPopulasiAkumulasi > 0 ? self::formatRupiahPerUnit($biayaPerPopulasiAkumulasi, $unitLabel) : '—',
+            'numeric_populasi' => $numPop,
+            'populasi_unit' => $unitLabel,
             'total_aplikasi_count' => $totalAplikasiCount,
             'total_tank_count' => $totalTankCount,
             'formatted_total_tank' => $fmtOverallTank.' Tank',

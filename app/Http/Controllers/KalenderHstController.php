@@ -374,6 +374,8 @@ class KalenderHstController extends Controller
             },
         ]);
 
+        $crop->activities->each(fn ($act) => $act->setRelation('crop', $crop));
+
         $currentHst = $crop->current_hst;
         $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
 

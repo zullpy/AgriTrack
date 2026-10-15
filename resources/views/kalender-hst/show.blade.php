@@ -314,7 +314,14 @@
                             <span class="text-lg sm:text-xl font-black text-emerald-950 mt-0.5 block">
                                 {{ $medicineSummary['formatted_total_biaya'] }}
                             </span>
-                            <span class="text-[10px] text-emerald-700 font-medium">Estimasi pengeluaran obat</span>
+                            @if (!empty($medicineSummary['formatted_biaya_per_populasi']) && $medicineSummary['formatted_biaya_per_populasi'] !== '—')
+                                <div class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded-md border border-teal-200 mt-1" title="Total biaya obat dibagi populasi tanaman">
+                                    <span>≈ {{ $medicineSummary['formatted_biaya_per_populasi'] }}</span>
+                                    <span class="text-[10px] text-teal-700 font-normal">({{ $crop->formatted_populasi_label }})</span>
+                                </div>
+                            @else
+                                <span class="text-[10px] text-emerald-700 font-medium">Estimasi pengeluaran obat</span>
+                            @endif
                         </div>
                         <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -410,7 +417,14 @@
                                                 <span class="px-2 py-0.5 rounded-lg bg-gray-100 font-mono text-[11px] text-gray-800">{{ $item['total_dosis_text'] }}</span>
                                             </td>
                                             <td class="py-3 px-3.5 text-right font-black text-emerald-800">
-                                                {{ $item['formatted_total_biaya'] }}
+                                                <span>{{ $item['formatted_total_biaya'] }}</span>
+                                                @if (!empty($item['formatted_biaya_per_populasi']) && $item['formatted_biaya_per_populasi'] !== '—')
+                                                    <div class="mt-0.5">
+                                                        <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200 whitespace-nowrap" title="Biaya per {{ $crop->populasi_unit_label }}">
+                                                            {{ $item['formatted_biaya_per_populasi'] }}
+                                                        </span>
+                                                    </div>
+                                                @endif
                                             </td>
                                             <td class="py-3 px-3.5 text-center">
                                                 <div class="flex items-center justify-center gap-1 flex-wrap max-w-xs mx-auto">
@@ -425,6 +439,32 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
+                                <tfoot class="bg-gray-50/80 border-t border-gray-200">
+                                    <tr class="text-xs">
+                                        <td colspan="2" class="py-2.5 px-3.5 font-bold text-gray-700">
+                                            Subtotal
+                                        </td>
+                                        <td class="py-2.5 px-3.5 text-center text-gray-400 font-normal">
+                                            —
+                                        </td>
+                                        <td class="py-2.5 px-3.5 text-center text-gray-400 font-normal">
+                                            —
+                                        </td>
+                                        <td class="py-2.5 px-3.5 text-right">
+                                            <span class="font-bold text-gray-900 text-xs block leading-tight">{{ $medicineSummary['formatted_total_biaya'] }}</span>
+                                            @if (!empty($medicineSummary['formatted_biaya_per_populasi']) && $medicineSummary['formatted_biaya_per_populasi'] !== '—')
+                                                <div class="mt-0.5">
+                                                    <span class="inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold bg-teal-50 text-teal-800 border border-teal-200 whitespace-nowrap" title="Total akumulasi biaya obat dibagi populasi ({{ $crop->formatted_populasi_label }})">
+                                                        ≈ {{ $medicineSummary['formatted_biaya_per_populasi'] }}
+                                                    </span>
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td class="py-2.5 px-3.5 text-center text-gray-400 font-normal">
+                                            —
+                                        </td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -704,6 +744,11 @@
                                                                     </svg>
                                                                     <span>Total: {{ $act->formatted_total_biaya_obat }}</span>
                                                                 </span>
+                                                                @if ($act->formatted_biaya_per_populasi)
+                                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200" title="Biaya per {{ $crop->populasi_unit_label }}: {{ $act->formatted_total_biaya_obat }} ÷ {{ $crop->formatted_populasi_label }}">
+                                                                        <span>{{ $act->formatted_biaya_per_populasi }}</span>
+                                                                    </span>
+                                                                @endif
                                                             @endif
                                                         </div>
                                                     @endif
@@ -1029,10 +1074,22 @@
                                     0 Obat
                                 </span>
                             </div>
+                            <div class="flex items-center gap-1.5 text-xs flex-wrap">
+                                <span class="text-teal-800 font-semibold">Biaya per Populasi:</span>
+                                <span id="add-obat-per-populasi-display" class="font-extrabold text-teal-900">Rp 0 / {{ $crop->populasi_unit_label }}</span>
+                                @if ($crop->numeric_populasi > 0)
+                                    <span class="text-[11px] text-gray-500 font-normal">({{ $crop->formatted_populasi_label }})</span>
+                                @else
+                                    <span class="text-[11px] text-amber-700 font-medium">(Populasi belum diatur)</span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-emerald-200/60">
+                        <div class="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-0.5 border-t sm:border-t-0 pt-2 sm:pt-0 border-emerald-200/60 shrink-0">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Total Biaya Obat</span>
                             <span id="add-obat-total-display" class="font-black text-emerald-700 text-base sm:text-lg">Rp 0</span>
+                            <span id="add-obat-total-per-pop-badge" class="text-[11px] font-bold text-teal-700 hidden sm:inline">
+                                ≈ Rp 0 / {{ $crop->populasi_unit_label }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -1258,10 +1315,22 @@
                                     0 Obat
                                 </span>
                             </div>
+                            <div class="flex items-center gap-1.5 text-xs flex-wrap">
+                                <span class="text-teal-800 font-semibold">Biaya per Populasi:</span>
+                                <span id="edit-obat-per-populasi-display" class="font-extrabold text-teal-900">Rp 0 / {{ $crop->populasi_unit_label }}</span>
+                                @if ($crop->numeric_populasi > 0)
+                                    <span class="text-[11px] text-gray-500 font-normal">({{ $crop->formatted_populasi_label }})</span>
+                                @else
+                                    <span class="text-[11px] text-amber-700 font-medium">(Populasi belum diatur)</span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-emerald-200/60">
+                        <div class="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-0.5 border-t sm:border-t-0 pt-2 sm:pt-0 border-emerald-200/60 shrink-0">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Total Biaya Obat</span>
                             <span id="edit-obat-total-display" class="font-black text-emerald-700 text-base sm:text-lg">Rp 0</span>
+                            <span id="edit-obat-total-per-pop-badge" class="text-[11px] font-bold text-teal-700 hidden sm:inline">
+                                ≈ Rp 0 / {{ $crop->populasi_unit_label }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -1704,6 +1773,22 @@
 <script>
     const PLANT_DATE_STRING = '{{ $crop->tanggal_tanam->toDateString() }}';
     const PLANT_DATE = new Date(PLANT_DATE_STRING + 'T00:00:00');
+    const CROP_NUMERIC_POPULASI = {{ (float) ($crop->numeric_populasi ?? 0) }};
+    const CROP_POPULASI_UNIT = '{{ addslashes($crop->populasi_unit_label ?? "tanaman") }}';
+    const CROP_POPULASI_RAW = '{{ addslashes($crop->populasi ?? "") }}';
+
+    function formatRupiahPerPopulasi(amount, unit = 'tanaman') {
+        if (isNaN(amount) || amount <= 0) return `Rp 0 / ${unit}`;
+        let formattedVal;
+        if (Math.abs(amount - Math.round(amount)) < 0.001) {
+            formattedVal = Math.round(amount).toLocaleString('id-ID');
+        } else if (amount >= 100) {
+            formattedVal = amount.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        } else {
+            formattedVal = amount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        return `Rp ${formattedVal} / ${unit}`;
+    }
 
     function formatDateToString(d) {
         const year = d.getFullYear();
@@ -2236,6 +2321,23 @@
         if (tankDisplay) tankDisplay.textContent = `x ${fmtTank} Tank`;
         if (totalDisplay) totalDisplay.textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
         if (countBadge) countBadge.textContent = `${summaryItems.length} Obat`;
+
+        // Hitung biaya per populasi: Total Biaya Obat ÷ Populasi
+        const perPopDisplay = document.getElementById(`${prefix}-obat-per-populasi-display`);
+        const perPopBadge = document.getElementById(`${prefix}-obat-total-per-pop-badge`);
+
+        if (CROP_NUMERIC_POPULASI > 0) {
+            const perPopVal = grandTotal > 0 ? (grandTotal / CROP_NUMERIC_POPULASI) : 0;
+            const formattedPerPop = formatRupiahPerPopulasi(perPopVal, CROP_POPULASI_UNIT);
+            if (perPopDisplay) perPopDisplay.textContent = formattedPerPop;
+            if (perPopBadge) {
+                perPopBadge.textContent = `≈ ${formattedPerPop}`;
+                perPopBadge.classList.remove('hidden');
+            }
+        } else {
+            if (perPopDisplay) perPopDisplay.textContent = '— (Populasi belum diatur)';
+            if (perPopBadge) perPopBadge.classList.add('hidden');
+        }
 
         if (hiddenTotalBiaya) {
             hiddenTotalBiaya.value = grandTotal;
