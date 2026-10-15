@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\LandPreparationStep;
 use App\Models\PlantingSeed;
 use App\Models\PlantingStep;
+use App\Models\StepNote;
 use App\Services\CloudinaryService;
 use App\Services\ImageCompressionService;
 use Database\Seeders\LandPreparationStepSeeder;
 use Database\Seeders\PlantingSeedSeeder;
+use Database\Seeders\StepNoteSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -529,5 +531,51 @@ class StepController extends Controller
         return redirect()->route('steps.penanaman-bibit')
             ->with('active_seed_id', $step->planting_seed_id)
             ->with('success', 'Foto berhasil dihapus dari sistem dan penyimpanan.');
+    }
+
+    public function catatan(): View
+    {
+        if (StepNote::count() === 0) {
+            (new StepNoteSeeder)->run();
+        }
+
+        $notes = StepNote::latest()->get();
+
+        return view('steps.catatan', compact('notes'));
+    }
+
+    public function storeCatatan(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'judul' => 'required|string|max:255',
+            'catatan' => 'required|string',
+        ]);
+
+        $note = StepNote::create($validated);
+
+        return redirect()->route('steps.catatan')
+            ->with('success', "Catatan penting '{$note->judul}' berhasil ditambahkan.");
+    }
+
+    public function updateCatatan(Request $request, StepNote $note): RedirectResponse
+    {
+        $validated = $request->validate([
+            'judul' => 'required|string|max:255',
+            'catatan' => 'required|string',
+        ]);
+
+        $note->update($validated);
+
+        return redirect()->route('steps.catatan')
+            ->with('success', "Catatan penting '{$note->judul}' berhasil diperbarui.");
+    }
+
+    public function destroyCatatan(StepNote $note): RedirectResponse
+    {
+        $judul = $note->judul;
+        $note->delete();
+
+        return redirect()->route('steps.catatan')
+            ->with('success', "Catatan penting '{$judul}' berhasil dihapus.");
     }
 }

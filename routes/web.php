@@ -53,6 +53,12 @@ Route::delete('/steps/penanaman-bibit/steps/{step}', [StepController::class, 'de
 Route::post('/steps/penanaman-bibit/steps/{step}/foto', [StepController::class, 'uploadPhotoPlantingStep'])->name('steps.penanaman-bibit.steps.foto.upload');
 Route::delete('/steps/penanaman-bibit/steps/{step}/foto', [StepController::class, 'destroyPhotoPlantingStep'])->name('steps.penanaman-bibit.steps.foto.destroy');
 
+// Catatan Penting Budidaya
+Route::get('/steps/catatan', [StepController::class, 'catatan'])->name('steps.catatan');
+Route::post('/steps/catatan', [StepController::class, 'storeCatatan'])->name('steps.catatan.store');
+Route::put('/steps/catatan/{note}', [StepController::class, 'updateCatatan'])->name('steps.catatan.update');
+Route::delete('/steps/catatan/{note}', [StepController::class, 'destroyCatatan'])->name('steps.catatan.destroy');
+
 // Keuangan
 Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');
 Route::post('/keuangan', [KeuanganController::class, 'store'])->name('keuangan.store');

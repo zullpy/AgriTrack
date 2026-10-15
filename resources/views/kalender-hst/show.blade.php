@@ -194,14 +194,14 @@
         </div>
 
         {{-- ── Action Bar ── --}}
-        <div class="p-3 sm:p-4 bg-gray-50/90 border-t border-gray-200 flex items-center justify-between gap-3 text-xs">
-            <div class="flex items-center gap-2">
-                <span class="font-bold text-gray-700 uppercase tracking-wider text-[11px]">Log Kegiatan Per HST</span>
+        <div class="p-3 sm:p-4 bg-gray-50/90 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+            <div class="flex items-center justify-between sm:justify-start gap-2 flex-wrap">
+                <span class="font-bold text-gray-700 uppercase tracking-wider text-[11px] whitespace-nowrap">Log Kegiatan Per HST</span>
                 @if ($medicineSummary['total_aplikasi_count'] > 0)
                     <button type="button"
                             onclick="switchDetailTab('obat')"
-                            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors cursor-pointer">
-                        <svg class="w-3 h-3 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors cursor-pointer shrink-0 whitespace-nowrap">
+                        <svg class="w-3 h-3 text-emerald-700 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="6" width="18" height="15" rx="3"/>
                             <path d="M8 2h8v4H8z"/>
                             <path d="M12 10v7m-3.5-3.5h7"/>
@@ -213,14 +213,14 @@
             @if ($crop->status === 'Sedang Ditanam')
                 <button type="button"
                         onclick="openAddActivityModal({{ $currentHst }})"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0 cursor-pointer">
+                        class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 rounded-xl sm:rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0 cursor-pointer w-full sm:w-auto text-xs sm:text-sm">
                     <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                     </svg>
                     <span>Catat Kegiatan</span>
                 </button>
             @else
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gray-100 border border-gray-200 text-text-secondary font-medium text-[11px]">
+                <span class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-text-secondary font-medium text-[11px] w-full sm:w-auto">
                     <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
                     </svg>
@@ -234,31 +234,35 @@
     @php
         $detailTab = request('tab', 'kalender');
     @endphp
-    <div class="flex items-center gap-2 mb-6 border-b border-gray-200/80 pb-3 overflow-x-auto">
+    <div class="flex items-center gap-2 mb-6 border-b border-gray-200/80 pb-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         <button type="button"
                 onclick="switchDetailTab('kalender')"
                 id="btn-detail-tab-kalender"
-                class="detail-tab-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ $detailTab === 'kalender' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
-            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                class="detail-tab-button inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 whitespace-nowrap {{ $detailTab === 'kalender' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
+            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
             </svg>
             <span>Log Kalender HST</span>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700">{{ count($tableRows) }} Hari</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700 shrink-0">
+                {{ count($tableRows) }} Hari
+            </span>
         </button>
 
         <button type="button"
                 onclick="switchDetailTab('obat')"
                 id="btn-detail-tab-obat"
-                class="detail-tab-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ $detailTab === 'obat' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
-            <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                class="detail-tab-button inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 whitespace-nowrap {{ $detailTab === 'obat' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
+            <svg class="w-4 h-4 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="6" width="18" height="15" rx="3"/>
                 <path d="M8 2h8v4H8z"/>
                 <path d="M12 10v7m-3.5-3.5h7"/>
             </svg>
-            <span>Rangkuman Pemakaian Obat</span>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                {{ $medicineSummary['total_jenis_obat'] }} Obat ({{ $medicineSummary['formatted_total_biaya'] }})
-            </span>
+            <span>Rangkuman Obat</span>
+            @if ($medicineSummary['total_aplikasi_count'] > 0)
+                <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-100 text-emerald-800 shrink-0">
+                    <span class="hidden sm:inline">{{ $medicineSummary['total_jenis_obat'] }} Obat • </span>{{ $medicineSummary['formatted_total_biaya'] }}
+                </span>
+            @endif
         </button>
     </div>
 
@@ -927,23 +931,28 @@
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- MODAL: TAMBAH KEGIATAN (KEGIATAN, OBAT, SASARAN, KETERANGAN) --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
-<div id="modal-add-activity" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-gray-200 max-h-[92vh] overflow-y-auto">
-        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+<div id="modal-add-activity" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-gray-200 max-h-[92vh] flex flex-col overflow-hidden">
+        {{-- Header Modal (Fixed / Diam tidak ikut ter-scroll) --}}
+        <div class="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100 bg-white shrink-0">
             <div>
                 <h3 class="text-base font-bold text-gray-900">Catat Log Kegiatan Perawatan</h3>
                 <p class="text-xs text-text-muted mt-0.5">Komoditas: {{ $crop->nama_tanaman }} ({{ $crop->varietas ?? 'Tanpa Varietas' }})</p>
             </div>
-            <button type="button" onclick="closeModal('modal-add-activity')" class="text-gray-400 hover:text-gray-600">
+            <button type="button" onclick="closeModal('modal-add-activity')" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer" title="Tutup">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
         </div>
 
-        <form id="form-add-activity" method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/kegiatan" enctype="multipart/form-data" class="mt-4 space-y-4">
+        {{-- Form & Scrollable Body --}}
+        <form id="form-add-activity" method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/kegiatan" enctype="multipart/form-data" class="flex-1 flex flex-col min-h-0">
             @csrf
             <input type="hidden" name="redirect_to" value="show">
+
+            {{-- Area Scrollable Konten Form --}}
+            <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-4">
 
             {{-- Synchronized HST and Date --}}
             <div class="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2">
@@ -1023,20 +1032,20 @@
 
                 {{-- Kontrol Jumlah Tank & Total Estimasi Biaya Obat --}}
                 <div class="rounded-xl border border-emerald-200 bg-white p-3 space-y-2.5 shadow-2xs">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="space-y-0.5">
-                            <label for="add-jumlah-tank" class="block text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="space-y-0.5 min-w-0">
+                            <label for="add-jumlah-tank" class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                                 </svg>
                                 <span>Jumlah Tank Semprot</span>
                             </label>
                             <p class="text-[11px] text-gray-500">
-                                Takaran dosis per baris obat di atas dihitung untuk 1 tangki semprot (±16 Liter).
+                                Takaran dosis dihitung untuk 1 tangki semprot (±16L).
                             </p>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <div class="inline-flex items-center rounded-xl border border-gray-300 bg-gray-50 p-1 shadow-2xs">
+                        <div class="shrink-0">
+                            <div class="inline-flex items-center rounded-xl border border-gray-300 bg-gray-50 p-0.5 shadow-2xs">
                                 <button type="button"
                                         onclick="stepTank('add', -1)"
                                         class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-bold border border-gray-200 text-sm cursor-pointer transition-colors shadow-2xs"
@@ -1049,9 +1058,9 @@
                                        value="1"
                                        min="0.1"
                                        step="any"
-                                       class="w-14 text-center font-black text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none p-0"
+                                       class="w-12 text-center font-black text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none p-0"
                                        oninput="updateObatSummary('add')">
-                                <span class="text-xs font-bold text-gray-500 pr-2">Tank</span>
+                                <span class="text-xs font-bold text-gray-500 pr-1.5">Tank</span>
                                 <button type="button"
                                         onclick="stepTank('add', 1)"
                                         class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-bold border border-gray-200 text-sm cursor-pointer transition-colors shadow-2xs"
@@ -1063,33 +1072,41 @@
                     </div>
 
                     {{-- Total Summary Bar --}}
-                    <div id="add-obat-total-bar" class="p-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-xs flex-wrap">
-                                <span class="text-gray-600 font-medium">Subtotal Dosis / Tank:</span>
-                                <span id="add-obat-subtotal-display" class="font-bold text-gray-900">Rp 0</span>
-                                <span id="add-obat-tank-display" class="text-xs font-bold text-emerald-800">x 1 Tank</span>
-                                <span class="text-gray-400">•</span>
-                                <span class="text-[10px] text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full font-bold" id="add-obat-count-badge">
-                                    0 Obat
-                                </span>
+                    <div id="add-obat-total-bar" class="p-3 sm:p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/90 to-teal-50/90 border border-emerald-200/90 shadow-2xs space-y-2 text-xs">
+                        {{-- Baris 1: Subtotal Dosis per Tank --}}
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="text-gray-600 font-medium">Subtotal Dosis / Tank</span>
+                                <span id="add-obat-count-badge" class="text-[10px] bg-emerald-100/90 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold shrink-0">0 Obat</span>
                             </div>
-                            <div class="flex items-center gap-1.5 text-xs flex-wrap">
-                                <span class="text-teal-800 font-semibold">Biaya per Populasi:</span>
-                                <span id="add-obat-per-populasi-display" class="font-extrabold text-teal-900">Rp 0 / {{ $crop->populasi_unit_label }}</span>
-                                @if ($crop->numeric_populasi > 0)
-                                    <span class="text-[11px] text-gray-500 font-normal">({{ $crop->formatted_populasi_label }})</span>
-                                @else
-                                    <span class="text-[11px] text-amber-700 font-medium">(Populasi belum diatur)</span>
-                                @endif
+                            <div class="text-right shrink-0 whitespace-nowrap">
+                                <span id="add-obat-subtotal-display" class="font-bold text-gray-900">Rp 0</span>
+                                <span id="add-obat-tank-display" class="text-[11px] font-semibold text-emerald-800 ml-1">× 1 Tank</span>
                             </div>
                         </div>
-                        <div class="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-0.5 border-t sm:border-t-0 pt-2 sm:pt-0 border-emerald-200/60 shrink-0">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Total Biaya Obat</span>
-                            <span id="add-obat-total-display" class="font-black text-emerald-700 text-base sm:text-lg">Rp 0</span>
-                            <span id="add-obat-total-per-pop-badge" class="text-[11px] font-bold text-teal-700 hidden sm:inline">
-                                ≈ Rp 0 / {{ $crop->populasi_unit_label }}
-                            </span>
+
+                        {{-- Baris 2: Biaya per Populasi --}}
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1 min-w-0">
+                                <span class="text-teal-800 font-medium">Biaya per Populasi:</span>
+                                @if ($crop->numeric_populasi > 0)
+                                    <span class="text-[10px] text-gray-400">({{ $crop->formatted_populasi_label }})</span>
+                                @endif
+                            </div>
+                            <div class="text-right shrink-0 whitespace-nowrap">
+                                <span id="add-obat-per-populasi-display" class="font-extrabold text-teal-900">Rp 0 / {{ $crop->populasi_unit_label }}</span>
+                            </div>
+                        </div>
+
+                        {{-- Baris 3: Total Biaya Obat (Highlighted) --}}
+                        <div class="pt-2 border-t border-emerald-200/70 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-950 block">Total Biaya Obat</span>
+                                <span class="text-[10px] text-gray-500 font-medium block">Otomatis masuk ke pengeluaran</span>
+                            </div>
+                            <div class="text-right shrink-0 whitespace-nowrap">
+                                <span id="add-obat-total-display" class="font-black text-emerald-700 text-lg sm:text-xl whitespace-nowrap block leading-tight">Rp 0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1159,14 +1176,17 @@
                 <div id="add-photo-preview-grid" class="grid grid-cols-5 gap-2 pt-1 hidden"></div>
             </div>
 
-            <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+            </div>
+
+            {{-- Footer Modal (Fixed / Pinned di bawah) --}}
+            <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/90 shrink-0">
                 <button type="button"
                         onclick="closeModal('modal-add-activity')"
-                        class="px-4 py-2 rounded-xl border border-gray-200 text-text-secondary hover:bg-gray-50 text-xs font-semibold">
+                        class="px-4 py-2 rounded-xl border border-gray-200 text-text-secondary hover:bg-gray-100 text-xs font-semibold transition-colors cursor-pointer">
                     Batal
                 </button>
                 <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-sm">
+                        class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer">
                     Simpan Kegiatan
                 </button>
             </div>
@@ -1177,23 +1197,28 @@
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- MODAL: EDIT KEGIATAN                                         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
-<div id="modal-edit-activity" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-gray-200 max-h-[92vh] overflow-y-auto">
-        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+<div id="modal-edit-activity" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-gray-200 max-h-[92vh] flex flex-col overflow-hidden">
+        {{-- Header Modal (Fixed / Diam tidak ikut ter-scroll) --}}
+        <div class="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100 bg-white shrink-0">
             <div>
                 <h3 class="text-base font-bold text-gray-900">Edit Kegiatan Perawatan</h3>
                 <p class="text-xs text-text-muted mt-0.5">Perbarui jadwal atau rincian aplikasi obat</p>
             </div>
-            <button type="button" onclick="closeModal('modal-edit-activity')" class="text-gray-400 hover:text-gray-600">
+            <button type="button" onclick="closeModal('modal-edit-activity')" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer" title="Tutup">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
         </div>
 
-        <form id="form-edit-activity" method="POST" action="" enctype="multipart/form-data" class="mt-4 space-y-4">
+        {{-- Form & Scrollable Body --}}
+        <form id="form-edit-activity" method="POST" action="" enctype="multipart/form-data" class="flex-1 flex flex-col min-h-0">
             @csrf
             @method('PUT')
+
+            {{-- Area Scrollable Konten Form --}}
+            <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-4">
 
             {{-- Synchronized HST and Date --}}
             <div class="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2">
@@ -1264,20 +1289,20 @@
 
                 {{-- Kontrol Jumlah Tank & Total Estimasi Biaya Obat (Edit Mode) --}}
                 <div class="rounded-xl border border-emerald-200 bg-white p-3 space-y-2.5 shadow-2xs">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="space-y-0.5">
-                            <label for="edit-jumlah-tank" class="block text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="space-y-0.5 min-w-0">
+                            <label for="edit-jumlah-tank" class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                                 </svg>
                                 <span>Jumlah Tank Semprot</span>
                             </label>
                             <p class="text-[11px] text-gray-500">
-                                Takaran dosis per baris obat di atas dihitung untuk 1 tangki semprot (±16 Liter).
+                                Takaran dosis dihitung untuk 1 tangki semprot (±16L).
                             </p>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <div class="inline-flex items-center rounded-xl border border-gray-300 bg-gray-50 p-1 shadow-2xs">
+                        <div class="shrink-0">
+                            <div class="inline-flex items-center rounded-xl border border-gray-300 bg-gray-50 p-0.5 shadow-2xs">
                                 <button type="button"
                                         onclick="stepTank('edit', -1)"
                                         class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-bold border border-gray-200 text-sm cursor-pointer transition-colors shadow-2xs"
@@ -1290,9 +1315,9 @@
                                        value="1"
                                        min="0.1"
                                        step="any"
-                                       class="w-14 text-center font-black text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none p-0"
+                                       class="w-12 text-center font-black text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none p-0"
                                        oninput="updateObatSummary('edit')">
-                                <span class="text-xs font-bold text-gray-500 pr-2">Tank</span>
+                                <span class="text-xs font-bold text-gray-500 pr-1.5">Tank</span>
                                 <button type="button"
                                         onclick="stepTank('edit', 1)"
                                         class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-bold border border-gray-200 text-sm cursor-pointer transition-colors shadow-2xs"
@@ -1304,33 +1329,41 @@
                     </div>
 
                     {{-- Total Summary Bar --}}
-                    <div id="edit-obat-total-bar" class="p-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-xs flex-wrap">
-                                <span class="text-gray-600 font-medium">Subtotal Dosis / Tank:</span>
-                                <span id="edit-obat-subtotal-display" class="font-bold text-gray-900">Rp 0</span>
-                                <span id="edit-obat-tank-display" class="text-xs font-bold text-emerald-800">x 1 Tank</span>
-                                <span class="text-gray-400">•</span>
-                                <span class="text-[10px] text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full font-bold" id="edit-obat-count-badge">
-                                    0 Obat
-                                </span>
+                    <div id="edit-obat-total-bar" class="p-3 sm:p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/90 to-teal-50/90 border border-emerald-200/90 shadow-2xs space-y-2 text-xs">
+                        {{-- Baris 1: Subtotal Dosis per Tank --}}
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="text-gray-600 font-medium">Subtotal Dosis / Tank</span>
+                                <span id="edit-obat-count-badge" class="text-[10px] bg-emerald-100/90 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold shrink-0">0 Obat</span>
                             </div>
-                            <div class="flex items-center gap-1.5 text-xs flex-wrap">
-                                <span class="text-teal-800 font-semibold">Biaya per Populasi:</span>
-                                <span id="edit-obat-per-populasi-display" class="font-extrabold text-teal-900">Rp 0 / {{ $crop->populasi_unit_label }}</span>
-                                @if ($crop->numeric_populasi > 0)
-                                    <span class="text-[11px] text-gray-500 font-normal">({{ $crop->formatted_populasi_label }})</span>
-                                @else
-                                    <span class="text-[11px] text-amber-700 font-medium">(Populasi belum diatur)</span>
-                                @endif
+                            <div class="text-right shrink-0 whitespace-nowrap">
+                                <span id="edit-obat-subtotal-display" class="font-bold text-gray-900">Rp 0</span>
+                                <span id="edit-obat-tank-display" class="text-[11px] font-semibold text-emerald-800 ml-1">× 1 Tank</span>
                             </div>
                         </div>
-                        <div class="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-0.5 border-t sm:border-t-0 pt-2 sm:pt-0 border-emerald-200/60 shrink-0">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Total Biaya Obat</span>
-                            <span id="edit-obat-total-display" class="font-black text-emerald-700 text-base sm:text-lg">Rp 0</span>
-                            <span id="edit-obat-total-per-pop-badge" class="text-[11px] font-bold text-teal-700 hidden sm:inline">
-                                ≈ Rp 0 / {{ $crop->populasi_unit_label }}
-                            </span>
+
+                        {{-- Baris 2: Biaya per Populasi --}}
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1 min-w-0">
+                                <span class="text-teal-800 font-medium">Biaya per Populasi:</span>
+                                @if ($crop->numeric_populasi > 0)
+                                    <span class="text-[10px] text-gray-400">({{ $crop->formatted_populasi_label }})</span>
+                                @endif
+                            </div>
+                            <div class="text-right shrink-0 whitespace-nowrap">
+                                <span id="edit-obat-per-populasi-display" class="font-extrabold text-teal-900">Rp 0 / {{ $crop->populasi_unit_label }}</span>
+                            </div>
+                        </div>
+
+                        {{-- Baris 3: Total Biaya Obat (Highlighted) --}}
+                        <div class="pt-2 border-t border-emerald-200/70 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-950 block">Total Biaya Obat</span>
+                                <span class="text-[10px] text-gray-500 font-medium block">Otomatis masuk ke pengeluaran</span>
+                            </div>
+                            <div class="text-right shrink-0 whitespace-nowrap">
+                                <span id="edit-obat-total-display" class="font-black text-emerald-700 text-lg sm:text-xl whitespace-nowrap block leading-tight">Rp 0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1400,14 +1433,17 @@
                 <div id="edit-deleted-photos-container"></div>
             </div>
 
-            <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+            </div>
+
+            {{-- Footer Modal (Fixed / Pinned di bawah) --}}
+            <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/90 shrink-0">
                 <button type="button"
                         onclick="closeModal('modal-edit-activity')"
-                        class="px-4 py-2 rounded-xl border border-gray-200 text-text-secondary hover:bg-gray-50 text-xs font-semibold">
+                        class="px-4 py-2 rounded-xl border border-gray-200 text-text-secondary hover:bg-gray-100 text-xs font-semibold transition-colors cursor-pointer">
                     Batal
                 </button>
                 <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-sm">
+                        class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer">
                     Simpan Perubahan
                 </button>
             </div>
@@ -1802,6 +1838,10 @@
         if (m) {
             m.classList.remove('hidden');
             m.classList.add('flex');
+            const scrollBody = m.querySelector('.overflow-y-auto');
+            if (scrollBody) {
+                scrollBody.scrollTop = 0;
+            }
         }
     }
 
@@ -2318,7 +2358,7 @@
         const fmtTank = (Math.round(jumlahTank * 100) / 100).toString().replace('.', ',');
 
         if (subtotalDisplay) subtotalDisplay.textContent = 'Rp ' + subtotalPerTank.toLocaleString('id-ID');
-        if (tankDisplay) tankDisplay.textContent = `x ${fmtTank} Tank`;
+        if (tankDisplay) tankDisplay.textContent = `× ${fmtTank} Tank`;
         if (totalDisplay) totalDisplay.textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
         if (countBadge) countBadge.textContent = `${summaryItems.length} Obat`;
 
@@ -2335,7 +2375,7 @@
                 perPopBadge.classList.remove('hidden');
             }
         } else {
-            if (perPopDisplay) perPopDisplay.textContent = '— (Populasi belum diatur)';
+            if (perPopDisplay) perPopDisplay.textContent = '—';
             if (perPopBadge) perPopBadge.classList.add('hidden');
         }
 

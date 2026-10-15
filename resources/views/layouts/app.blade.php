@@ -418,6 +418,7 @@
                     $isStepsActive = request()->is('steps*');
                     $isPengolahanTanah = request()->is('steps/pengolahan-tanah*');
                     $isPenanamanBibit = request()->is('steps/penanaman-bibit*');
+                    $isCatatan = request()->is('steps/catatan*');
                 @endphp
                 <div class="space-y-1" id="tahapan-menu-wrapper">
                     <button type="button"
@@ -450,6 +451,13 @@
                                   {{ $isPenanamanBibit ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
                             <span class="w-1.5 h-1.5 rounded-full {{ $isPenanamanBibit ? 'bg-primary' : 'bg-gray-300' }}"></span>
                             <span>Tahapan Penanaman Bibit</span>
+                        </a>
+
+                        <a href="/steps/catatan"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isCatatan ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isCatatan ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Catatan Penting</span>
                         </a>
                     </div>
                 </div>

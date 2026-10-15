@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             MedicineCategorySeeder::class,
             MedicineSeeder::class,
             FinancialCategorySeeder::class,
+            StepNoteSeeder::class,
         ]);
     }
 }

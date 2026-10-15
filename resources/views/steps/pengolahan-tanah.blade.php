@@ -77,6 +77,10 @@
            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
             2. Penanaman Bibit
         </a>
+        <a href="/steps/catatan"
+           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
+            3. Catatan Penting
+        </a>
     </div>
 
     {{-- ── Petunjuk Praktis Foto Kamera HP ── --}}

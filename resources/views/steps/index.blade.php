@@ -28,10 +28,14 @@
            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
             2. Penanaman Bibit
         </a>
+        <a href="/steps/catatan"
+           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
+            3. Catatan Penting
+        </a>
     </div>
 
-    {{-- ── Main Two Phase Cards (Solid Colors, No Gradients, No Blur Glows) ── --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+    {{-- ── Main Cards (Solid Colors, Clean) ── --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
 
         {{-- Phase 1: Pengolahan Tanah --}}
         <div class="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-7 flex flex-col justify-between hover:border-amber-400 hover:shadow-md transition-all group">
@@ -129,6 +133,56 @@
                 <a href="/steps/penanaman-bibit"
                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs sm:text-sm font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
                     <span>Buka Panduan</span>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+
+        {{-- Phase 3: Catatan Penting --}}
+        <div class="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-7 flex flex-col justify-between hover:border-blue-400 hover:shadow-md transition-all group">
+            <div>
+                <div class="flex items-center justify-between gap-2 mb-4">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Fase 3: Catatan Khusus
+                    </span>
+                    <span class="text-xs font-semibold text-gray-400">Aturan Lapangan</span>
+                </div>
+
+                <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform border border-blue-200">
+                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.53-4h7.5m-7.5-4h3.75m-6.75-6.75H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                </div>
+
+                <h2 class="text-lg sm:text-xl font-extrabold text-gray-900 group-hover:text-blue-800 transition-colors">
+                    Catatan Penting
+                </h2>
+                <p class="text-xs sm:text-sm text-gray-600 mt-2 leading-relaxed">
+                    Kumpulan panduan kehati-hatian, waktu semprot, sanitasi tangki, dan instruksi penting lapangan yang dapat Anda tambah, edit, atau sesuaikan sewaktu-waktu.
+                </p>
+
+                <div class="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-medium text-gray-600">
+                        <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>Waktu Aplikasi Semprot & Ketahanan Cuaca</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-medium text-gray-600">
+                        <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>Standar Kualitas Air Pelarut Obat & Tangki</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-medium text-gray-600">
+                        <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>Pencegahan Kontaminasi & Keracunan Herbisida</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                <span class="text-xs font-medium text-gray-500">Kelola & Catat Bebas</span>
+                <a href="/steps/catatan"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition-all shadow-xs">
+                    <span>Buka Catatan</span>
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                 </a>
             </div>
