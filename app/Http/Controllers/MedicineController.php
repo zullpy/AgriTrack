@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -647,6 +648,10 @@ class MedicineController extends Controller
             }
 
             $validated['deskripsi'] = ! empty($validated['deskripsi']) ? trim((string) $validated['deskripsi']) : null;
+
+            if (empty($validated['id'])) {
+                $validated['id'] = ((int) DB::table('medicine_categories')->max('id')) + 1;
+            }
 
             $category = MedicineCategory::create($validated);
 

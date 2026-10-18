@@ -19,6 +19,7 @@ class MedicineCategory extends Model
     protected static bool $tableChecked = false;
 
     protected $fillable = [
+        'id',
         'nama',
         'warna',
         'deskripsi',
@@ -26,6 +27,20 @@ class MedicineCategory extends Model
     ];
 
     protected $appends = ['theme_config'];
+
+    /**
+     * Boot the model.
+     * Pastikan id terisi otomatis dengan max(id) + 1 jika MySQL tidak memiliki AUTO_INCREMENT pada kolom id.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $category) {
+            if (empty($category->id)) {
+                $maxId = (int) DB::table('medicine_categories')->max('id');
+                $category->id = $maxId + 1;
+            }
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -332,6 +347,29 @@ class MedicineCategory extends Model
                         ['nama' => 'Peralatan', 'warna' => 'blue', 'deskripsi' => 'Tangki semprot, gunting, koret, cangkul dll', 'urutan' => 7, 'created_at' => $now, 'updated_at' => $now],
                     ];
                     DB::table('medicine_categories')->insert($defaults);
+                }
+
+                // Perbaiki auto_increment pada kolom id jika di MySQL belum ada
+                if (DB::getDriverName() === 'mysql') {
+                    try {
+                        $col = DB::selectOne("
+                            SELECT EXTRA, COLUMN_KEY 
+                            FROM information_schema.COLUMNS 
+                            WHERE TABLE_SCHEMA = DATABASE() 
+                              AND TABLE_NAME = 'medicine_categories' 
+                              AND COLUMN_NAME = 'id'
+                        ");
+
+                        if ($col && stripos($col->EXTRA ?? '', 'auto_increment') === false) {
+                            if (empty($col->COLUMN_KEY) || strtoupper($col->COLUMN_KEY) !== 'PRI') {
+                                DB::statement('ALTER TABLE `medicine_categories` ADD PRIMARY KEY (`id`)');
+                            }
+                            DB::statement('ALTER TABLE `medicine_categories` MODIFY `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT');
+                            Log::info('Berhasil memperbaiki auto_increment pada medicine_categories');
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('Gagal alter auto_increment medicine_categories: '.$e->getMessage());
+                    }
                 }
             }
 
