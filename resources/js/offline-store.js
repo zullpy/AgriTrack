@@ -678,10 +678,82 @@ class AgriOfflineStore {
         }
     }
 
+    async _ensureOfflineCategoryHierarchy(catStore, queueStore, kategori, subKategori, tipe) {
+        if (!kategori || !kategori.trim()) return;
+        const allCatsReq = catStore.getAll();
+        return new Promise((resolve) => {
+            allCatsReq.onsuccess = () => {
+                const cats = allCatsReq.result || [];
+                const katTrimmed = kategori.trim();
+                let rootCat = cats.find(c => (!c.parent_id || c.parent_id === null) && c.nama && c.nama.toLowerCase().trim() === katTrimmed.toLowerCase());
+
+                if (!rootCat) {
+                    const localId = 'offline_cat_' + Date.now();
+                    rootCat = {
+                        id: localId,
+                        client_id: localId,
+                        nama: katTrimmed,
+                        tipe: tipe || 'pengeluaran',
+                        parent_id: null,
+                        subcategories: [],
+                        is_synced: false
+                    };
+                    catStore.put(rootCat);
+                    if (queueStore) {
+                        queueStore.add({
+                            type: 'keuangan',
+                            action: 'create_category',
+                            local_id: localId,
+                            data: { nama: rootCat.nama, tipe: rootCat.tipe, parent_id: null },
+                            timestamp: Date.now()
+                        });
+                    }
+                }
+
+                if (subKategori && subKategori.trim()) {
+                    const subTrimmed = subKategori.trim();
+                    if (!Array.isArray(rootCat.subcategories)) {
+                        rootCat.subcategories = [];
+                    }
+                    const exists = rootCat.subcategories.some(s => s.nama && s.nama.toLowerCase().trim() === subTrimmed.toLowerCase());
+                    if (!exists) {
+                        const subLocalId = 'offline_cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+                        const subObj = {
+                            id: subLocalId,
+                            client_id: subLocalId,
+                            nama: subTrimmed,
+                            tipe: rootCat.tipe || tipe || 'pengeluaran',
+                            parent_id: rootCat.id,
+                            subcategories: [],
+                            is_synced: false
+                        };
+                        rootCat.subcategories.push(subObj);
+                        catStore.put(rootCat);
+                        if (queueStore) {
+                            queueStore.add({
+                                type: 'keuangan',
+                                action: 'create_category',
+                                local_id: subLocalId,
+                                data: { nama: subTrimmed, tipe: subObj.tipe, parent_id: rootCat.id },
+                                timestamp: Date.now()
+                            });
+                        }
+                    }
+                }
+
+                resolve(rootCat);
+            };
+            allCatsReq.onerror = () => resolve(null);
+        });
+    }
+
     async addKeuanganTransactionOffline(data) {
-        const tx = await this.getTransaction(['keuangan_transactions', 'sync_queue'], 'readwrite');
+        const tx = await this.getTransaction(['keuangan_transactions', 'keuangan_categories', 'sync_queue'], 'readwrite');
         const trxStore = tx.objectStore('keuangan_transactions');
+        const catStore = tx.objectStore('keuangan_categories');
         const queueStore = tx.objectStore('sync_queue');
+
+        await this._ensureOfflineCategoryHierarchy(catStore, queueStore, data.kategori, data.sub_kategori, data.tipe);
 
         const localId = 'offline_trx_' + Date.now();
         const nominal = parseInt((data.nominal || '0').toString().replace(/[^0-9]/g, ''), 10) || 0;
@@ -729,9 +801,14 @@ class AgriOfflineStore {
     }
 
     async updateKeuanganTransactionOffline(id, data) {
-        const tx = await this.getTransaction(['keuangan_transactions', 'sync_queue'], 'readwrite');
+        const tx = await this.getTransaction(['keuangan_transactions', 'keuangan_categories', 'sync_queue'], 'readwrite');
         const trxStore = tx.objectStore('keuangan_transactions');
+        const catStore = tx.objectStore('keuangan_categories');
         const queueStore = tx.objectStore('sync_queue');
+
+        if (data.kategori) {
+            await this._ensureOfflineCategoryHierarchy(catStore, queueStore, data.kategori, data.sub_kategori, data.tipe);
+        }
 
         const targetKey = String(id).startsWith('offline_trx_') ? id : ('srv_' + id);
         const req = trxStore.get(targetKey);

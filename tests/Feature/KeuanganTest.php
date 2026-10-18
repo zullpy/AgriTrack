@@ -415,4 +415,93 @@ class KeuanganTest extends TestCase
         $response->assertSee('submenu-content-statistik');
         $response->assertSee('btn-subnav-statistik');
     }
+
+    public function test_sub_category_added_from_transaction_is_automatically_saved_to_financial_categories(): void
+    {
+        $response = $this->post('/keuangan', [
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pengeluaran Insidentil / biaya tak terduga',
+            'sub_kategori' => 'Agenda ke Cikalong',
+            'judul' => 'Bensin ke cikalong',
+            'nominal' => 150000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $response->assertRedirect('/keuangan');
+
+        // Pastikan kategori utama tersimpan di database
+        $this->assertDatabaseHas('financial_categories', [
+            'nama' => 'Pengeluaran Insidentil / biaya tak terduga',
+            'parent_id' => null,
+            'tipe' => 'pengeluaran',
+        ]);
+
+        $parent = FinancialCategory::where('nama', 'Pengeluaran Insidentil / biaya tak terduga')->firstOrFail();
+
+        // Pastikan sub-kategori otomatis tersimpan di database di bawah parent
+        $this->assertDatabaseHas('financial_categories', [
+            'nama' => 'Agenda ke Cikalong',
+            'parent_id' => $parent->id,
+            'tipe' => 'pengeluaran',
+        ]);
+
+        // Cek response JSON dari /keuangan bahwa sub-kategori muncul di categories
+        $jsonResponse = $this->getJson('/keuangan');
+        $jsonResponse->assertOk();
+
+        $categories = collect($jsonResponse->json('categories'));
+        $foundParent = $categories->firstWhere('nama', 'Pengeluaran Insidentil / biaya tak terduga');
+        $this->assertNotNull($foundParent);
+
+        $subcategories = collect($foundParent['subcategories'] ?? []);
+        $this->assertTrue($subcategories->contains('nama', 'Agenda ke Cikalong'));
+    }
+
+    public function test_nested_sub_category_from_transaction_is_saved_in_hierarchy(): void
+    {
+        $this->postJson('/keuangan', [
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pengeluaran Insidentil / biaya tak terduga',
+            'sub_kategori' => 'Mager kebon › Beli bambu',
+            'judul' => 'Beli bambu pagar',
+            'nominal' => 120000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ])->assertOk();
+
+        $parent = FinancialCategory::where('nama', 'Pengeluaran Insidentil / biaya tak terduga')->firstOrFail();
+        $sub1 = FinancialCategory::where('nama', 'Mager kebon')->where('parent_id', $parent->id)->firstOrFail();
+
+        $this->assertDatabaseHas('financial_categories', [
+            'nama' => 'Beli bambu',
+            'parent_id' => $sub1->id,
+        ]);
+    }
+
+    public function test_sub_category_updated_from_transaction_is_saved(): void
+    {
+        $trx = FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pengeluaran Insidentil / biaya tak terduga',
+            'sub_kategori' => null,
+            'judul' => 'Nyedot air kolam',
+            'nominal' => 90000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $this->putJson('/keuangan/'.$trx->id, [
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pengeluaran Insidentil / biaya tak terduga',
+            'sub_kategori' => 'Nyedot cai',
+            'judul' => 'Nyedot air kolam',
+            'nominal' => 90000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ])->assertOk();
+
+        $parent = FinancialCategory::where('nama', 'Pengeluaran Insidentil / biaya tak terduga')->firstOrFail();
+
+        $this->assertDatabaseHas('financial_categories', [
+            'nama' => 'Nyedot cai',
+            'parent_id' => $parent->id,
+        ]);
+    }
 }

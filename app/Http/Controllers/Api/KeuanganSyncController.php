@@ -29,6 +29,7 @@ class KeuanganSyncController extends Controller
         if (FinancialCategory::count() === 0) {
             (new FinancialCategorySeeder)->run();
         }
+        FinancialCategory::syncFromTransactions();
         $categories = FinancialCategory::parents()->with('subcategories')->get();
 
         $transaksiList = $transactions->map(function (FinancialTransaction $m): array {
@@ -102,6 +103,14 @@ class KeuanganSyncController extends Controller
                         $nominal = 1;
                     }
 
+                    if (! empty($data['kategori'])) {
+                        FinancialCategory::ensureCategoryHierarchy(
+                            $data['kategori'],
+                            $data['sub_kategori'] ?? null,
+                            $data['tipe'] ?? 'pengeluaran'
+                        );
+                    }
+
                     $trx = FinancialTransaction::create([
                         'crop_id' => ! empty($data['crop_id']) ? (int) $data['crop_id'] : null,
                         'tipe' => in_array($data['tipe'] ?? '', ['pemasukan', 'pengeluaran']) ? $data['tipe'] : 'pengeluaran',
@@ -159,6 +168,13 @@ class KeuanganSyncController extends Controller
                                 if ($newPhoto) {
                                     $updateData['foto_nota'] = $newPhoto;
                                 }
+                            }
+
+                            $catName = $updateData['kategori'] ?? $trx->kategori;
+                            $subName = array_key_exists('sub_kategori', $updateData) ? $updateData['sub_kategori'] : $trx->sub_kategori;
+                            $tipeName = $updateData['tipe'] ?? $trx->tipe;
+                            if (! empty($catName)) {
+                                FinancialCategory::ensureCategoryHierarchy($catName, $subName, $tipeName);
                             }
 
                             $trx->update($updateData);

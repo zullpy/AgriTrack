@@ -1779,12 +1779,18 @@ async function handleQuickAddCategorySubmit(event) {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.querySelector('input[name="_token"]')?.value
             },
-            body: JSON.stringify({ nama, deskripsi })
+            body: JSON.stringify({ nama, deskripsi: deskripsi || null })
         });
 
-        const json = await res.json();
+        let json = {};
+        try {
+            json = await res.json();
+        } catch (parseErr) {
+            json = { success: false, message: 'Respon server tidak valid (Status ' + res.status + ')' };
+        }
 
         if (res.ok && json.success) {
             const cat = json.data;

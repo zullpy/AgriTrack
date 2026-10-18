@@ -6,11 +6,17 @@ use Database\Factories\MedicineCategoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class MedicineCategory extends Model
 {
     /** @use HasFactory<MedicineCategoryFactory> */
     use HasFactory;
+
+    protected static bool $tableChecked = false;
 
     protected $fillable = [
         'nama',
@@ -265,6 +271,102 @@ class MedicineCategory extends Model
     }
 
     /**
+     * Pastikan tabel medicine_categories beserta semua kolom penting telah tersedia di database (self-healing).
+     * Sangat krusial untuk hosting tanpa akses shell artisan / migrasi manual (InfinityFree dll).
+     */
+    public static function ensureTableExists(): void
+    {
+        if (static::$tableChecked) {
+            return;
+        }
+
+        try {
+            if (! Schema::hasTable('medicine_categories')) {
+                Schema::create('medicine_categories', function (Blueprint $table) {
+                    $table->id();
+                    $table->string('nama', 100)->unique();
+                    $table->string('warna', 50)->default('purple');
+                    $table->string('deskripsi', 255)->nullable();
+                    $table->integer('urutan')->default(0);
+                    $table->timestamps();
+                });
+
+                $now = now();
+                $defaults = [
+                    ['nama' => 'Fungisida', 'warna' => 'purple', 'deskripsi' => 'Pencegah & pengendali jamur / fungi', 'urutan' => 1, 'created_at' => $now, 'updated_at' => $now],
+                    ['nama' => 'Insektisida', 'warna' => 'rose', 'deskripsi' => 'Pengendali hama serangga & ulat', 'urutan' => 2, 'created_at' => $now, 'updated_at' => $now],
+                    ['nama' => 'Pupuk', 'warna' => 'emerald', 'deskripsi' => 'Nutrisi makro & mikro tanaman', 'urutan' => 3, 'created_at' => $now, 'updated_at' => $now],
+                    ['nama' => 'Vitamin', 'warna' => 'teal', 'deskripsi' => 'Suplemen tanaman & anti-stres', 'urutan' => 4, 'created_at' => $now, 'updated_at' => $now],
+                    ['nama' => 'Bibit', 'warna' => 'lime', 'deskripsi' => 'Benih & bibit tanaman', 'urutan' => 5, 'created_at' => $now, 'updated_at' => $now],
+                    ['nama' => 'Perlengkapan', 'warna' => 'amber', 'deskripsi' => 'Mulsa, ajir, tali, selang, perekat dll', 'urutan' => 6, 'created_at' => $now, 'updated_at' => $now],
+                    ['nama' => 'Peralatan', 'warna' => 'blue', 'deskripsi' => 'Tangki semprot, gunting, koret, cangkul dll', 'urutan' => 7, 'created_at' => $now, 'updated_at' => $now],
+                ];
+
+                DB::table('medicine_categories')->insert($defaults);
+            } else {
+                if (! Schema::hasColumn('medicine_categories', 'warna')) {
+                    Schema::table('medicine_categories', function (Blueprint $table) {
+                        $table->string('warna', 50)->default('purple')->after('nama');
+                    });
+                }
+                if (! Schema::hasColumn('medicine_categories', 'deskripsi')) {
+                    Schema::table('medicine_categories', function (Blueprint $table) {
+                        $table->string('deskripsi', 255)->nullable()->after('warna');
+                    });
+                }
+                if (! Schema::hasColumn('medicine_categories', 'urutan')) {
+                    Schema::table('medicine_categories', function (Blueprint $table) {
+                        $table->integer('urutan')->default(0)->after('deskripsi');
+                    });
+                }
+
+                if (DB::table('medicine_categories')->count() === 0) {
+                    $now = now();
+                    $defaults = [
+                        ['nama' => 'Fungisida', 'warna' => 'purple', 'deskripsi' => 'Pencegah & pengendali jamur / fungi', 'urutan' => 1, 'created_at' => $now, 'updated_at' => $now],
+                        ['nama' => 'Insektisida', 'warna' => 'rose', 'deskripsi' => 'Pengendali hama serangga & ulat', 'urutan' => 2, 'created_at' => $now, 'updated_at' => $now],
+                        ['nama' => 'Pupuk', 'warna' => 'emerald', 'deskripsi' => 'Nutrisi makro & mikro tanaman', 'urutan' => 3, 'created_at' => $now, 'updated_at' => $now],
+                        ['nama' => 'Vitamin', 'warna' => 'teal', 'deskripsi' => 'Suplemen tanaman & anti-stres', 'urutan' => 4, 'created_at' => $now, 'updated_at' => $now],
+                        ['nama' => 'Bibit', 'warna' => 'lime', 'deskripsi' => 'Benih & bibit tanaman', 'urutan' => 5, 'created_at' => $now, 'updated_at' => $now],
+                        ['nama' => 'Perlengkapan', 'warna' => 'amber', 'deskripsi' => 'Mulsa, ajir, tali, selang, perekat dll', 'urutan' => 6, 'created_at' => $now, 'updated_at' => $now],
+                        ['nama' => 'Peralatan', 'warna' => 'blue', 'deskripsi' => 'Tangki semprot, gunting, koret, cangkul dll', 'urutan' => 7, 'created_at' => $now, 'updated_at' => $now],
+                    ];
+                    DB::table('medicine_categories')->insert($defaults);
+                }
+            }
+
+            // Sync jenis unik dari tabel medicines jika belum tercatat di medicine_categories
+            if (Schema::hasTable('medicines')) {
+                $existingJenis = DB::table('medicines')
+                    ->whereNotNull('jenis')
+                    ->where('jenis', '!=', '')
+                    ->distinct()
+                    ->pluck('jenis');
+
+                $order = 10;
+                $now = now();
+                foreach ($existingJenis as $jenis) {
+                    $trimJenis = trim($jenis);
+                    if ($trimJenis !== '' && ! DB::table('medicine_categories')->where('nama', $trimJenis)->exists()) {
+                        DB::table('medicine_categories')->insert([
+                            'nama' => $trimJenis,
+                            'warna' => self::getNextAvailableColor(),
+                            'deskripsi' => null,
+                            'urutan' => $order++,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                    }
+                }
+            }
+
+            static::$tableChecked = true;
+        } catch (\Throwable $e) {
+            Log::warning('Gagal auto-heal medicine_categories: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Tentukan warna berikutnya secara otomatis agar setiap kategori memiliki warna yang berbeda.
      * Mengambil warna yang belum pernah digunakan, atau warna yang paling jarang dipakai jika semua warna sudah terpakai.
      *
@@ -274,33 +376,37 @@ class MedicineCategory extends Model
     {
         $colors = array_keys(self::colorPresets());
 
-        $query = self::query();
-        if ($excludeId) {
-            $query->where('id', '!=', $excludeId);
-        }
-        $usedColors = $query->pluck('warna')->filter()->toArray();
-
-        // 1. Cari warna pertama yang belum pernah dipakai
-        foreach ($colors as $c) {
-            if (! in_array($c, $usedColors, true)) {
-                return $c;
+        try {
+            $query = self::query();
+            if ($excludeId) {
+                $query->where('id', '!=', $excludeId);
             }
-        }
+            $usedColors = $query->pluck('warna')->filter()->toArray();
 
-        // 2. Jika seluruh warna sudah terpakai, pilih warna yang paling sedikit digunakan
-        $colorCounts = array_count_values($usedColors);
-        $leastUsed = $colors[0];
-        $minCount = PHP_INT_MAX;
-
-        foreach ($colors as $c) {
-            $count = $colorCounts[$c] ?? 0;
-            if ($count < $minCount) {
-                $minCount = $count;
-                $leastUsed = $c;
+            // 1. Cari warna pertama yang belum pernah dipakai
+            foreach ($colors as $c) {
+                if (! in_array($c, $usedColors, true)) {
+                    return $c;
+                }
             }
-        }
 
-        return $leastUsed;
+            // 2. Jika seluruh warna sudah terpakai, pilih warna yang paling sedikit digunakan
+            $colorCounts = array_count_values($usedColors);
+            $leastUsed = $colors[0];
+            $minCount = PHP_INT_MAX;
+
+            foreach ($colors as $c) {
+                $count = $colorCounts[$c] ?? 0;
+                if ($count < $minCount) {
+                    $minCount = $count;
+                    $leastUsed = $c;
+                }
+            }
+
+            return $leastUsed;
+        } catch (\Throwable $e) {
+            return $colors[0] ?? 'purple';
+        }
     }
 
     /**

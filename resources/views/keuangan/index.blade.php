@@ -811,9 +811,12 @@
 
                 {{-- Sub-Kategori Dropdown (Dinamis) --}}
                 <div id="create-sub-kategori-container" class="hidden">
-                    <label for="create-select-sub-kategori" class="block text-xs font-semibold text-gray-700 mb-1">
-                        Sub-Kategori / Sub-Sub <span class="text-gray-400 font-normal">(Pilih atau isi sesuai kegiatan)</span>
-                    </label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="create-select-sub-kategori" class="block text-xs font-semibold text-gray-700">
+                            Sub-Kategori / Sub-Sub
+                        </label>
+                        <span class="text-[11px] text-gray-400">Pilih atau buat baru</span>
+                    </div>
                     <div class="space-y-2">
                         <select id="create-select-sub-kategori"
                                 onchange="handleSubCategorySelection('create')"
@@ -823,8 +826,13 @@
                         <input type="text"
                                id="create-input-sub-kategori"
                                name="sub_kategori"
-                               placeholder="Atau ketik sub-kategori khusus..."
+                               oninput="handleSubCategoryInput('create')"
+                               placeholder="Atau ketik nama sub-kategori baru..."
                                class="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                        <p id="create-sub-kategori-helper" class="text-[11px] text-emerald-700 font-medium flex items-center gap-1.5 hidden bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Sub-kategori baru ini akan otomatis tersimpan ke master kategori saat disimpan.</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1010,9 +1018,12 @@
 
                 {{-- Sub-Kategori Dropdown (Dinamis) --}}
                 <div id="edit-sub-kategori-container" class="hidden">
-                    <label for="edit-select-sub-kategori" class="block text-xs font-semibold text-gray-700 mb-1">
-                        Sub-Kategori / Sub-Sub <span class="text-gray-400 font-normal">(Pilih atau isi sesuai kegiatan)</span>
-                    </label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="edit-select-sub-kategori" class="block text-xs font-semibold text-gray-700">
+                            Sub-Kategori / Sub-Sub
+                        </label>
+                        <span class="text-[11px] text-gray-400">Pilih atau buat baru</span>
+                    </div>
                     <div class="space-y-2">
                         <select id="edit-select-sub-kategori"
                                 onchange="handleSubCategorySelection('edit')"
@@ -1022,8 +1033,13 @@
                         <input type="text"
                                id="edit-input-sub-kategori"
                                name="sub_kategori"
-                               placeholder="Atau ketik sub-kategori khusus..."
+                               oninput="handleSubCategoryInput('edit')"
+                               placeholder="Atau ketik nama sub-kategori baru..."
                                class="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                        <p id="edit-sub-kategori-helper" class="text-[11px] text-emerald-700 font-medium flex items-center gap-1.5 hidden bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Sub-kategori baru ini akan otomatis tersimpan ke master kategori saat disimpan.</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1497,61 +1513,138 @@
         const subContainer = document.getElementById(`${prefix}-sub-kategori-container`);
         const subSelect = document.getElementById(`${prefix}-select-sub-kategori`);
         const subInput = document.getElementById(`${prefix}-input-sub-kategori`);
+        const subHelper = document.getElementById(`${prefix}-sub-kategori-helper`);
 
         if (!catSelect || !subContainer || !subSelect) return;
 
         const selectedCatName = catSelect.value;
         const currentCat = appCategories.find(c => c.nama === selectedCatName);
 
-        if (currentCat && currentCat.subcategories && currentCat.subcategories.length > 0) {
+        if (selectedCatName) {
             subContainer.classList.remove('hidden');
-            subSelect.innerHTML = '<option value="">— Pilih Sub-Kategori —</option>';
+            subSelect.innerHTML = '';
 
-            currentCat.subcategories.forEach(sub => {
-                const subSubs = sub.subcategories || [];
-                if (subSubs.length > 0) {
-                    // Sub-kategori punya anak → pakai optgroup
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = `📂 Sub: ${sub.nama}`;
-                    subSubs.forEach(subSub => {
-                        const opt = document.createElement('option');
-                        opt.value = sub.nama + ' › ' + subSub.nama;
-                        opt.textContent = `↳ 🏷️ [Sub-Sub] ${subSub.nama}`;
-                        if (presetSubCatName && opt.value === presetSubCatName) {
-                            opt.selected = true;
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = '— Tanpa Sub-Kategori —';
+            subSelect.appendChild(defaultOpt);
+
+            let matchFound = false;
+
+            if (currentCat && currentCat.subcategories && currentCat.subcategories.length > 0) {
+                currentCat.subcategories.forEach(sub => {
+                    const subSubs = sub.subcategories || [];
+                    if (subSubs.length > 0) {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = `📂 Sub: ${sub.nama}`;
+
+                        const optSelf = document.createElement('option');
+                        optSelf.value = sub.nama;
+                        optSelf.textContent = `📂 ${sub.nama} (Utama)`;
+                        if (presetSubCatName && optSelf.value.toLowerCase() === presetSubCatName.toLowerCase()) {
+                            optSelf.selected = true;
+                            matchFound = true;
                         }
-                        optgroup.appendChild(opt);
-                    });
-                    subSelect.appendChild(optgroup);
-                } else {
-                    // Sub-kategori tanpa anak → option biasa
-                    const opt = document.createElement('option');
-                    opt.value = sub.nama;
-                    opt.textContent = `📂 [Sub] ${sub.nama}`;
-                    if (presetSubCatName && sub.nama === presetSubCatName) {
-                        opt.selected = true;
-                    }
-                    subSelect.appendChild(opt);
-                }
-            });
+                        optgroup.appendChild(optSelf);
 
-            subInput.value = presetSubCatName || '';
-        } else if (selectedCatName) {
-            subContainer.classList.remove('hidden');
-            subSelect.innerHTML = '<option value="">— Kategori ini tidak memiliki sub bawaan —</option>';
-            subInput.value = presetSubCatName || '';
+                        subSubs.forEach(subSub => {
+                            const opt = document.createElement('option');
+                            opt.value = sub.nama + ' › ' + subSub.nama;
+                            opt.textContent = `↳ 🏷️ [Sub-Sub] ${subSub.nama}`;
+                            if (presetSubCatName && opt.value.toLowerCase() === presetSubCatName.toLowerCase()) {
+                                opt.selected = true;
+                                matchFound = true;
+                            }
+                            optgroup.appendChild(opt);
+                        });
+                        subSelect.appendChild(optgroup);
+                    } else {
+                        const opt = document.createElement('option');
+                        opt.value = sub.nama;
+                        opt.textContent = `📂 [Sub] ${sub.nama}`;
+                        if (presetSubCatName && sub.nama.toLowerCase() === presetSubCatName.toLowerCase()) {
+                            opt.selected = true;
+                            matchFound = true;
+                        }
+                        subSelect.appendChild(opt);
+                    }
+                });
+            }
+
+            const newOpt = document.createElement('option');
+            newOpt.value = '__NEW__';
+            newOpt.textContent = '➕ Tambah / Ketik Sub-Kategori Baru...';
+            subSelect.appendChild(newOpt);
+
+            if (presetSubCatName) {
+                subInput.value = presetSubCatName;
+                if (!matchFound) {
+                    subSelect.value = '__NEW__';
+                    if (subHelper) subHelper.classList.remove('hidden');
+                } else if (subHelper) {
+                    subHelper.classList.add('hidden');
+                }
+            } else {
+                subSelect.value = '';
+                subInput.value = '';
+                if (subHelper) subHelper.classList.add('hidden');
+            }
         } else {
             subContainer.classList.add('hidden');
             subSelect.innerHTML = '<option value="">— Tanpa Sub-Kategori —</option>';
             subInput.value = '';
+            if (subHelper) subHelper.classList.add('hidden');
         }
     }
 
     function handleSubCategorySelection(prefix) {
         const subSelect = document.getElementById(`${prefix}-select-sub-kategori`);
         const subInput = document.getElementById(`${prefix}-input-sub-kategori`);
-        if (subSelect && subInput) {
-            subInput.value = subSelect.value || '';
+        const subHelper = document.getElementById(`${prefix}-sub-kategori-helper`);
+        if (!subSelect || !subInput) return;
+
+        if (subSelect.value === '__NEW__') {
+            subInput.value = '';
+            subInput.focus();
+            if (subHelper) subHelper.classList.remove('hidden');
+        } else if (subSelect.value) {
+            subInput.value = subSelect.value;
+            if (subHelper) subHelper.classList.add('hidden');
+        } else {
+            subInput.value = '';
+            if (subHelper) subHelper.classList.add('hidden');
+        }
+    }
+
+    function handleSubCategoryInput(prefix) {
+        const subSelect = document.getElementById(`${prefix}-select-sub-kategori`);
+        const subInput = document.getElementById(`${prefix}-input-sub-kategori`);
+        const subHelper = document.getElementById(`${prefix}-sub-kategori-helper`);
+        if (!subSelect || !subInput) return;
+
+        const val = (subInput.value || '').trim();
+        let matchFound = false;
+
+        for (let i = 0; i < subSelect.options.length; i++) {
+            const opt = subSelect.options[i];
+            if (opt.value && opt.value !== '__NEW__' && opt.value.toLowerCase() === val.toLowerCase()) {
+                subSelect.value = opt.value;
+                matchFound = true;
+                break;
+            }
+        }
+
+        if (!matchFound) {
+            if (val.length > 0) {
+                const newOpt = subSelect.querySelector('option[value="__NEW__"]');
+                if (newOpt) subSelect.value = '__NEW__';
+                if (subHelper) subHelper.classList.remove('hidden');
+            } else {
+                subSelect.value = '';
+                if (subHelper) subHelper.classList.add('hidden');
+            }
+        } else {
+            if (subHelper) subHelper.classList.add('hidden');
         }
     }
 
@@ -3157,6 +3250,10 @@
                         closeModal('modal-create-transaksi');
                         formCreate.reset();
                         notifySuccess(data.message || 'Transaksi keuangan berhasil dicatat!');
+                        if (data.categories) {
+                            appCategories = data.categories;
+                            renderCategoryTree(appCategories);
+                        }
                         loadKeuanganData();
                     } else {
                         let errorMsg = data.message || 'Gagal mencatat transaksi.';
@@ -3301,6 +3398,10 @@
                     if (res.ok && data.success) {
                         closeModal('modal-edit-transaksi');
                         notifySuccess(data.message || 'Transaksi keuangan berhasil diperbarui!');
+                        if (data.categories) {
+                            appCategories = data.categories;
+                            renderCategoryTree(appCategories);
+                        }
                         loadKeuanganData();
                     } else {
                         let errorMsg = data.message || 'Gagal memperbarui transaksi.';

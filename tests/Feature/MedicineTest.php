@@ -808,4 +808,65 @@ class MedicineTest extends TestCase
         $responseWp->assertSee('Antracol 70 WP');
         $responseWp->assertDontSee('Amistar Top 325 SC');
     }
+
+    public function test_can_update_category_via_post_method_spoofing(): void
+    {
+        $category = MedicineCategory::create([
+            'nama' => 'Bakterisida Test',
+            'warna' => 'emerald',
+            'deskripsi' => 'Pengendali bakteri',
+            'urutan' => 30,
+        ]);
+
+        $response = $this->postJson("/data-obat/kategori/{$category->id}", [
+            'nama' => 'Bakterisida Update',
+            'warna' => 'blue',
+            'deskripsi' => 'Pengendali bakteri update',
+            '_method' => 'PUT',
+        ], [
+            'X-HTTP-Method-Override' => 'PUT',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('medicine_categories', [
+            'id' => $category->id,
+            'nama' => 'Bakterisida Update',
+            'deskripsi' => 'Pengendali bakteri update',
+        ]);
+    }
+
+    public function test_can_delete_category_via_post_method_spoofing(): void
+    {
+        $category = MedicineCategory::create([
+            'nama' => 'Kategori Delete Test',
+            'warna' => 'amber',
+            'urutan' => 31,
+        ]);
+
+        $response = $this->postJson("/data-obat/kategori/{$category->id}", [
+            '_method' => 'DELETE',
+        ], [
+            'X-HTTP-Method-Override' => 'DELETE',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseMissing('medicine_categories', [
+            'id' => $category->id,
+        ]);
+    }
+
+    public function test_medicine_category_ensure_table_exists(): void
+    {
+        MedicineCategory::ensureTableExists();
+        $this->assertTrue(MedicineCategory::where('nama', 'Fungisida')->exists());
+        $this->assertTrue(MedicineCategory::where('nama', 'Insektisida')->exists());
+    }
 }

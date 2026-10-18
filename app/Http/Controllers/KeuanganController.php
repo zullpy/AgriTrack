@@ -68,6 +68,7 @@ class KeuanganController extends Controller
         if (FinancialCategory::count() === 0) {
             (new FinancialCategorySeeder)->run();
         }
+        FinancialCategory::syncFromTransactions();
         $categories = FinancialCategory::parents()->with('subcategories')->get();
 
         if ($request->expectsJson() || $request->ajax()) {
@@ -134,6 +135,13 @@ class KeuanganController extends Controller
             $fotoPath = $uploadResult['url'] ?? null;
         }
 
+        // Pastikan hierarki kategori dan sub-kategori tersimpan di master kategori
+        FinancialCategory::ensureCategoryHierarchy(
+            $validated['kategori'],
+            $validated['sub_kategori'] ?? null,
+            $validated['tipe']
+        );
+
         $transaction = FinancialTransaction::create([
             'crop_id' => $validated['crop_id'] ?? null,
             'tipe' => $validated['tipe'],
@@ -151,6 +159,7 @@ class KeuanganController extends Controller
                 'success' => true,
                 'message' => 'Transaksi keuangan berhasil dicatat!',
                 'data' => $transaction,
+                'categories' => FinancialCategory::parents()->with('subcategories')->get(),
             ]);
         }
 
@@ -189,6 +198,13 @@ class KeuanganController extends Controller
             $fotoPath = $uploadResult['url'] ?? null;
         }
 
+        // Pastikan hierarki kategori dan sub-kategori tersimpan di master kategori
+        FinancialCategory::ensureCategoryHierarchy(
+            $validated['kategori'],
+            $validated['sub_kategori'] ?? null,
+            $validated['tipe']
+        );
+
         $transaction->update([
             'crop_id' => $validated['crop_id'] ?? null,
             'tipe' => $validated['tipe'],
@@ -206,6 +222,7 @@ class KeuanganController extends Controller
                 'success' => true,
                 'message' => 'Transaksi keuangan berhasil diperbarui!',
                 'data' => $transaction,
+                'categories' => FinancialCategory::parents()->with('subcategories')->get(),
             ]);
         }
 

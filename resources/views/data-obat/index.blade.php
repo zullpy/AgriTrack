@@ -1529,20 +1529,35 @@ async function handleCategoryFormSubmit(event) {
 
     const isEdit = Boolean(id);
     const url = isEdit ? `/data-obat/kategori/${id}` : '/data-obat/kategori';
-    const method = isEdit ? 'PUT' : 'POST';
+
+    const payload = {
+        nama,
+        deskripsi: deskripsi || null
+    };
+
+    if (isEdit) {
+        payload._method = 'PUT';
+    }
 
     try {
         const res = await fetch(url, {
-            method: method,
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-HTTP-Method-Override': isEdit ? 'PUT' : 'POST',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ nama, deskripsi })
+            body: JSON.stringify(payload)
         });
 
-        const json = await res.json();
+        let json = {};
+        try {
+            json = await res.json();
+        } catch (parseErr) {
+            json = { success: false, message: 'Respon server tidak valid (Status ' + res.status + ')' };
+        }
 
         if (res.ok && json.success) {
             if (window.AgriSwal) {
@@ -1585,13 +1600,24 @@ function handleDeleteCategoryClick(id, nama, medCount) {
     const doDelete = async () => {
         try {
             const res = await fetch(`/data-obat/kategori/${id}`, {
-                method: 'DELETE',
+                method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-HTTP-Method-Override': 'DELETE',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
-                }
+                },
+                body: JSON.stringify({ _method: 'DELETE' })
             });
-            const json = await res.json();
+
+            let json = {};
+            try {
+                json = await res.json();
+            } catch (parseErr) {
+                json = { success: false, message: 'Respon server tidak valid (Status ' + res.status + ')' };
+            }
+
             if (res.ok && json.success) {
                 if (window.AgriSwal) window.AgriSwal.toastSuccess(json.message);
                 await loadCategoriesList();

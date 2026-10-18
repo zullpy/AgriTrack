@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -54,6 +55,7 @@ class MedicineController extends Controller
         }
 
         $medicines = $query->latest()->paginate(10)->withQueryString();
+        MedicineCategory::ensureTableExists();
         $categories = MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
 
         return view('data-obat.index', compact('medicines', 'categories'));
@@ -61,6 +63,7 @@ class MedicineController extends Controller
 
     public function create()
     {
+        MedicineCategory::ensureTableExists();
         $existingMedicines = Medicine::with('purchases')->get();
         $categories = MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
 
@@ -305,6 +308,7 @@ class MedicineController extends Controller
 
     public function edit(Medicine $medicine)
     {
+        MedicineCategory::ensureTableExists();
         $medicine->load('purchases');
         $existingMedicines = Medicine::with('purchases')->where('id', '!=', $medicine->id)->get();
         $categories = MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
@@ -602,6 +606,8 @@ class MedicineController extends Controller
      */
     public function getCategories(Request $request): JsonResponse
     {
+        MedicineCategory::ensureTableExists();
+
         $categories = MedicineCategory::withCount('medicines')
             ->orderBy('urutan')
             ->orderBy('nama')
@@ -619,6 +625,8 @@ class MedicineController extends Controller
      */
     public function storeCategory(Request $request): RedirectResponse|JsonResponse
     {
+        MedicineCategory::ensureTableExists();
+
         $validated = $request->validate([
             'nama' => 'required|string|max:100|unique:medicine_categories,nama',
             'warna' => 'nullable|string|max:50',
@@ -629,33 +637,54 @@ class MedicineController extends Controller
             'nama.required' => 'Nama kategori obat wajib diisi.',
         ]);
 
-        if (empty($validated['warna'])) {
-            $validated['warna'] = MedicineCategory::getNextAvailableColor();
+        try {
+            if (empty($validated['warna'])) {
+                $validated['warna'] = MedicineCategory::getNextAvailableColor();
+            }
+
+            if (! isset($validated['urutan'])) {
+                $validated['urutan'] = (MedicineCategory::max('urutan') ?? 0) + 1;
+            }
+
+            $validated['deskripsi'] = ! empty($validated['deskripsi']) ? trim((string) $validated['deskripsi']) : null;
+
+            $category = MedicineCategory::create($validated);
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Kategori '{$category->nama}' berhasil ditambahkan!",
+                    'data' => $category,
+                    'theme_config' => $category->theme_config,
+                ]);
+            }
+
+            return redirect()->back()->with('success', "Kategori '{$category->nama}' berhasil ditambahkan!");
+        } catch (\Throwable $e) {
+            Log::error('Error storeCategory: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan kategori: '.$e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Gagal menyimpan kategori: '.$e->getMessage());
         }
-
-        if (! isset($validated['urutan'])) {
-            $validated['urutan'] = (MedicineCategory::max('urutan') ?? 0) + 1;
-        }
-
-        $category = MedicineCategory::create($validated);
-
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Kategori '{$category->nama}' berhasil ditambahkan!",
-                'data' => $category,
-                'theme_config' => $category->theme_config,
-            ]);
-        }
-
-        return redirect()->back()->with('success', "Kategori '{$category->nama}' berhasil ditambahkan!");
     }
 
     /**
      * Perbarui kategori obat.
      */
-    public function updateCategory(Request $request, MedicineCategory $category): RedirectResponse|JsonResponse
+    public function updateCategory(Request $request, $category): RedirectResponse|JsonResponse
     {
+        MedicineCategory::ensureTableExists();
+
+        if (! ($category instanceof MedicineCategory)) {
+            $category = MedicineCategory::findOrFail($category);
+        }
+
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:100', Rule::unique('medicine_categories', 'nama')->ignore($category->id)],
             'warna' => 'nullable|string|max:50',
@@ -666,61 +695,95 @@ class MedicineController extends Controller
             'nama.required' => 'Nama kategori obat wajib diisi.',
         ]);
 
-        if (empty($validated['warna'])) {
-            $validated['warna'] = $category->warna ?: MedicineCategory::getNextAvailableColor($category->id);
+        try {
+            if (empty($validated['warna'])) {
+                $validated['warna'] = $category->warna ?: MedicineCategory::getNextAvailableColor($category->id);
+            }
+
+            $validated['deskripsi'] = ! empty($validated['deskripsi']) ? trim((string) $validated['deskripsi']) : null;
+
+            $oldName = $category->nama;
+            $category->update($validated);
+
+            if ($oldName !== $category->nama) {
+                Medicine::where('jenis', $oldName)->update(['jenis' => $category->nama]);
+            }
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Kategori '{$category->nama}' berhasil diperbarui!",
+                    'data' => $category,
+                    'theme_config' => $category->theme_config,
+                ]);
+            }
+
+            return redirect()->back()->with('success', "Kategori '{$category->nama}' berhasil diperbarui!");
+        } catch (\Throwable $e) {
+            Log::error('Error updateCategory: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal memperbarui kategori: '.$e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Gagal memperbarui kategori: '.$e->getMessage());
         }
-
-        $oldName = $category->nama;
-        $category->update($validated);
-
-        if ($oldName !== $category->nama) {
-            Medicine::where('jenis', $oldName)->update(['jenis' => $category->nama]);
-        }
-
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Kategori '{$category->nama}' berhasil diperbarui!",
-                'data' => $category,
-                'theme_config' => $category->theme_config,
-            ]);
-        }
-
-        return redirect()->back()->with('success', "Kategori '{$category->nama}' berhasil diperbarui!");
     }
 
     /**
      * Hapus kategori obat.
      */
-    public function destroyCategory(Request $request, MedicineCategory $category): RedirectResponse|JsonResponse
+    public function destroyCategory(Request $request, $category): RedirectResponse|JsonResponse
     {
-        $count = Medicine::where('jenis', $category->nama)->count();
+        MedicineCategory::ensureTableExists();
 
-        if ($count > 0) {
-            $msg = "Kategori '{$category->nama}' tidak dapat dihapus karena masih digunakan oleh {$count} data obat.";
+        if (! ($category instanceof MedicineCategory)) {
+            $category = MedicineCategory::findOrFail($category);
+        }
+
+        try {
+            $count = Medicine::where('jenis', $category->nama)->count();
+
+            if ($count > 0) {
+                $msg = "Kategori '{$category->nama}' tidak dapat dihapus karena masih digunakan oleh {$count} data obat.";
+
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $msg,
+                    ], 422);
+                }
+
+                return redirect()->back()->with('error', $msg);
+            }
+
+            $name = $category->nama;
+            $category->delete();
+
+            $msg = "Kategori '{$name}' berhasil dihapus.";
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                ]);
+            }
+
+            return redirect()->back()->with('success', $msg);
+        } catch (\Throwable $e) {
+            Log::error('Error destroyCategory: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $msg,
-                ], 422);
+                    'message' => 'Gagal menghapus kategori: '.$e->getMessage(),
+                ], 500);
             }
 
-            return redirect()->back()->with('error', $msg);
+            return redirect()->back()->with('error', 'Gagal menghapus kategori: '.$e->getMessage());
         }
-
-        $name = $category->nama;
-        $category->delete();
-
-        $msg = "Kategori '{$name}' berhasil dihapus.";
-
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => $msg,
-            ]);
-        }
-
-        return redirect()->back()->with('success', $msg);
     }
 }
