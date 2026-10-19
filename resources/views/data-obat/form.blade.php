@@ -92,9 +92,9 @@
                             <div class="flex items-start gap-2.5">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 mt-1 shrink-0 animate-ping"></span>
                                 <div>
-                                    <p class="font-bold text-emerald-900">Data obat "<span id="autofill-medicine-name"></span>" ditemukan!</p>
+                                    <p class="font-bold text-emerald-900">Data obat "<span id="autofill-medicine-name"></span>" ditemukan! (Stok saat ini: <span id="autofill-stok-text" class="font-black underline">0</span>)</p>
                                     <p class="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
-                                        Formulir otomatis terisi dari data yang sudah ada. Jika nama toko sama, yang terupdate otomatis adalah harga baru & tanggal belinya.
+                                        Formulir otomatis terisi dari data yang sudah ada. Pembelian ini akan memperbarui harga obat dan menambah stok sesuai jumlah yang dibeli.
                                     </p>
                                 </div>
                             </div>
@@ -321,8 +321,8 @@
                     </div>
                 </div>
 
-                {{-- Grid 2 Kolom: Harga Obat & Ukuran Kemasan --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {{-- Grid 3 Kolom: Harga Obat, Stok Obat & Ukuran Kemasan --}}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {{-- Harga Obat --}}
                     <div>
                         <label for="harga" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -346,8 +346,30 @@
                                    placeholder="Contoh: 65.000"
                                    class="field-input w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder:text-gray-400 font-semibold transition-all">
                         </div>
-                        <p class="text-[11px] text-gray-500 mt-1">Format otomatis Rupiah (contoh: 65000 jadi 65.000).</p>
+                        <p class="text-[11px] text-gray-500 mt-1">Format otomatis Rupiah.</p>
                         @error('harga')
+                            <p class="text-xs text-red-600 mt-1 font-semibold">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Stok Obat --}}
+                    <div>
+                        <label for="stok" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Stok Obat (Jumlah)
+                        </label>
+                        <div class="relative">
+                            <input type="number"
+                                   min="0"
+                                   id="stok"
+                                   name="stok"
+                                   value="{{ old('stok', $medicine->stok ?? 0) }}"
+                                   placeholder="Contoh: 5"
+                                   class="field-input w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 font-bold transition-all @error('stok') border-red-500 bg-red-50 @enderror">
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1">
+                            {{ isset($medicine) ? 'Stok fisik saat ini.' : 'Stok awal obat di kebun.' }}
+                        </p>
+                        @error('stok')
                             <p class="text-xs text-red-600 mt-1 font-semibold">{{ $message }}</p>
                         @enderror
                     </div>
@@ -355,7 +377,7 @@
                     {{-- Ukuran Kemasan & Satuan --}}
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                            Ukuran & Satuan Kemasan
+                            Ukuran & Satuan
                         </label>
                         @php
                             $currentJumlah = old('kemasan_jumlah', isset($medicine) && $medicine->kemasan_jumlah !== null ? ((float)$medicine->kemasan_jumlah == (int)$medicine->kemasan_jumlah ? (int)$medicine->kemasan_jumlah : (float)$medicine->kemasan_jumlah) : '');
@@ -368,20 +390,21 @@
                                    id="kemasan_jumlah"
                                    name="kemasan_jumlah"
                                    value="{{ $currentJumlah }}"
-                                   placeholder="Contoh: 1 atau 500"
-                                   class="field-input w-1/2 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 font-semibold transition-all">
+                                   placeholder="1 / 500"
+                                   class="field-input w-1/2 px-3 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 font-semibold transition-all">
                             <select id="kemasan_satuan"
                                     name="kemasan_satuan"
-                                    class="field-input w-1/2 px-3 py-2.5 rounded-xl border border-gray-300 bg-white text-sm font-bold text-gray-700 transition-all">
-                                <option value="kg" {{ $currentSatuan === 'kg' ? 'selected' : '' }}>kg (Kilogram)</option>
-                                <option value="gram" {{ $currentSatuan === 'gram' ? 'selected' : '' }}>gram (gr)</option>
-                                <option value="liter" {{ in_array($currentSatuan, ['liter', 'l']) ? 'selected' : '' }}>liter (L)</option>
-                                <option value="ml" {{ $currentSatuan === 'ml' ? 'selected' : '' }}>ml (Mililiter)</option>
+                                    class="field-input w-1/2 px-2.5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs font-bold text-gray-700 transition-all">
+                                <option value="kg" {{ $currentSatuan === 'kg' ? 'selected' : '' }}>kg</option>
+                                <option value="gram" {{ $currentSatuan === 'gram' ? 'selected' : '' }}>gram</option>
+                                <option value="liter" {{ in_array($currentSatuan, ['liter', 'l']) ? 'selected' : '' }}>liter</option>
+                                <option value="ml" {{ $currentSatuan === 'ml' ? 'selected' : '' }}>ml</option>
                                 <option value="sachet" {{ $currentSatuan === 'sachet' ? 'selected' : '' }}>sachet</option>
-                                <option value="pcs" {{ $currentSatuan === 'pcs' ? 'selected' : '' }}>pcs / butir</option>
+                                <option value="botol" {{ $currentSatuan === 'botol' ? 'selected' : '' }}>botol</option>
+                                <option value="pcs" {{ $currentSatuan === 'pcs' ? 'selected' : '' }}>pcs</option>
                             </select>
                         </div>
-                        <p class="text-[11px] text-gray-500 mt-1">Dikonversi otomatis ke gram/ml untuk dosis.</p>
+                        <p class="text-[11px] text-gray-500 mt-1">Konversi dosis otomatis.</p>
                         @error('kemasan_jumlah')
                             <p class="text-xs text-red-600 mt-1 font-semibold">{{ $message }}</p>
                         @enderror
@@ -628,6 +651,7 @@
                                         'id' => null,
                                         'toko_obat' => old('toko_obat', $medicine->toko_obat ?? ''),
                                         'harga' => old('harga', $medicine->harga ?? null),
+                                        'jumlah' => 1,
                                         'tanggal_beli' => isset($medicine->tanggal_beli) ? $medicine->tanggal_beli->format('Y-m-d') : old('tanggal_beli', ''),
                                         'catatan' => '',
                                     ]
@@ -652,7 +676,7 @@
                                     </button>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                     <div>
                                         <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nama Toko</label>
                                         <input type="text"
@@ -672,6 +696,15 @@
                                                    placeholder="Contoh: 68.000"
                                                    class="purchase-harga-input w-full pl-8 pr-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-semibold">
                                         </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-600 mb-1">Jumlah Beli</label>
+                                        <input type="number"
+                                               min="1"
+                                               name="purchases[{{ $index }}][jumlah]"
+                                               value="{{ $purchase->jumlah ?? 1 }}"
+                                               placeholder="1"
+                                               class="purchase-jumlah-input w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-bold">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-semibold text-gray-600 mb-1">Tanggal Beli</label>
@@ -1227,9 +1260,19 @@ function handleMedicineNameLookup(val) {
 function applyMedicineAutofill(matched) {
     const banner = document.getElementById('autofill-banner');
     const nameSpan = document.getElementById('autofill-medicine-name');
+    const stokSpan = document.getElementById('autofill-stok-text');
     if (banner && nameSpan) {
         nameSpan.textContent = matched.nama;
+        if (stokSpan) {
+            stokSpan.textContent = (matched.stok ?? 0) + (matched.kemasan_satuan ? ' ' + matched.kemasan_satuan : '');
+        }
         banner.classList.remove('hidden');
+    }
+
+    // Stok Obat
+    const stokInput = document.getElementById('stok');
+    if (stokInput && matched.stok !== undefined && matched.stok !== null) {
+        stokInput.value = matched.stok;
     }
 
     // 1. Kategori (Jenis)
@@ -1393,7 +1436,7 @@ function applyMedicineAutofill(matched) {
                             </svg>
                         </button>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div>
                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nama Toko</label>
                             <input type="text"
@@ -1413,6 +1456,15 @@ function applyMedicineAutofill(matched) {
                                        placeholder="Contoh: 68.000"
                                        class="purchase-harga-input w-full pl-8 pr-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-semibold">
                             </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Jumlah Beli</label>
+                            <input type="number"
+                                   min="1"
+                                   name="purchases[${idx}][jumlah]"
+                                   value="${p.jumlah || 1}"
+                                   placeholder="1"
+                                   class="purchase-jumlah-input w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-bold">
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">Tanggal Beli</label>
@@ -1496,7 +1548,7 @@ window.addPurchaseRow = function() {
                 </svg>
             </button>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
                 <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nama Toko</label>
                 <input type="text"
@@ -1514,6 +1566,15 @@ window.addPurchaseRow = function() {
                            placeholder="Contoh: 70.000"
                            class="purchase-harga-input w-full pl-8 pr-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-semibold">
                 </div>
+            </div>
+            <div>
+                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Jumlah Beli</label>
+                <input type="number"
+                       min="1"
+                       name="purchases[${nextIndex}][jumlah]"
+                       value="1"
+                       placeholder="1"
+                       class="purchase-jumlah-input w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-bold">
             </div>
             <div>
                 <label class="block text-[11px] font-semibold text-gray-600 mb-1">Tanggal Beli</label>

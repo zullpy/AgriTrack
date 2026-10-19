@@ -21,10 +21,10 @@ class ExampleTest extends TestCase
         $response = $this->get('/data-obat');
 
         $response->assertStatus(200);
-        $response->assertDontSee('Stok');
+        $response->assertSee('Data Obat');
     }
 
-    public function test_can_create_and_update_medicine_without_stok(): void
+    public function test_can_create_and_update_medicine(): void
     {
         $storeResponse = $this->post('/data-obat', [
             'nama' => 'Insektisida Organik',
@@ -33,12 +33,14 @@ class ExampleTest extends TestCase
             'dosis_anjuran' => '5 ml / liter',
             'interval_aplikasi' => '7 hari',
             'catatan_keamanan' => 'Aman untuk lingkungan',
+            'stok' => 5,
         ]);
 
         $storeResponse->assertRedirect('/data-obat');
         $this->assertDatabaseHas('medicines', [
             'nama' => 'Insektisida Organik',
             'jenis' => 'Insektisida',
+            'stok' => 5,
         ]);
     }
 }

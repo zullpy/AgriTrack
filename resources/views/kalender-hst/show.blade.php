@@ -573,10 +573,22 @@
                                                 $isDone = $act->status === 'Selesai';
                                             @endphp
                                             <div class="flex items-start justify-between gap-2 p-1.5 rounded-lg {{ $isToday ? 'bg-white/90 border border-emerald-300 shadow-xs' : ($isDone ? 'bg-gray-100/80 text-text-muted' : 'bg-white border border-gray-200') }}">
-                                                <div class="min-w-0 flex-1">
-                                                    <span class="font-semibold text-xs sm:text-sm {{ $isDone ? 'line-through text-gray-400' : 'text-gray-900' }} break-words">
-                                                        {{ $act->nama_kegiatan }}
-                                                    </span>
+                                                <div class="min-w-0 flex-1 flex items-start gap-2">
+                                                    {{-- Tombol Toggle Status Selesai / Belum --}}
+                                                    <button type="button"
+                                                            onclick="toggleActivityStatus({{ $act->id }})"
+                                                            title="{{ $isDone ? 'Status: Selesai. Klik untuk batalkan (stok obat/perlengkapan akan dikembalikan).' : 'Status: Belum. Klik untuk tandai Selesai (stok obat/perlengkapan akan otomatis dipotong).' }}"
+                                                            class="w-5 h-5 mt-0.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 {{ $isDone ? 'bg-emerald-600 border-2 border-emerald-600 text-white shadow-2xs hover:bg-emerald-700' : 'border-2 border-gray-300 hover:border-emerald-500 hover:bg-emerald-50 text-transparent hover:text-emerald-600' }}">
+                                                        <svg class="w-3.5 h-3.5 {{ $isDone ? 'block' : 'opacity-0 hover:opacity-100' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                                                        </svg>
+                                                    </button>
+
+                                                    <div class="min-w-0 flex-1">
+                                                        <span class="font-semibold text-xs sm:text-sm {{ $isDone ? 'line-through text-gray-400' : 'text-gray-900' }} break-words">
+                                                            {{ $act->nama_kegiatan }}
+                                                        </span>
+                                                    </div>
                                                 </div>
 
                                                 {{-- Tombol Edit / Hapus Kegiatan --}}
@@ -1040,7 +1052,7 @@
                                 </svg>
                                 <span>Jumlah Tank Semprot</span>
                             </label>
-                            <p class="text-[11px] text-gray-500">
+                            <p id="add-tank-hint-text" class="text-[11px] text-gray-500">
                                 Takaran dosis dihitung untuk 1 tangki semprot (±16L).
                             </p>
                         </div>
@@ -1073,39 +1085,39 @@
 
                     {{-- Total Summary Bar --}}
                     <div id="add-obat-total-bar" class="p-3 sm:p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/90 to-teal-50/90 border border-emerald-200/90 shadow-2xs space-y-2 text-xs">
-                        {{-- Baris 1: Subtotal Dosis per Tank --}}
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1.5 min-w-0">
-                                <span class="text-gray-600 font-medium">Subtotal Dosis / Tank</span>
-                                <span id="add-obat-count-badge" class="text-[10px] bg-emerald-100/90 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold shrink-0">0 Obat</span>
-                            </div>
-                            <div class="text-right shrink-0 whitespace-nowrap">
-                                <span id="add-obat-subtotal-display" class="font-bold text-gray-900">Rp 0</span>
-                                <span id="add-obat-tank-display" class="text-[11px] font-semibold text-emerald-800 ml-1">× 1 Tank</span>
+                        {{-- Baris 1: Item Count Header --}}
+                        <div class="flex items-center justify-between pb-1.5 border-b border-emerald-200/70">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-950">Rincian Estimasi Biaya</span>
+                            <span id="add-obat-count-badge" class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">0 Item</span>
+                        </div>
+
+                        {{-- Baris 2: Subtotal --}}
+                        <div class="flex items-baseline justify-between gap-2">
+                            <span id="add-obat-subtotal-label" class="text-gray-600 font-medium text-[11px] truncate">Subtotal Dosis</span>
+                            <div class="text-right shrink-0">
+                                <span id="add-obat-subtotal-display" class="font-bold text-gray-900 text-xs">Rp 0</span>
+                                <span id="add-obat-tank-display" class="text-[10px] font-semibold text-emerald-800 ml-1">× 1 Tank</span>
                             </div>
                         </div>
 
-                        {{-- Baris 2: Biaya per Populasi --}}
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1 min-w-0">
-                                <span class="text-teal-800 font-medium">Biaya per Populasi:</span>
-                                @if ($crop->numeric_populasi > 0)
-                                    <span class="text-[10px] text-gray-400">({{ $crop->formatted_populasi_label }})</span>
-                                @endif
-                            </div>
-                            <div class="text-right shrink-0 whitespace-nowrap">
-                                <span id="add-obat-per-populasi-display" class="font-extrabold text-teal-900">Rp 0 / {{ $crop->populasi_unit_label }}</span>
+                        {{-- Baris 3: Biaya per Batang / Populasi --}}
+                        <div id="add-obat-populasi-wrapper" class="flex items-baseline justify-between gap-2 pt-1 border-t border-emerald-100/70">
+                            <span class="text-teal-800 font-medium text-[11px] truncate">
+                                Biaya per Populasi:
+                            </span>
+                            <div class="text-right shrink-0">
+                                <span id="add-obat-per-populasi-display" class="font-extrabold text-teal-900 text-xs">Rp 0 / {{ $crop->populasi_unit_label }}</span>
                             </div>
                         </div>
 
-                        {{-- Baris 3: Total Biaya Obat (Highlighted) --}}
-                        <div class="pt-2 border-t border-emerald-200/70 flex items-center justify-between gap-2">
+                        {{-- Baris 4: Total Biaya (Highlighted) --}}
+                        <div class="pt-2 border-t border-emerald-200/80 flex items-center justify-between gap-2">
                             <div class="min-w-0">
-                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-950 block">Total Biaya Obat</span>
-                                <span class="text-[10px] text-gray-500 font-medium block">Otomatis masuk ke pengeluaran</span>
+                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-950 block">Total Biaya</span>
+                                <span class="text-[10px] text-gray-500 font-medium block">Masuk ke pengeluaran</span>
                             </div>
                             <div class="text-right shrink-0 whitespace-nowrap">
-                                <span id="add-obat-total-display" class="font-black text-emerald-700 text-lg sm:text-xl whitespace-nowrap block leading-tight">Rp 0</span>
+                                <span id="add-obat-total-display" class="font-black text-emerald-700 text-base sm:text-lg whitespace-nowrap block leading-tight">Rp 0</span>
                             </div>
                         </div>
                     </div>
@@ -1174,6 +1186,21 @@
 
                 {{-- Container Pratinjau Foto --}}
                 <div id="add-photo-preview-grid" class="grid grid-cols-5 gap-2 pt-1 hidden"></div>
+            </div>
+
+            {{-- Status: Tandai Langsung Selesai --}}
+            <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 flex items-center justify-between gap-3">
+                <label for="add-status-selesai" class="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-emerald-950 select-none">
+                    <input type="hidden" name="status" value="Belum">
+                    <input type="checkbox"
+                           id="add-status-selesai"
+                           name="status"
+                           value="Selesai"
+                           checked
+                           class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                    <span>Tandai Langsung Selesai</span>
+                </label>
+                <span class="text-[10px] text-emerald-700 font-medium text-right">Stok otomatis langsung dipotong</span>
             </div>
 
             </div>
@@ -1297,7 +1324,7 @@
                                 </svg>
                                 <span>Jumlah Tank Semprot</span>
                             </label>
-                            <p class="text-[11px] text-gray-500">
+                            <p id="edit-tank-hint-text" class="text-[11px] text-gray-500">
                                 Takaran dosis dihitung untuk 1 tangki semprot (±16L).
                             </p>
                         </div>
@@ -1330,39 +1357,39 @@
 
                     {{-- Total Summary Bar --}}
                     <div id="edit-obat-total-bar" class="p-3 sm:p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/90 to-teal-50/90 border border-emerald-200/90 shadow-2xs space-y-2 text-xs">
-                        {{-- Baris 1: Subtotal Dosis per Tank --}}
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1.5 min-w-0">
-                                <span class="text-gray-600 font-medium">Subtotal Dosis / Tank</span>
-                                <span id="edit-obat-count-badge" class="text-[10px] bg-emerald-100/90 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold shrink-0">0 Obat</span>
-                            </div>
-                            <div class="text-right shrink-0 whitespace-nowrap">
-                                <span id="edit-obat-subtotal-display" class="font-bold text-gray-900">Rp 0</span>
-                                <span id="edit-obat-tank-display" class="text-[11px] font-semibold text-emerald-800 ml-1">× 1 Tank</span>
+                        {{-- Baris 1: Item Count Header --}}
+                        <div class="flex items-center justify-between pb-1.5 border-b border-emerald-200/70">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-950">Rincian Estimasi Biaya</span>
+                            <span id="edit-obat-count-badge" class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">0 Item</span>
+                        </div>
+
+                        {{-- Baris 2: Subtotal --}}
+                        <div class="flex items-baseline justify-between gap-2">
+                            <span id="edit-obat-subtotal-label" class="text-gray-600 font-medium text-[11px] truncate">Subtotal Dosis</span>
+                            <div class="text-right shrink-0">
+                                <span id="edit-obat-subtotal-display" class="font-bold text-gray-900 text-xs">Rp 0</span>
+                                <span id="edit-obat-tank-display" class="text-[10px] font-semibold text-emerald-800 ml-1">× 1 Tank</span>
                             </div>
                         </div>
 
-                        {{-- Baris 2: Biaya per Populasi --}}
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1 min-w-0">
-                                <span class="text-teal-800 font-medium">Biaya per Populasi:</span>
-                                @if ($crop->numeric_populasi > 0)
-                                    <span class="text-[10px] text-gray-400">({{ $crop->formatted_populasi_label }})</span>
-                                @endif
-                            </div>
-                            <div class="text-right shrink-0 whitespace-nowrap">
-                                <span id="edit-obat-per-populasi-display" class="font-extrabold text-teal-900">Rp 0 / {{ $crop->populasi_unit_label }}</span>
+                        {{-- Baris 3: Biaya per Batang / Populasi --}}
+                        <div id="edit-obat-populasi-wrapper" class="flex items-baseline justify-between gap-2 pt-1 border-t border-emerald-100/70">
+                            <span class="text-teal-800 font-medium text-[11px] truncate">
+                                Biaya per Populasi:
+                            </span>
+                            <div class="text-right shrink-0">
+                                <span id="edit-obat-per-populasi-display" class="font-extrabold text-teal-900 text-xs">Rp 0 / {{ $crop->populasi_unit_label }}</span>
                             </div>
                         </div>
 
-                        {{-- Baris 3: Total Biaya Obat (Highlighted) --}}
-                        <div class="pt-2 border-t border-emerald-200/70 flex items-center justify-between gap-2">
+                        {{-- Baris 4: Total Biaya (Highlighted) --}}
+                        <div class="pt-2 border-t border-emerald-200/80 flex items-center justify-between gap-2">
                             <div class="min-w-0">
-                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-950 block">Total Biaya Obat</span>
-                                <span class="text-[10px] text-gray-500 font-medium block">Otomatis masuk ke pengeluaran</span>
+                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-950 block">Total Biaya</span>
+                                <span class="text-[10px] text-gray-500 font-medium block">Masuk ke pengeluaran</span>
                             </div>
                             <div class="text-right shrink-0 whitespace-nowrap">
-                                <span id="edit-obat-total-display" class="font-black text-emerald-700 text-lg sm:text-xl whitespace-nowrap block leading-tight">Rp 0</span>
+                                <span id="edit-obat-total-display" class="font-black text-emerald-700 text-base sm:text-lg whitespace-nowrap block leading-tight">Rp 0</span>
                             </div>
                         </div>
                     </div>
@@ -1935,9 +1962,6 @@
                         <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                             Nama Obat (Ketik untuk mencari)
                         </label>
-                        <span class="selected-med-badge text-[10px] font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full ${medJenis ? '' : 'hidden'}">
-                            ${escapeHtml(medJenis)}
-                        </span>
                     </div>
                     <div class="relative flex items-center">
                         <div class="absolute left-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none text-gray-400 z-10">
@@ -1980,7 +2004,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-end pt-1.5 border-t border-gray-100">
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                        <label class="dosis-label-title block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                             Dosis Obat
                         </label>
                         <span class="dosis-hint text-[10px] text-emerald-800 font-medium truncate max-w-[150px]">
@@ -2002,7 +2026,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                    <label class="cost-label-title block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                         Perkiraan Biaya Dosis
                     </label>
                     <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 font-bold text-xs" style="min-height: 38px;">
@@ -2035,8 +2059,12 @@
                 clearBtn.classList.add('hidden');
             }
 
-            // Check if exact match
-            const exactMatch = ALL_MEDICINES.find(m => m.nama.toLowerCase() === val.trim().toLowerCase());
+            // Check if exact match against in-stock medicines
+            const exactMatch = ALL_MEDICINES.find(m => {
+                const vol = parseFloat(m.stok_volume !== undefined && m.stok_volume !== null ? m.stok_volume : 0);
+                const qty = parseInt(m.stok !== undefined && m.stok !== null ? m.stok : 0);
+                return (vol > 0 || qty > 0) && m.nama.toLowerCase() === val.trim().toLowerCase();
+            });
             if (exactMatch) {
                 bindObatDataToRow(row, exactMatch, prefix, false);
             } else {
@@ -2105,12 +2133,31 @@
         if (!dropdown) return;
 
         const q = (query || '').trim().toLowerCase();
+
+        // Filter: Hanya obat yang memiliki persediaan stok yang muncul di daftar pilihan
+        const inStockMeds = ALL_MEDICINES.filter(m => {
+            const vol = parseFloat(m.stok_volume !== undefined && m.stok_volume !== null ? m.stok_volume : 0);
+            const qty = parseInt(m.stok !== undefined && m.stok !== null ? m.stok : 0);
+            return vol > 0 || qty > 0;
+        });
+
+        if (inStockMeds.length === 0) {
+            dropdown.innerHTML = `
+                <div class="p-3 text-center text-xs text-gray-500">
+                    <p class="font-bold text-gray-700">Tidak ada stok obat yang tersedia</p>
+                    <p class="text-[11px] text-gray-400 mt-1">Semua obat saat ini berstatus habis (stok 0). Silakan catat pembelian atau tambah stok di menu Stok Obat.</p>
+                </div>
+            `;
+            dropdown.classList.remove('hidden');
+            return;
+        }
+
         let filtered = [];
 
         if (!q) {
-            filtered = ALL_MEDICINES;
+            filtered = inStockMeds;
         } else {
-            filtered = ALL_MEDICINES.filter(m => {
+            filtered = inStockMeds.filter(m => {
                 const name = (m.nama || '').toLowerCase();
                 const jenis = (m.jenis || '').toLowerCase();
                 const sasaran = (m.sasaran_obat || '').toLowerCase();
@@ -2122,8 +2169,8 @@
         if (filtered.length === 0) {
             dropdown.innerHTML = `
                 <div class="p-3 text-center text-xs text-gray-500">
-                    <p class="font-medium text-gray-700">Tidak ada obat dengan nama "<b>${escapeHtml(query)}</b>"</p>
-                    <p class="text-[10px] text-gray-400 mt-0.5">Teks yang diketik tetap akan disimpan sebagai catatan obat.</p>
+                    <p class="font-medium text-gray-700">Tidak ada obat berstok dengan nama "<b>${escapeHtml(query)}</b>"</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">Hanya obat yang memiliki sisa stok yang muncul di daftar pilihan.</p>
                 </div>
             `;
             dropdown.classList.remove('hidden');
@@ -2137,6 +2184,10 @@
                 : '';
             const kemasanStr = m.kemasan_label ? `<span class="text-[10px] text-gray-500">Kemasan: ${escapeHtml(m.kemasan_label)}</span>` : '';
             const jenisStr = m.jenis ? `<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-gray-100 text-gray-700">${escapeHtml(m.jenis)}</span>` : '';
+            const stokText = m.stok_volume_label || m.stok_label || '';
+            const stokStr = stokText 
+                ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Stok: ${escapeHtml(stokText)}</span>` 
+                : '';
             const highlightedName = highlightMatch(m.nama, q);
 
             itemsHtml += `
@@ -2148,13 +2199,15 @@
                      data-rate="${m.harga_per_base_unit || 0}"
                      data-rate-formatted="${escapeHtml(m.formatted_harga_per_base_unit || '')}"
                      data-dosis="${escapeHtml(m.dosis_anjuran || '')}"
+                     data-stok="${escapeHtml(stokText)}"
                      data-sasaran="${escapeHtml(m.sasaran_obat || '')}">
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <span class="text-xs font-bold text-gray-900 truncate">${highlightedName}</span>
                             ${jenisStr}
+                            ${stokStr}
                         </div>
-                        <div class="flex items-center gap-2 mt-0.5">
+                        <div class="flex items-center gap-2 mt-0.5 flex-wrap">
                             ${kemasanStr}
                             ${m.sasaran_obat ? `<span class="text-[10px] text-gray-500 truncate max-w-[180px]">Sasaran: ${escapeHtml(m.sasaran_obat)}</span>` : ''}
                         </div>
@@ -2175,6 +2228,20 @@
                 bindObatDataToRow(row, item.dataset, prefix, true);
             });
         });
+    }
+
+    const EQUIPMENT_UNITS = [
+        'pcs', 'buah', 'lembar', 'rol', 'roll', 'gulung', 'ikat', 'batang', 'set', 'karung', 'unit', 'biji', 'pack', 'pak', 'meter', 'm', 'tali', 'kresek', 'sak', 'kantong'
+    ];
+
+    function isEquipment(unit, jenis, name) {
+        unit = (unit || '').toLowerCase().trim();
+        jenis = (jenis || '').toLowerCase().trim();
+        name = (name || '').toLowerCase().trim();
+        if (EQUIPMENT_UNITS.includes(unit)) return true;
+        if (jenis.includes('perlengkapan') || jenis.includes('peralatan') || jenis.includes('alat')) return true;
+        if (/(karung|kresek|tali|rapia|mulsa|ajir|bambu|polybag|polibag|tray|selang|terpal|kardus|plastik|kantong)/i.test(name)) return true;
+        return false;
     }
 
     function bindObatDataToRow(row, data, prefix, autoFocusDose = false) {
@@ -2200,6 +2267,8 @@
         const sasaran = data.sasaran_obat || data.sasaran || '';
         const jenis = data.jenis || '';
 
+        const isEq = isEquipment(unit, jenis, nama);
+
         if (searchInput) searchInput.value = nama;
         if (idInput) idInput.value = data.id || '';
         if (nameInput) nameInput.value = nama;
@@ -2208,20 +2277,27 @@
         if (dosisInputVal) dosisInputVal.value = dosis;
         if (sasaranInputVal) sasaranInputVal.value = sasaran;
 
+        const doseLabel = row.querySelector('.dosis-label-title');
+        const costLabel = row.querySelector('.cost-label-title');
+        if (doseLabel) doseLabel.textContent = isEq ? 'Jumlah Dipakai (Non-Tank)' : 'Dosis Obat (per Tank)';
+        if (costLabel) costLabel.textContent = isEq ? 'Biaya Perlengkapan (Langsung)' : 'Perkiraan Biaya Dosis';
+
         if (unitBadge) unitBadge.textContent = unit;
-        if (dosisHint) dosisHint.textContent = dosis ? `Anjuran: ${dosis}` : '';
+        if (dosisHint) {
+            if (isEq) {
+                dosisHint.textContent = 'Langsung (tidak dikali tangki)';
+            } else {
+                dosisHint.textContent = dosis ? `Anjuran: ${dosis}` : '';
+            }
+        }
         if (clearBtn) clearBtn.classList.remove('hidden');
 
         if (badge) {
-            badge.textContent = jenis || 'Obat Terdaftar';
+            const stokInfo = data.stok || data.stok_volume_label || data.stok_label || '';
+            const typeLabel = isEq ? (jenis || 'Perlengkapan') : (jenis || 'Obat');
+            const suffix = isEq ? ' • Non-Tank' : '';
+            badge.textContent = stokInfo ? `${typeLabel}${suffix} • Sisa ${stokInfo}` : `${typeLabel}${suffix}`;
             badge.classList.remove('hidden');
-        }
-
-        if (sasaran) {
-            const sasaranModalInput = document.getElementById(`${prefix}-sasaran`);
-            if (sasaranModalInput && !sasaranModalInput.value.trim()) {
-                sasaranModalInput.value = sasaran;
-            }
         }
 
         if (dropdown) dropdown.classList.add('hidden');
@@ -2243,10 +2319,11 @@
         const unitInput = row.querySelector('.obat-unit-val');
         const nameInput = row.querySelector('.obat-name-val');
         const searchInput = row.querySelector('.obat-search-input');
+        const idInput = row.querySelector('.obat-id-val');
 
         const medName = (nameInput?.value || searchInput?.value || '').trim();
         if (!medName) {
-            if (costCalc) costCalc.textContent = 'Ketik & pilih obat';
+            if (costCalc) costCalc.textContent = 'Ketik & pilih obat / perlengkapan';
             if (costAmount) costAmount.textContent = 'Rp 0';
             return 0;
         }
@@ -2255,20 +2332,31 @@
         const unit = unitInput?.value || 'gram';
         const dose = parseFloat(doseInput?.value || '0');
 
+        const medObj = ALL_MEDICINES.find(m => String(m.id) === String(idInput?.value || ''))
+            || ALL_MEDICINES.find(m => m.nama.toLowerCase() === medName.toLowerCase());
+        const isEq = isEquipment(unit, medObj?.jenis || '', medName);
+
+        const doseLabel = row.querySelector('.dosis-label-title');
+        const costLabel = row.querySelector('.cost-label-title');
+        if (doseLabel) doseLabel.textContent = isEq ? 'Jumlah Dipakai (Non-Tank)' : 'Dosis Obat (per Tank)';
+        if (costLabel) costLabel.textContent = isEq ? 'Biaya Perlengkapan (Langsung)' : 'Perkiraan Biaya Dosis';
+
+        const eqTag = isEq ? ' (Non-Tank)' : '';
+
         if (dose > 0 && rate > 0) {
             const cost = Math.round(dose * rate);
             const formattedCost = 'Rp ' + Number(cost).toLocaleString('id-ID');
             const formattedRate = 'Rp ' + (rate < 10 && rate % 1 !== 0 ? rate.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(rate).toLocaleString('id-ID'));
-            if (costCalc) costCalc.textContent = `${dose} ${unit} × ${formattedRate}/${unit}`;
+            if (costCalc) costCalc.textContent = `${dose} ${unit} × ${formattedRate}/${unit}${eqTag}`;
             if (costAmount) costAmount.textContent = formattedCost;
             return cost;
         } else if (dose > 0) {
-            if (costCalc) costCalc.textContent = `${dose} ${unit} (Harga belum diset)`;
+            if (costCalc) costCalc.textContent = `${dose} ${unit} (Harga belum diset)${eqTag}`;
             if (costAmount) costAmount.textContent = 'Rp —';
             return 0;
         } else {
             const formattedRate = rate > 0 ? `Rp ${Math.round(rate).toLocaleString('id-ID')}/${unit}` : 'Rp 0';
-            if (costCalc) costCalc.textContent = `0 ${unit} × ${formattedRate}`;
+            if (costCalc) costCalc.textContent = `0 ${unit} × ${formattedRate}${eqTag}`;
             if (costAmount) costAmount.textContent = 'Rp 0';
             return 0;
         }
@@ -2300,12 +2388,10 @@
 
     function updateObatSummary(prefix) {
         const container = document.getElementById(`${prefix}-obat-rows-container`);
-        const totalBar = document.getElementById(`${prefix}-obat-total-bar`);
         const subtotalDisplay = document.getElementById(`${prefix}-obat-subtotal-display`);
         const tankDisplay = document.getElementById(`${prefix}-obat-tank-display`);
         const totalDisplay = document.getElementById(`${prefix}-obat-total-display`);
         const countBadge = document.getElementById(`${prefix}-obat-count-badge`);
-        const breakdownText = document.getElementById(`${prefix}-obat-calc-breakdown`);
         const hiddenAplikasiObat = document.getElementById(`${prefix}-aplikasi-obat`);
         const hiddenTotalBiaya = document.getElementById(`${prefix}-total-biaya-obat`);
         const tankInput = document.getElementById(`${prefix}-jumlah-tank`);
@@ -2318,7 +2404,10 @@
         }
 
         const rows = container.querySelectorAll('.obat-row');
-        let subtotalPerTank = 0;
+        let subtotalObatPerTank = 0;
+        let totalEquipmentDirect = 0;
+        let obatCount = 0;
+        let equipCount = 0;
         const summaryItems = [];
 
         rows.forEach(r => {
@@ -2327,6 +2416,7 @@
             const unitInput = r.querySelector('.obat-unit-val');
             const rateInput = r.querySelector('.obat-rate-val');
             const doseInput = r.querySelector('.dosis-input');
+            const idInput = r.querySelector('.obat-id-val');
 
             const medName = (nameInput?.value || searchInput?.value || '').trim();
             if (medName) {
@@ -2334,13 +2424,25 @@
                 const dose = parseFloat(doseInput?.value || '0');
                 const rate = parseFloat(rateInput?.value || '0');
 
-                let itemCostPerTank = 0;
+                const medObj = ALL_MEDICINES.find(m => String(m.id) === String(idInput?.value || ''))
+                    || ALL_MEDICINES.find(m => m.nama.toLowerCase() === medName.toLowerCase());
+                const isEq = isEquipment(unit, medObj?.jenis || '', medName);
+
+                let itemCost = 0;
                 if (dose > 0 && rate > 0) {
-                    itemCostPerTank = Math.round(dose * rate);
-                    subtotalPerTank += itemCostPerTank;
+                    itemCost = Math.round(dose * rate);
                 }
 
-                const itemGrandTotal = Math.round(itemCostPerTank * jumlahTank);
+                let itemGrandTotal = 0;
+                if (isEq) {
+                    equipCount++;
+                    itemGrandTotal = itemCost; // Langsung, TIDAK dikali tank!
+                    totalEquipmentDirect += itemCost;
+                } else {
+                    obatCount++;
+                    itemGrandTotal = Math.round(itemCost * jumlahTank); // Dikalikan tank
+                    subtotalObatPerTank += itemCost;
+                }
 
                 if (dose > 0) {
                     if (itemGrandTotal > 0) {
@@ -2354,13 +2456,65 @@
             }
         });
 
-        const grandTotal = Math.round(subtotalPerTank * jumlahTank);
+        const totalObat = Math.round(subtotalObatPerTank * jumlahTank);
+        const grandTotal = totalObat + totalEquipmentDirect;
         const fmtTank = (Math.round(jumlahTank * 100) / 100).toString().replace('.', ',');
 
-        if (subtotalDisplay) subtotalDisplay.textContent = 'Rp ' + subtotalPerTank.toLocaleString('id-ID');
-        if (tankDisplay) tankDisplay.textContent = `× ${fmtTank} Tank`;
+        const subtotalLabel = document.getElementById(`${prefix}-obat-subtotal-label`);
+        if (subtotalLabel) {
+            if (obatCount > 0 && equipCount > 0) {
+                subtotalLabel.textContent = 'Dosis Obat / Tank';
+            } else if (obatCount === 0 && equipCount > 0) {
+                subtotalLabel.textContent = 'Total Perlengkapan';
+            } else {
+                subtotalLabel.textContent = 'Subtotal Dosis';
+            }
+        }
+
+        if (subtotalDisplay) {
+            if (obatCount > 0 && equipCount > 0) {
+                subtotalDisplay.textContent = 'Rp ' + subtotalObatPerTank.toLocaleString('id-ID');
+            } else if (obatCount === 0 && equipCount > 0) {
+                subtotalDisplay.textContent = 'Rp ' + totalEquipmentDirect.toLocaleString('id-ID');
+            } else {
+                subtotalDisplay.textContent = 'Rp ' + subtotalObatPerTank.toLocaleString('id-ID');
+            }
+        }
+
+        if (tankDisplay) {
+            if (obatCount > 0 && equipCount > 0) {
+                tankDisplay.textContent = `× ${fmtTank} Tank (+ Alat Rp ${totalEquipmentDirect.toLocaleString('id-ID')})`;
+            } else if (obatCount === 0 && equipCount > 0) {
+                tankDisplay.textContent = '(Non-Tank)';
+            } else {
+                tankDisplay.textContent = `× ${fmtTank} Tank`;
+            }
+        }
+
         if (totalDisplay) totalDisplay.textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
-        if (countBadge) countBadge.textContent = `${summaryItems.length} Obat`;
+
+        if (countBadge) {
+            if (obatCount > 0 && equipCount > 0) {
+                countBadge.textContent = `${obatCount} Obat + ${equipCount} Alat`;
+            } else if (equipCount > 0) {
+                countBadge.textContent = `${equipCount} Perlengkapan`;
+            } else if (obatCount > 0) {
+                countBadge.textContent = `${obatCount} Obat`;
+            } else {
+                countBadge.textContent = '0 Item';
+            }
+        }
+
+        const tankHint = document.getElementById(`${prefix}-tank-hint-text`);
+        if (tankHint) {
+            if (obatCount === 0 && equipCount > 0) {
+                tankHint.textContent = 'Perlengkapan tidak dipengaruhi jumlah tangki semprot.';
+                tankHint.className = 'text-[11px] text-amber-700 font-semibold';
+            } else {
+                tankHint.textContent = 'Takaran dosis dihitung untuk 1 tangki semprot (±16L).';
+                tankHint.className = 'text-[11px] text-gray-500';
+            }
+        }
 
         // Hitung biaya per populasi: Total Biaya Obat ÷ Populasi
         const perPopDisplay = document.getElementById(`${prefix}-obat-per-populasi-display`);
@@ -2404,7 +2558,7 @@
                 }
             }
 
-            const doseMatch = part.match(/(\d+(?:[.,]\d+)?)\s*(?:gram|gr|g|ml|liter|kg|sachet|sendok)/i);
+            const doseMatch = part.match(/(\d+(?:[.,]\d+)?)\s*(?:gram|gr|g|ml|liter|ltr|lt|l|kg|sachet|bungkus|sendok|sdm|pcs|buah|lembar|rol|roll|gulung|karung|unit|pack|pak|meter|m|biji|ikat|batang|sak|tali|kresek)/i);
             if (doseMatch) {
                 foundDose = doseMatch[1].replace(',', '.');
             }
@@ -2550,6 +2704,9 @@
 
         initObatBuilder('add', '', 1);
 
+        const statusCb = document.getElementById('add-status-selesai');
+        if (statusCb) statusCb.checked = true;
+
         // Reset foto
         addSelectedFiles = [];
         syncAddFileInput();
@@ -2567,6 +2724,54 @@
         }
 
         openModal('modal-add-activity');
+    }
+
+    // ── Toggle Status Kegiatan Selesai / Belum (dengan Potong / Kembalikan Stok) ──
+    async function toggleActivityStatus(activityId) {
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                || '{{ csrf_token() }}';
+
+            const res = await fetch(`/kalender-hst/kegiatan/${activityId}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                if (typeof Swal !== 'undefined') {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: data.status === 'Selesai' ? 'Kegiatan Selesai!' : 'Status Diubah',
+                        text: data.message,
+                        timer: 1600,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                }
+                window.location.reload();
+            } else {
+                alert(data.message || 'Gagal mengubah status kegiatan.');
+            }
+        } catch (err) {
+            console.error('Error toggling activity status:', err);
+            // Fallback form post
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/kalender-hst/kegiatan/${activityId}/toggle`;
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            form.appendChild(csrf);
+            document.body.appendChild(form);
+            form.submit();
+        }
     }
 
     // ── Manajemen Foto Modal Edit Kegiatan ──

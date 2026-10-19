@@ -16,6 +16,27 @@
     }
 @endphp
 
+    {{-- ── TAB NAVIGASI: Data Obat vs Stok Obat ── --}}
+    <div class="flex items-center gap-1.5 p-1 bg-gray-100/90 rounded-2xl w-fit mb-5 border border-gray-200/70">
+        <a href="/data-obat"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs bg-white text-emerald-800 border border-gray-200/60 transition-all">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+            </svg>
+            <span>Data Obat</span>
+        </a>
+        <a href="/stok-obat"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-200/60 transition-all">
+            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+            </svg>
+            <span>Stok Obat</span>
+            @if(isset($stokMenipisCount) && $stokMenipisCount > 0)
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900">{{ $stokMenipisCount }}</span>
+            @endif
+        </a>
+    </div>
+
     {{-- ── Header Section (Sleek, Clean, Solid Colors, No Gradient) ── --}}
     <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-gray-200">
         <div class="flex-1 min-w-0">
@@ -494,7 +515,7 @@
                     <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-gray-100 w-full min-w-0 box-border">
                         <button type="button"
                                 onclick="openMedicineDetail({{ $medicine->id }})"
-                                class="w-full py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold text-center transition-colors flex items-center justify-center gap-1 border border-emerald-200/60 box-border">
+                                class="w-full py-2 px-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold text-center transition-colors flex items-center justify-center gap-1 border border-emerald-200/60 box-border">
                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -503,7 +524,7 @@
                         </button>
 
                         <a href="/data-obat/{{ $medicine->id }}/edit"
-                           class="w-full py-2 px-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold text-center transition-colors flex items-center justify-center gap-1 box-border">
+                           class="w-full py-2 px-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold text-center transition-colors flex items-center justify-center gap-1 box-border">
                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 015.25 6H10"/>
                             </svg>
@@ -516,7 +537,7 @@
                             @csrf
                             @method('DELETE')
                             <button type="submit"
-                                    class="w-full py-2 px-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-red-200 box-border">
+                                    class="w-full py-2 px-1 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-red-200 box-border">
                                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
                                 </svg>
@@ -606,7 +627,7 @@
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     @if ($medicine->purchases && $medicine->purchases->count() > 1)
                                         <div class="space-y-1.5">
-                                            @foreach ($medicine->purchases as $p)
+                                             @foreach ($medicine->purchases as $p)
                                                 <div class="flex items-center gap-1.5">
                                                     <span class="text-xs font-bold text-green-700 tabular-nums">
                                                         {{ $p->formatted_harga ?: '—' }}
@@ -825,20 +846,22 @@
                     <p id="modal-keterangan" class="text-xs text-gray-700 leading-relaxed break-words"></p>
                 </div>
             </div>
-            <div class="px-6 py-3.5 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between">
+            <div class="px-6 py-3.5 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between gap-2">
                 <button type="button"
                         onclick="closeMedicineDetail()"
                         class="px-4 py-2 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
                     Tutup
                 </button>
-                <a id="modal-edit-link" 
-                   href="#" 
-                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-all shadow-sm">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 015.25 6H10"/>
-                    </svg>
-                    <span>Edit Data</span>
-                </a>
+                <div class="flex items-center gap-2">
+                    <a id="modal-edit-link" 
+                       href="#" 
+                       class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-all shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 015.25 6H10"/>
+                        </svg>
+                        <span>Edit Data</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -965,10 +988,13 @@ window.toggleDetails = function(id) {
 
 // Modal Detail Obat Functions
 const medicinesData = @json($medicines->items() ? collect($medicines->items())->keyBy('id') : []);
+let currentDetailMedicine = null;
+let currentPurchaseMedicine = null;
 
 window.openMedicineDetail = function(id) {
     const data = medicinesData[id];
     if (!data) return;
+    currentDetailMedicine = data;
 
     // Nama Obat
     document.getElementById('modal-nama').textContent = data.nama || '—';
@@ -1093,6 +1119,12 @@ window.openMedicineDetail = function(id) {
     // Tanaman Sasaran & Dosis
     document.getElementById('modal-tanaman').textContent = data.tanaman_sasaran || '—';
     document.getElementById('modal-dosis').textContent = data.dosis_anjuran || '—';
+    const modalStokEl = document.getElementById('modal-stok');
+    if (modalStokEl) {
+        const stokVal = (data.stok !== undefined && data.stok !== null) ? Number(data.stok) : 0;
+        const kemasanSuffix = data.kemasan_label ? ` (${data.kemasan_label})` : ' Unit';
+        modalStokEl.textContent = `${stokVal}${kemasanSuffix}`;
+    }
 
     // Fase Tanaman
     const faseBadge = document.getElementById('modal-fase-badge');
@@ -1233,6 +1265,8 @@ window.closeMedicineDetail = function() {
     document.body.classList.remove('overflow-hidden');
 };
 
+window.closeQuickPurchaseModal = function() {};
+
 window.toggleActionMenu = function(event, id) {
     event.stopPropagation();
     const menu = document.getElementById(`action-dropdown-${id}`);
@@ -1279,6 +1313,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         document.querySelectorAll('.medicine-action-dropdown').forEach(el => el.classList.add('hidden'));
         closeMedicineDetail();
+        closeQuickPurchaseModal();
     }
 });
 

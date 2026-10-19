@@ -869,4 +869,240 @@ class MedicineTest extends TestCase
         $this->assertTrue(MedicineCategory::where('nama', 'Fungisida')->exists());
         $this->assertTrue(MedicineCategory::where('nama', 'Insektisida')->exists());
     }
+
+    public function test_can_create_medicine_with_stok(): void
+    {
+        $response = $this->post('/data-obat', [
+            'nama' => 'Score 250 EC',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Bawang Merah',
+            'dosis_anjuran' => '1 ml/liter',
+            'harga' => 75000,
+            'stok' => 8,
+            'kemasan_satuan' => 'botol',
+            'toko_obat' => 'Toko Subur',
+            'tanggal_beli' => '2026-10-10',
+        ]);
+
+        $response->assertRedirect('/data-obat');
+
+        $this->assertDatabaseHas('medicines', [
+            'nama' => 'Score 250 EC',
+            'stok' => 8,
+            'harga' => 75000,
+        ]);
+
+        $medicine = Medicine::where('nama', 'Score 250 EC')->first();
+        $this->assertEquals(8, $medicine->stok);
+        $this->assertEquals('8 botol', $medicine->stok_label);
+    }
+
+    public function test_purchasing_existing_medicine_updates_price_and_increments_stock(): void
+    {
+        $existing = Medicine::create([
+            'nama' => 'Amistar Top',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Padi, Jagung',
+            'harga' => 120000,
+            'stok' => 3,
+            'toko_obat' => 'Toko Lama',
+        ]);
+
+        // Submit form with existing medicine name, new price, and purchase qty 4
+        $response = $this->post('/data-obat', [
+            'nama' => 'amistar top ', // slightly different case and whitespace
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Padi, Jagung',
+            'harga' => 135000,
+            'toko_obat' => 'Toko Tani Baru',
+            'tanggal_beli' => '2026-10-19',
+            'purchases' => [
+                [
+                    'toko_obat' => 'Toko Tani Baru',
+                    'harga' => 135000,
+                    'jumlah' => 4,
+                    'tanggal_beli' => '2026-10-19',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect('/data-obat');
+
+        // Should not create a new medicine row
+        $this->assertEquals(1, Medicine::where('nama', 'LIKE', '%Amistar Top%')->count());
+
+        $existing->refresh();
+        $this->assertEquals(135000, $existing->harga);
+        $this->assertEquals(7, $existing->stok); // 3 + 4 = 7
+        $this->assertEquals('Toko Tani Baru', $existing->toko_obat);
+
+        $this->assertDatabaseHas('medicine_purchases', [
+            'medicine_id' => $existing->id,
+            'toko_obat' => 'Toko Tani Baru',
+            'harga' => 135000,
+            'jumlah' => 4,
+        ]);
+    }
+
+    public function test_store_purchase_route_updates_price_and_increments_stock(): void
+    {
+        $medicine = Medicine::create([
+            'nama' => 'Gramoxone 276 SL',
+            'jenis' => 'Herbisida',
+            'tanaman_sasaran' => 'Gulma Umum',
+            'harga' => 80000,
+            'stok' => 2,
+            'toko_obat' => 'Toko Rejeki',
+        ]);
+
+        $response = $this->post("/data-obat/{$medicine->id}/pembelian", [
+            'toko_obat' => 'Toko Sumber Makmur',
+            'harga' => 'Rp 88.000',
+            'jumlah' => 5,
+            'tanggal_beli' => '2026-10-19',
+            'catatan' => 'Restock musim tanam',
+        ]);
+
+        $response->assertRedirect();
+
+        $medicine->refresh();
+        $this->assertEquals(88000, $medicine->harga);
+        $this->assertEquals(7, $medicine->stok); // 2 + 5 = 7
+        $this->assertEquals('Toko Sumber Makmur', $medicine->toko_obat);
+
+        $this->assertDatabaseHas('medicine_purchases', [
+            'medicine_id' => $medicine->id,
+            'toko_obat' => 'Toko Sumber Makmur',
+            'harga' => 88000,
+            'jumlah' => 5,
+            'catatan' => 'Restock musim tanam',
+        ]);
+    }
+
+    public function test_stok_obat_page_loads_and_filters_correctly(): void
+    {
+        Medicine::create([
+            'nama' => 'Obat Aman 1',
+            'jenis' => 'Insektisida',
+            'tanaman_sasaran' => 'Cabai',
+            'harga' => 50000,
+            'stok' => 10,
+        ]);
+
+        Medicine::create([
+            'nama' => 'Obat Menipis 1',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Tomat',
+            'harga' => 60000,
+            'stok' => 2,
+        ]);
+
+        Medicine::create([
+            'nama' => 'Obat Habis 1',
+            'jenis' => 'Pupuk',
+            'tanaman_sasaran' => 'Padi',
+            'harga' => 40000,
+            'stok' => 0,
+        ]);
+
+        $response = $this->get('/stok-obat');
+        $response->assertStatus(200);
+        $response->assertSee('Stok & Pembelian Obat');
+        $response->assertSee('Obat Aman 1');
+        $response->assertSee('Obat Menipis 1');
+        $response->assertSee('Obat Habis 1');
+
+        // Filter status aman
+        $resAman = $this->get('/stok-obat?status=aman');
+        $resAman->assertStatus(200);
+        $this->assertTrue($resAman->viewData('medicines')->pluck('nama')->contains('Obat Aman 1'));
+        $this->assertFalse($resAman->viewData('medicines')->pluck('nama')->contains('Obat Menipis 1'));
+        $this->assertFalse($resAman->viewData('medicines')->pluck('nama')->contains('Obat Habis 1'));
+
+        // Filter status menipis
+        $resMenipis = $this->get('/stok-obat?status=menipis');
+        $resMenipis->assertStatus(200);
+        $this->assertTrue($resMenipis->viewData('medicines')->pluck('nama')->contains('Obat Menipis 1'));
+        $this->assertFalse($resMenipis->viewData('medicines')->pluck('nama')->contains('Obat Aman 1'));
+        $this->assertFalse($resMenipis->viewData('medicines')->pluck('nama')->contains('Obat Habis 1'));
+
+        // Filter status habis
+        $resHabis = $this->get('/stok-obat?status=habis');
+        $resHabis->assertStatus(200);
+        $this->assertTrue($resHabis->viewData('medicines')->pluck('nama')->contains('Obat Habis 1'));
+        $this->assertFalse($resHabis->viewData('medicines')->pluck('nama')->contains('Obat Aman 1'));
+    }
+
+    public function test_store_general_purchase_updates_existing_medicine_or_creates_new(): void
+    {
+        $existing = Medicine::create([
+            'nama' => 'Bion M 1/48 WP',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Cabai',
+            'harga' => 90000,
+            'stok' => 1,
+            'toko_obat' => 'Toko Awal',
+            'tanggal_beli' => '2026-09-01',
+        ]);
+
+        // 1. Purchase existing medicine with DIFFERENT price (90.000 -> 95.000)
+        $resp1 = $this->post('/stok-obat/pembelian', [
+            'medicine_id' => $existing->id,
+            'toko_obat' => 'Toko Maju',
+            'harga' => 'Rp 95.000',
+            'jumlah' => 3,
+            'tanggal_beli' => '2026-10-19',
+        ]);
+
+        $resp1->assertRedirect();
+        $existing->refresh();
+        $this->assertEquals(95000, $existing->harga); // Price updated because different
+        $this->assertEquals(4, $existing->stok); // 1 + 3 = 4
+        $this->assertEquals('2026-10-19', $existing->tanggal_beli->toDateString());
+        $this->assertEquals('Toko Maju', $existing->toko_obat);
+
+        // 2. Purchase existing medicine with SAME price (95.000 -> 95.000): price remains, date updated
+        $respSamePrice = $this->post('/stok-obat/pembelian', [
+            'medicine_id' => $existing->id,
+            'toko_obat' => 'Toko Maju',
+            'harga' => 'Rp 95.000',
+            'jumlah' => 2,
+            'tanggal_beli' => '2026-10-25',
+        ]);
+
+        $respSamePrice->assertRedirect();
+        $existing->refresh();
+        $this->assertEquals(95000, $existing->harga); // Price kept same
+        $this->assertEquals(6, $existing->stok); // 4 + 2 = 6
+        $this->assertEquals('2026-10-25', $existing->tanggal_beli->toDateString()); // Date updated!
+
+        // 3. Purchase a brand new medicine for the first time: directly saved to data obat & stok
+        $resp2 = $this->post('/stok-obat/pembelian', [
+            'nama' => 'Antracol Baru 70 WP',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Semua Sayuran',
+            'toko_obat' => 'Toko Barokah Tani',
+            'harga' => 'Rp 65.000',
+            'jumlah' => 6,
+            'tanggal_beli' => '2026-10-19',
+        ]);
+
+        $resp2->assertRedirect();
+        $this->assertDatabaseHas('medicines', [
+            'nama' => 'Antracol Baru 70 WP',
+            'harga' => 65000,
+            'stok' => 6,
+            'toko_obat' => 'Toko Barokah Tani',
+        ]);
+
+        $newMed = Medicine::where('nama', 'Antracol Baru 70 WP')->first();
+        $this->assertNotNull($newMed);
+        $this->assertEquals(6, $newMed->stok);
+        $this->assertDatabaseHas('medicine_purchases', [
+            'medicine_id' => $newMed->id,
+            'harga' => 65000,
+            'jumlah' => 6,
+            'toko_obat' => 'Toko Barokah Tani',
+        ]);
+    }
 }

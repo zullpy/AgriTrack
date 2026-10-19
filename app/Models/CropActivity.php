@@ -17,6 +17,8 @@ class CropActivity extends Model
         'sasaran',
         'target_hst',
         'status',
+        'stok_dipotong',
+        'stok_deductions',
         'tanggal_selesai',
         'catatan',
         'keterangan',
@@ -29,6 +31,8 @@ class CropActivity extends Model
             'target_hst' => 'integer',
             'jumlah_tank' => 'float',
             'total_biaya_obat' => 'float',
+            'stok_dipotong' => 'boolean',
+            'stok_deductions' => 'array',
             'tanggal_selesai' => 'date',
             'foto_kegiatan' => 'array',
         ];

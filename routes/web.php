@@ -29,8 +29,16 @@ Route::match(['put', 'post', 'patch'], '/data-obat/kategori/{category}', [Medici
 Route::match(['delete', 'post'], '/data-obat/kategori/{category}', [MedicineController::class, 'destroyCategory'])->name('data-obat.category.destroy');
 Route::get('/data-obat/{medicine}/edit', [MedicineController::class, 'edit']);
 Route::put('/data-obat/{medicine}', [MedicineController::class, 'update']);
+Route::post('/data-obat/{medicine}/pembelian', [MedicineController::class, 'storePurchase'])->name('data-obat.pembelian.store');
 Route::delete('/data-obat/{medicine}', [MedicineController::class, 'destroy']);
 Route::delete('/data-obat/{medicine}/foto', [MedicineController::class, 'destroyPhoto']);
+
+// Stok Obat & Pembelian
+Route::get('/stok-obat', [MedicineController::class, 'stok'])->name('stok-obat.index');
+Route::get('/data-obat/stok', function () {
+    return redirect('/stok-obat');
+});
+Route::post('/stok-obat/pembelian', [MedicineController::class, 'storeGeneralPurchase'])->name('stok-obat.pembelian.store');
 
 // Tahapan & Sub-menu
 Route::get('/steps', [StepController::class, 'index'])->name('steps.index');

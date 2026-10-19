@@ -6,6 +6,7 @@ use App\Models\Medicine;
 use App\Models\MedicineCategory;
 use App\Models\MedicinePurchase;
 use App\Services\CloudinaryService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,8 +59,9 @@ class MedicineController extends Controller
         $medicines = $query->latest()->paginate(10)->withQueryString();
         MedicineCategory::ensureTableExists();
         $categories = MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
+        $stokMenipisCount = Medicine::where('stok', '>', 0)->where('stok', '<=', 3)->count();
 
-        return view('data-obat.index', compact('medicines', 'categories'));
+        return view('data-obat.index', compact('medicines', 'categories', 'stokMenipisCount'));
     }
 
     public function create()
@@ -84,7 +86,18 @@ class MedicineController extends Controller
             }
         }
 
-        // Bersihkan harga pada setiap array purchases jika ada
+        // Bersihkan stok jika ada
+        if ($request->has('stok')) {
+            $rawStok = $request->input('stok');
+            if ($rawStok === null || $rawStok === '') {
+                $request->merge(['stok' => null]);
+            } else {
+                $cleanedStok = preg_replace('/\D/', '', (string) $rawStok);
+                $request->merge(['stok' => $cleanedStok !== '' ? (int) $cleanedStok : null]);
+            }
+        }
+
+        // Bersihkan harga & jumlah pada setiap array purchases jika ada
         if ($request->has('purchases') && is_array($request->input('purchases'))) {
             $purchasesInput = $request->input('purchases');
             foreach ($purchasesInput as $idx => $p) {
@@ -95,6 +108,15 @@ class MedicineController extends Controller
                     } else {
                         $cleaned = preg_replace('/\D/', '', (string) $rawP);
                         $purchasesInput[$idx]['harga'] = $cleaned !== '' ? (int) $cleaned : null;
+                    }
+                }
+                if (array_key_exists('jumlah', $p)) {
+                    $rawJ = $p['jumlah'];
+                    if ($rawJ === null || trim((string) $rawJ) === '') {
+                        $purchasesInput[$idx]['jumlah'] = null;
+                    } else {
+                        $cleanedJ = preg_replace('/\D/', '', (string) $rawJ);
+                        $purchasesInput[$idx]['jumlah'] = $cleanedJ !== '' ? (int) $cleanedJ : null;
                     }
                 }
             }
@@ -111,6 +133,7 @@ class MedicineController extends Controller
             'dosis_anjuran' => 'nullable|string|max:255',
             'interval_aplikasi' => 'nullable|string|max:255',
             'harga' => 'nullable|integer|min:0',
+            'stok' => 'nullable|integer|min:0',
             'kemasan_jumlah' => 'nullable|numeric|min:0',
             'kemasan_satuan' => 'nullable|string|max:50',
             'unsur_bahan' => 'nullable|string|max:255',
@@ -124,6 +147,7 @@ class MedicineController extends Controller
             'purchases' => 'nullable|array',
             'purchases.*.toko_obat' => 'nullable|string|max:255',
             'purchases.*.harga' => 'nullable|integer|min:0',
+            'purchases.*.jumlah' => 'nullable|integer|min:0',
             'purchases.*.tanggal_beli' => 'nullable|date',
             'purchases.*.catatan' => 'nullable|string|max:1000',
             'purchases.*.foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
@@ -146,10 +170,11 @@ class MedicineController extends Controller
                     if ($request->hasFile("purchases.{$idx}.foto_nota")) {
                         $pFoto = $this->uploadSinglePhoto($request->file("purchases.{$idx}.foto_nota"));
                     }
-                    if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli'])) {
+                    if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli']) || ! empty($pData['jumlah'])) {
                         $purchasesInput[] = [
                             'toko_obat' => $pData['toko_obat'] ?? null,
                             'harga' => $pData['harga'] ?? null,
+                            'jumlah' => ! empty($pData['jumlah']) ? (int) $pData['jumlah'] : 1,
                             'tanggal_beli' => $pData['tanggal_beli'] ?? null,
                             'catatan' => $pData['catatan'] ?? null,
                             'foto_nota' => $pFoto ?? $primaryFotoPath,
@@ -159,10 +184,11 @@ class MedicineController extends Controller
             }
 
             // Jika tidak menggunakan array purchases, gunakan input tunggal
-            if (empty($purchasesInput) && (! empty($validated['toko_obat']) || ! empty($validated['harga']) || ! empty($validated['tanggal_beli']))) {
+            if (empty($purchasesInput) && (! empty($validated['toko_obat']) || ! empty($validated['harga']) || ! empty($validated['tanggal_beli']) || ! empty($request->input('jumlah')))) {
                 $purchasesInput[] = [
                     'toko_obat' => $validated['toko_obat'] ?? null,
                     'harga' => $validated['harga'] ?? null,
+                    'jumlah' => ! empty($request->input('jumlah')) ? (int) $request->input('jumlah') : 1,
                     'tanggal_beli' => $validated['tanggal_beli'] ?? null,
                     'catatan' => null,
                     'foto_nota' => $primaryFotoPath,
@@ -171,8 +197,11 @@ class MedicineController extends Controller
 
             $updatedStores = [];
             $addedStores = [];
+            $totalAddedQty = 0;
 
             foreach ($purchasesInput as $p) {
+                $qty = (int) ($p['jumlah'] ?? 1);
+                $totalAddedQty += max(1, $qty);
                 $storeName = trim($p['toko_obat'] ?? '');
                 $existingPurchase = null;
 
@@ -200,10 +229,9 @@ class MedicineController extends Controller
                         }
                         $updatePurchaseData['foto_nota'] = $p['foto_nota'];
                     }
+                    $updatePurchaseData['jumlah'] = ($existingPurchase->jumlah ?? 0) + $qty;
 
-                    if (! empty($updatePurchaseData)) {
-                        $existingPurchase->update($updatePurchaseData);
-                    }
+                    $existingPurchase->update($updatePurchaseData);
                     $updatedStores[] = $existingPurchase->toko_obat;
                 } else {
                     // Nama toko baru: buat baris pembelian baru
@@ -242,20 +270,40 @@ class MedicineController extends Controller
                 }
             }
 
+            // Update stok obat: tambah stok dari pembelian baru jika ada, atau update nilai manual
+            $baseTotal = (float) ($existing->base_total_unit ?: 1.0);
+            if ($totalAddedQty > 0) {
+                $currentVolume = ((float) ($existing->stok_volume ?? 0) > 0)
+                    ? (float) $existing->stok_volume
+                    : ((float) ($existing->stok ?? 0) * $baseTotal);
+                $newVolume = $currentVolume + ((float) $totalAddedQty * $baseTotal);
+                $masterUpdates['stok_volume'] = $newVolume;
+                $masterUpdates['stok'] = $baseTotal > 0 ? (int) ceil($newVolume / $baseTotal) : (int) $newVolume;
+            } elseif (array_key_exists('stok', $validated) && $validated['stok'] !== null) {
+                $masterUpdates['stok'] = (int) $validated['stok'];
+                $masterUpdates['stok_volume'] = (float) $validated['stok'] * $baseTotal;
+            }
+
             if (! empty($masterUpdates)) {
                 $existing->update($masterUpdates);
             }
 
             $msgParts = [];
+            if ($totalAddedQty > 0) {
+                $msgParts[] = "stok bertambah +{$totalAddedQty} (total stok: {$existing->stok})";
+            }
+            if (isset($masterUpdates['harga']) && $masterUpdates['harga'] !== null) {
+                $msgParts[] = 'harga terbaru Rp '.number_format($masterUpdates['harga'], 0, ',', '.');
+            }
             if (! empty($updatedStores)) {
-                $msgParts[] = "harga & tanggal toko '".implode(', ', $updatedStores)."' berhasil diperbarui";
+                $msgParts[] = "toko '".implode(', ', $updatedStores)."' diperbarui";
             }
             if (! empty($addedStores)) {
-                $msgParts[] = "pembelian dari toko baru '".implode(', ', $addedStores)."' berhasil ditambahkan";
+                $msgParts[] = "toko baru '".implode(', ', $addedStores)."' ditambahkan";
             }
             $msgDetail = ! empty($msgParts) ? ' ('.implode(', ', $msgParts).')' : '';
 
-            return redirect('/data-obat')->with('success', "Obat '{$existing->nama}' sudah terdaftar{$msgDetail}.");
+            return redirect('/data-obat')->with('success', "Obat '{$existing->nama}' berhasil diperbarui{$msgDetail}.");
         }
 
         // Pastikan kategori obat tersimpan di database dengan warna otomatis
@@ -267,10 +315,7 @@ class MedicineController extends Controller
             ]
         );
 
-        // Jika obat belum ada, buat baru
-        $medicine = Medicine::create($validated);
-
-        // Simpan pembelian
+        // Kumpulkan pembelian yang akan ditambahkan untuk obat baru
         $purchasesToAdd = [];
         if ($request->has('purchases') && is_array($request->input('purchases'))) {
             foreach ($request->input('purchases') as $idx => $pData) {
@@ -278,10 +323,11 @@ class MedicineController extends Controller
                 if ($request->hasFile("purchases.{$idx}.foto_nota")) {
                     $pFoto = $this->uploadSinglePhoto($request->file("purchases.{$idx}.foto_nota"));
                 }
-                if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli'])) {
+                if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli']) || ! empty($pData['jumlah'])) {
                     $purchasesToAdd[] = [
                         'toko_obat' => $pData['toko_obat'] ?? null,
                         'harga' => $pData['harga'] ?? null,
+                        'jumlah' => ! empty($pData['jumlah']) ? (int) $pData['jumlah'] : 1,
                         'tanggal_beli' => $pData['tanggal_beli'] ?? null,
                         'catatan' => $pData['catatan'] ?? null,
                         'foto_nota' => $pFoto ?? $primaryFotoPath,
@@ -290,21 +336,39 @@ class MedicineController extends Controller
             }
         }
 
-        if (empty($purchasesToAdd) && (! empty($validated['toko_obat']) || ! empty($validated['harga']) || ! empty($validated['tanggal_beli']))) {
+        if (empty($purchasesToAdd) && (! empty($validated['toko_obat']) || ! empty($validated['harga']) || ! empty($validated['tanggal_beli']) || ! empty($request->input('jumlah')))) {
             $purchasesToAdd[] = [
                 'toko_obat' => $validated['toko_obat'] ?? null,
                 'harga' => $validated['harga'] ?? null,
+                'jumlah' => ! empty($request->input('jumlah')) ? (int) $request->input('jumlah') : 1,
                 'tanggal_beli' => $validated['tanggal_beli'] ?? null,
                 'catatan' => null,
                 'foto_nota' => $primaryFotoPath,
             ];
         }
 
+        // Tentukan stok awal jika tidak diisi manual
+        if (! isset($validated['stok']) || $validated['stok'] === null) {
+            $initStok = 0;
+            foreach ($purchasesToAdd as $p) {
+                $initStok += (int) ($p['jumlah'] ?? 1);
+            }
+            $validated['stok'] = max(0, $initStok);
+        }
+
+        // Jika obat belum ada, buat baru
+        $medicine = Medicine::create($validated);
+        $baseTotal = (float) ($medicine->base_total_unit ?: 1.0);
+        $medicine->updateQuietly([
+            'stok_volume' => (float) ($medicine->stok ?? 0) * $baseTotal,
+        ]);
+
+        // Simpan riwayat pembelian obat
         foreach ($purchasesToAdd as $p) {
             $medicine->purchases()->create($p);
         }
 
-        return redirect('/data-obat')->with('success', 'Data obat berhasil ditambahkan.');
+        return redirect('/data-obat')->with('success', "Data obat '{$medicine->nama}' berhasil ditambahkan.");
     }
 
     public function edit(Medicine $medicine)
@@ -329,6 +393,16 @@ class MedicineController extends Controller
             }
         }
 
+        if ($request->has('stok')) {
+            $rawStok = $request->input('stok');
+            if ($rawStok === null || $rawStok === '') {
+                $request->merge(['stok' => null]);
+            } else {
+                $cleanedStok = preg_replace('/\D/', '', (string) $rawStok);
+                $request->merge(['stok' => $cleanedStok !== '' ? (int) $cleanedStok : null]);
+            }
+        }
+
         if ($request->has('purchases') && is_array($request->input('purchases'))) {
             $purchasesInput = $request->input('purchases');
             foreach ($purchasesInput as $idx => $p) {
@@ -339,6 +413,15 @@ class MedicineController extends Controller
                     } else {
                         $cleaned = preg_replace('/\D/', '', (string) $rawP);
                         $purchasesInput[$idx]['harga'] = $cleaned !== '' ? (int) $cleaned : null;
+                    }
+                }
+                if (array_key_exists('jumlah', $p)) {
+                    $rawJ = $p['jumlah'];
+                    if ($rawJ === null || trim((string) $rawJ) === '') {
+                        $purchasesInput[$idx]['jumlah'] = null;
+                    } else {
+                        $cleanedJ = preg_replace('/\D/', '', (string) $rawJ);
+                        $purchasesInput[$idx]['jumlah'] = $cleanedJ !== '' ? (int) $cleanedJ : null;
                     }
                 }
             }
@@ -355,6 +438,7 @@ class MedicineController extends Controller
             'dosis_anjuran' => 'nullable|string|max:255',
             'interval_aplikasi' => 'nullable|string|max:255',
             'harga' => 'nullable|integer|min:0',
+            'stok' => 'nullable|integer|min:0',
             'kemasan_jumlah' => 'nullable|numeric|min:0',
             'kemasan_satuan' => 'nullable|string|max:50',
             'unsur_bahan' => 'nullable|string|max:255',
@@ -371,6 +455,7 @@ class MedicineController extends Controller
             'purchases.*.id' => 'nullable|integer',
             'purchases.*.toko_obat' => 'nullable|string|max:255',
             'purchases.*.harga' => 'nullable|integer|min:0',
+            'purchases.*.jumlah' => 'nullable|integer|min:0',
             'purchases.*.tanggal_beli' => 'nullable|date',
             'purchases.*.catatan' => 'nullable|string|max:1000',
             'purchases.*.foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
@@ -403,6 +488,13 @@ class MedicineController extends Controller
         );
 
         $medicine->update($validated);
+
+        if (array_key_exists('stok', $validated) && $validated['stok'] !== null) {
+            $baseTotal = (float) ($medicine->base_total_unit ?: 1.0);
+            $medicine->updateQuietly([
+                'stok_volume' => (float) $validated['stok'] * $baseTotal,
+            ]);
+        }
 
         // Kelola data riwayat pembelian jika dikirim melalui form edit
         if ($request->has('purchases') && is_array($request->input('purchases'))) {
@@ -443,6 +535,7 @@ class MedicineController extends Controller
                     $updateData = [
                         'toko_obat' => $pData['toko_obat'] ?? $purchase->toko_obat,
                         'harga' => $cleanPrice,
+                        'jumlah' => ! empty($pData['jumlah']) ? (int) $pData['jumlah'] : ($purchase->jumlah ?? 1),
                         'tanggal_beli' => ! empty($pData['tanggal_beli']) ? $pData['tanggal_beli'] : null,
                         'catatan' => $pData['catatan'] ?? $purchase->catatan,
                     ];
@@ -458,6 +551,7 @@ class MedicineController extends Controller
                     $newPurchase = $medicine->purchases()->create([
                         'toko_obat' => $pData['toko_obat'] ?? null,
                         'harga' => $cleanPrice,
+                        'jumlah' => ! empty($pData['jumlah']) ? (int) $pData['jumlah'] : 1,
                         'tanggal_beli' => ! empty($pData['tanggal_beli']) ? $pData['tanggal_beli'] : null,
                         'catatan' => $pData['catatan'] ?? null,
                         'foto_nota' => $pFoto ?? ($allPhotoPaths[0] ?? null),
@@ -499,6 +593,128 @@ class MedicineController extends Controller
         }
 
         return redirect('/data-obat')->with('success', 'Data obat berhasil diperbarui.');
+    }
+
+    /**
+     * Catat pembelian baru untuk obat yang sudah ada (tambah stok & update harga).
+     */
+    public function storePurchase(Request $request, Medicine $medicine): RedirectResponse
+    {
+        if ($request->has('harga')) {
+            $raw = $request->input('harga');
+            if ($raw === null || $raw === '') {
+                $request->merge(['harga' => null]);
+            } else {
+                $cleaned = preg_replace('/\D/', '', (string) $raw);
+                $request->merge(['harga' => $cleaned !== '' ? (int) $cleaned : null]);
+            }
+        }
+
+        if ($request->has('jumlah')) {
+            $rawJ = $request->input('jumlah');
+            if ($rawJ === null || $rawJ === '') {
+                $request->merge(['jumlah' => 1]);
+            } else {
+                $cleanedJ = preg_replace('/\D/', '', (string) $rawJ);
+                $request->merge(['jumlah' => $cleanedJ !== '' ? max(1, (int) $cleanedJ) : 1]);
+            }
+        }
+
+        $validated = $request->validate([
+            'toko_obat' => 'nullable|string|max:255',
+            'harga' => 'nullable|integer|min:0',
+            'jumlah' => 'nullable|integer|min:1',
+            'tanggal_beli' => 'nullable|date',
+            'catatan' => 'nullable|string|max:1000',
+            'foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        $fotoNotaPath = null;
+        if ($request->hasFile('foto_nota')) {
+            $fotoNotaPath = $this->uploadSinglePhoto($request->file('foto_nota'));
+        }
+
+        $jumlahBeli = $validated['jumlah'] ?? 1;
+
+        // Cek jika toko yang sama sudah tercatat sebelumnya di riwayat
+        $storeName = trim($validated['toko_obat'] ?? '');
+        $existingPurchase = null;
+        if (! empty($storeName)) {
+            $existingPurchase = $medicine->purchases()
+                ->whereRaw('LOWER(TRIM(toko_obat)) = ?', [strtolower($storeName)])
+                ->first();
+        }
+
+        $oldHarga = $medicine->harga;
+        $cleanHarga = $validated['harga'] ?? null;
+        $isPriceDifferent = ($cleanHarga !== null && ($oldHarga === null || (int) $cleanHarga !== (int) $oldHarga));
+        $tanggalBeli = $validated['tanggal_beli'] ?? now()->toDateString();
+
+        if ($existingPurchase) {
+            $purchaseUpdate = [
+                'jumlah' => ($existingPurchase->jumlah ?? 0) + $jumlahBeli,
+                'tanggal_beli' => $tanggalBeli,
+            ];
+            if ($isPriceDifferent) {
+                $purchaseUpdate['harga'] = $cleanHarga;
+            }
+            if (! empty($validated['catatan'])) {
+                $purchaseUpdate['catatan'] = $validated['catatan'];
+            }
+            if ($fotoNotaPath) {
+                if ($existingPurchase->foto_nota && $existingPurchase->foto_nota !== $fotoNotaPath) {
+                    $this->cloudinaryService->deleteImage($existingPurchase->foto_nota);
+                }
+                $purchaseUpdate['foto_nota'] = $fotoNotaPath;
+            }
+            $existingPurchase->update($purchaseUpdate);
+        } else {
+            $medicine->purchases()->create([
+                'toko_obat' => $validated['toko_obat'] ?? null,
+                'harga' => $cleanHarga,
+                'jumlah' => $jumlahBeli,
+                'tanggal_beli' => $tanggalBeli,
+                'catatan' => $validated['catatan'] ?? null,
+                'foto_nota' => $fotoNotaPath,
+            ]);
+        }
+
+        // Perbarui data master obat: stok bertambah & tanggal diperbarui
+        $baseTotal = (float) ($medicine->base_total_unit ?: 1.0);
+        $currentVolume = ((float) ($medicine->stok_volume ?? 0) > 0)
+            ? (float) $medicine->stok_volume
+            : ((float) ($medicine->stok ?? 0) * $baseTotal);
+        $newVolume = $currentVolume + ((float) $jumlahBeli * $baseTotal);
+        $newStok = $baseTotal > 0 ? (int) ceil($newVolume / $baseTotal) : (int) $newVolume;
+
+        $masterUpdates = [
+            'stok' => $newStok,
+            'stok_volume' => $newVolume,
+            'tanggal_beli' => $tanggalBeli,
+        ];
+
+        // Jika harga beda: update harga. Jika sama: cuma update tanggal
+        if ($isPriceDifferent) {
+            $masterUpdates['harga'] = $cleanHarga;
+        }
+
+        if (! empty($validated['toko_obat'])) {
+            $masterUpdates['toko_obat'] = $validated['toko_obat'];
+        }
+
+        if ($fotoNotaPath) {
+            $combined = array_values(array_unique(array_merge($medicine->foto_paths, [$fotoNotaPath])));
+            $masterUpdates['foto_nota'] = json_encode($combined);
+        }
+
+        $medicine->update($masterUpdates);
+
+        $tglFormatted = Carbon::parse($tanggalBeli)->translatedFormat('d M Y');
+        $msg = $isPriceDifferent
+            ? "Pembelian obat '{$medicine->nama}' berhasil dicatat! Harga diperbarui menjadi Rp ".number_format($cleanHarga, 0, ',', '.')." (tanggal beli: {$tglFormatted}, stok +{$jumlahBeli}, total: {$medicine->stok})."
+            : "Pembelian obat '{$medicine->nama}' berhasil dicatat! Harga tetap Rp ".number_format((int) $oldHarga, 0, ',', '.').", tanggal beli diperbarui ke {$tglFormatted} (stok +{$jumlahBeli}, total: {$medicine->stok}).";
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function destroy(Medicine $medicine)
@@ -790,5 +1006,231 @@ class MedicineController extends Controller
 
             return redirect()->back()->with('error', 'Gagal menghapus kategori: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Tampilan Khusus Menu Stok Obat & Pembelian
+     */
+    public function stok(Request $request)
+    {
+        $query = Medicine::with('purchases');
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('jenis', 'like', "%{$search}%")
+                    ->orWhere('tanaman_sasaran', 'like', "%{$search}%")
+                    ->orWhere('toko_obat', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->input('status')) {
+            if ($status === 'aman') {
+                $query->where('stok', '>', 3);
+            } elseif ($status === 'menipis') {
+                $query->where('stok', '>', 0)->where('stok', '<=', 3);
+            } elseif ($status === 'habis') {
+                $query->where(function ($q) {
+                    $q->whereNull('stok')->orWhere('stok', '<=', 0);
+                });
+            }
+        }
+
+        if ($jenis = $request->input('jenis')) {
+            $query->where('jenis', $jenis);
+        }
+
+        // Summary statistics
+        $allMedicines = Medicine::with('purchases')->get();
+        $totalObat = $allMedicines->count();
+        $stokAmanCount = $allMedicines->where('stok', '>', 3)->count();
+        $stokMenipisCount = $allMedicines->where('stok', '>', 0)->where('stok', '<=', 3)->count();
+        $stokHabisCount = $allMedicines->filter(fn ($m) => ($m->stok ?? 0) <= 0)->count();
+        $totalStokUnits = $allMedicines->sum('stok');
+
+        $medicines = $query->orderBy('stok', 'asc')->paginate(12)->withQueryString();
+        MedicineCategory::ensureTableExists();
+        $categories = MedicineCategory::orderBy('urutan')->orderBy('nama')->get();
+        $catalogMedicines = $allMedicines->map(fn ($m) => [
+            'id' => $m->id,
+            'nama' => $m->nama,
+            'jenis' => $m->jenis ?? 'Obat Pertanian',
+            'tanaman_sasaran' => $m->tanaman_sasaran ?? '',
+            'kemasan_jumlah' => $m->kemasan_jumlah,
+            'kemasan_satuan' => $m->kemasan_satuan,
+            'kemasan_label' => $m->kemasan_label,
+            'stok_label' => $m->stok_label,
+            'stok_volume' => $m->stok_volume,
+            'stok_volume_label' => $m->stok_volume_label,
+            'harga' => $m->harga ? (int) $m->harga : 0,
+            'formatted_harga' => $m->harga ? 'Rp '.number_format($m->harga, 0, ',', '.') : 'Rp 0',
+            'stok' => $m->stok ? (int) $m->stok : 0,
+            'toko_obat' => $m->toko_obat ?? '',
+        ])->values()->all();
+
+        return view('data-obat.stok', compact(
+            'medicines',
+            'categories',
+            'allMedicines',
+            'catalogMedicines',
+            'totalObat',
+            'stokAmanCount',
+            'stokMenipisCount',
+            'stokHabisCount',
+            'totalStokUnits'
+        ));
+    }
+
+    /**
+     * Catat Pembelian Obat Umum (Update stok jika ada, buat baru jika belum)
+     */
+    public function storeGeneralPurchase(Request $request): RedirectResponse
+    {
+        if ($request->has('harga')) {
+            $raw = $request->input('harga');
+            $cleaned = preg_replace('/\D/', '', (string) $raw);
+            $request->merge(['harga' => $cleaned !== '' ? (int) $cleaned : null]);
+        }
+
+        if ($request->has('jumlah')) {
+            $rawJ = $request->input('jumlah');
+            $cleanedJ = preg_replace('/\D/', '', (string) $rawJ);
+            $request->merge(['jumlah' => $cleanedJ !== '' ? max(1, (int) $cleanedJ) : 1]);
+        }
+
+        $validated = $request->validate([
+            'medicine_id' => 'nullable|exists:medicines,id',
+            'nama' => 'required_without:medicine_id|nullable|string|max:255',
+            'jenis' => 'nullable|string|max:100',
+            'kemasan_jumlah' => 'nullable|numeric|min:0',
+            'kemasan_satuan' => 'nullable|string|max:50',
+            'toko_obat' => 'required|string|max:255',
+            'harga' => 'required|integer|min:0',
+            'jumlah' => 'required|integer|min:1',
+            'tanggal_beli' => 'nullable|date',
+            'catatan' => 'nullable|string|max:1000',
+            'tanaman_sasaran' => 'nullable|string|max:255',
+            'dosis_anjuran' => 'nullable|string|max:255',
+        ]);
+
+        $medicine = null;
+        if (! empty($validated['medicine_id'])) {
+            $medicine = Medicine::find($validated['medicine_id']);
+        }
+
+        if (! $medicine && ! empty($validated['nama'])) {
+            $trimmedName = trim($validated['nama']);
+            $medicine = Medicine::whereRaw('LOWER(TRIM(nama)) = ?', [strtolower($trimmedName)])->first();
+        }
+
+        $cleanHarga = $validated['harga'];
+        $jumlahBeli = $validated['jumlah'];
+        $tanggalBeli = $validated['tanggal_beli'] ?? now()->toDateString();
+        $toko = trim($validated['toko_obat']);
+        $catatan = $validated['catatan'] ?? null;
+
+        if ($medicine) {
+            $oldHarga = $medicine->harga;
+            $isPriceDifferent = ($oldHarga === null || (int) $cleanHarga !== (int) $oldHarga);
+
+            // Update kemasan & satuan jika diisi
+            if (! empty($validated['kemasan_satuan'])) {
+                $medicine->kemasan_satuan = $validated['kemasan_satuan'];
+            }
+            if (array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null) {
+                $medicine->kemasan_jumlah = $validated['kemasan_jumlah'];
+            }
+
+            // Selalu tambah stok & update tanggal
+            $baseTotal = (float) ($medicine->base_total_unit ?: 1.0);
+            $currentVolume = ((float) ($medicine->stok_volume ?? 0) > 0)
+                ? (float) $medicine->stok_volume
+                : ((float) ($medicine->stok ?? 0) * $baseTotal);
+            $newVolume = $currentVolume + ((float) $jumlahBeli * $baseTotal);
+            $medicine->stok = $baseTotal > 0 ? (int) ceil($newVolume / $baseTotal) : (int) $newVolume;
+            $medicine->stok_volume = $newVolume;
+            $medicine->tanggal_beli = $tanggalBeli;
+            if (! empty($toko)) {
+                $medicine->toko_obat = $toko;
+            }
+
+            // Update harga hanya jika berbeda
+            if ($isPriceDifferent) {
+                $medicine->harga = $cleanHarga;
+            }
+
+            $medicine->save();
+
+            // Record purchase di riwayat pembelian per toko
+            $existingPurchase = $medicine->purchases()
+                ->whereRaw('LOWER(TRIM(toko_obat)) = ?', [strtolower($toko)])
+                ->first();
+
+            if ($existingPurchase) {
+                $purchaseUpdate = [
+                    'jumlah' => ($existingPurchase->jumlah ?? 0) + $jumlahBeli,
+                    'tanggal_beli' => $tanggalBeli,
+                    'catatan' => $catatan ?? $existingPurchase->catatan,
+                ];
+                if ($isPriceDifferent) {
+                    $purchaseUpdate['harga'] = $cleanHarga;
+                }
+                $existingPurchase->update($purchaseUpdate);
+            } else {
+                $medicine->purchases()->create([
+                    'toko_obat' => $toko,
+                    'harga' => $cleanHarga,
+                    'jumlah' => $jumlahBeli,
+                    'tanggal_beli' => $tanggalBeli,
+                    'catatan' => $catatan,
+                ]);
+            }
+
+            $tglFormatted = Carbon::parse($tanggalBeli)->translatedFormat('d M Y');
+            $successMsg = $isPriceDifferent
+                ? "Pembelian '{$medicine->nama}' berhasil dicatat! Harga diperbarui menjadi Rp ".number_format($cleanHarga, 0, ',', '.')." (tanggal beli: {$tglFormatted}, stok +{$jumlahBeli}, total: {$medicine->stok_label})."
+                : "Pembelian '{$medicine->nama}' berhasil dicatat! Harga tetap Rp ".number_format((int) $oldHarga, 0, ',', '.').", tanggal beli diperbarui ke {$tglFormatted} (stok +{$jumlahBeli}, total: {$medicine->stok_label}).";
+
+            return redirect()->back()->with('success', $successMsg);
+        }
+
+        // Obat belum ada (pertama kali beli): langsung simpan ke stok dan data obat!
+        if (! empty($validated['jenis'])) {
+            MedicineCategory::firstOrCreate(
+                ['nama' => $validated['jenis']],
+                [
+                    'warna' => MedicineCategory::getNextAvailableColor(),
+                    'urutan' => (MedicineCategory::max('urutan') ?? 0) + 1,
+                ]
+            );
+        }
+
+        $newMedicine = Medicine::create([
+            'nama' => trim($validated['nama']),
+            'jenis' => ! empty($validated['jenis']) ? $validated['jenis'] : 'Fungisida',
+            'tanaman_sasaran' => ! empty($validated['tanaman_sasaran']) ? $validated['tanaman_sasaran'] : 'Umum / Semua Tanaman',
+            'dosis_anjuran' => $validated['dosis_anjuran'] ?? null,
+            'kemasan_jumlah' => $validated['kemasan_jumlah'] ?? null,
+            'kemasan_satuan' => ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null,
+            'harga' => $cleanHarga,
+            'stok' => $jumlahBeli,
+            'toko_obat' => $toko,
+            'tanggal_beli' => $tanggalBeli,
+        ]);
+
+        $baseTotal = (float) ($newMedicine->base_total_unit ?: 1.0);
+        $newMedicine->updateQuietly([
+            'stok_volume' => (float) $jumlahBeli * $baseTotal,
+        ]);
+
+        $newMedicine->purchases()->create([
+            'toko_obat' => $toko,
+            'harga' => $cleanHarga,
+            'jumlah' => $jumlahBeli,
+            'tanggal_beli' => $tanggalBeli,
+            'catatan' => $catatan,
+        ]);
+
+        return redirect()->back()->with('success', "Obat baru '{$newMedicine->nama}' berhasil disimpan ke Data Obat & stok awal tersimpan ({$newMedicine->stok_label}, Rp ".number_format($cleanHarga, 0, ',', '.').').');
     }
 }

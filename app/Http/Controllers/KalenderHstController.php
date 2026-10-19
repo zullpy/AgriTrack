@@ -9,6 +9,7 @@ use App\Models\Medicine;
 use App\Models\PlantCatalog;
 use App\Services\CloudinaryService;
 use App\Services\ImageCompressionService;
+use App\Services\MedicineStockService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,8 @@ class KalenderHstController extends Controller
 {
     public function __construct(
         protected ImageCompressionService $compressionService,
-        protected CloudinaryService $cloudinaryService
+        protected CloudinaryService $cloudinaryService,
+        protected MedicineStockService $stockService
     ) {}
 
     public function index(Request $request): View
@@ -380,7 +382,7 @@ class KalenderHstController extends Controller
         $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
 
         // Ambil data obat untuk kemudahan input aplikasi obat & konversi dosis
-        $medicines = Medicine::orderBy('nama')->get(['id', 'nama', 'jenis', 'dosis_anjuran', 'sasaran_obat', 'harga', 'kemasan_jumlah', 'kemasan_satuan']);
+        $medicines = Medicine::orderBy('nama')->get(['id', 'nama', 'jenis', 'dosis_anjuran', 'sasaran_obat', 'harga', 'kemasan_jumlah', 'kemasan_satuan', 'stok', 'stok_volume']);
 
         $activitiesByHst = $crop->activities->groupBy('target_hst');
         $harvestsByHst = $crop->harvests->groupBy('hst_saat_panen');
@@ -484,6 +486,7 @@ class KalenderHstController extends Controller
             'sasaran' => 'nullable|string|max:500',
             'keterangan' => 'nullable|string|max:1000',
             'target_hst' => 'nullable|integer|min:0',
+            'status' => 'nullable|string|in:Belum,Selesai',
             'tanggal_kegiatan' => 'nullable|date',
             'catatan' => 'nullable|string|max:1000',
             'foto_kegiatan' => 'nullable',
@@ -541,18 +544,29 @@ class KalenderHstController extends Controller
             }
         }
 
-        $crop->activities()->create([
+        if ($request->filled('status') && in_array($request->input('status'), ['Belum', 'Selesai'], true)) {
+            $status = $request->input('status');
+        } else {
+            $status = ! empty($validated['aplikasi_obat']) ? 'Selesai' : 'Belum';
+        }
+
+        $createdActivity = $crop->activities()->create([
             'nama_kegiatan' => $validated['nama_kegiatan'],
             'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
             'jumlah_tank' => $jumlahTank,
             'total_biaya_obat' => $totalBiayaObat,
             'sasaran' => $validated['sasaran'] ?? null,
             'target_hst' => $targetHst,
-            'status' => 'Belum',
+            'status' => $status,
+            'tanggal_selesai' => $status === 'Selesai' ? now() : null,
             'keterangan' => $keteranganFinal,
             'catatan' => $keteranganFinal,
             'foto_kegiatan' => ! empty($uploadedPhotos) ? $uploadedPhotos : null,
         ]);
+
+        if ($status === 'Selesai') {
+            $this->stockService->deductForActivity($createdActivity);
+        }
 
         // Terapkan kegiatan ke tanaman lain yang dipilih
         $appliedOtherCrops = [];
@@ -573,18 +587,23 @@ class KalenderHstController extends Controller
                 $otherPlantDate = Carbon::parse($otherCrop->tanggal_tanam)->startOfDay();
                 $otherHst = max(0, (int) $otherPlantDate->diffInDays($activityDate, false));
 
-                $otherCrop->activities()->create([
+                $otherActivity = $otherCrop->activities()->create([
                     'nama_kegiatan' => $validated['nama_kegiatan'],
                     'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
                     'jumlah_tank' => $jumlahTank,
                     'total_biaya_obat' => $totalBiayaObat,
                     'sasaran' => $validated['sasaran'] ?? null,
                     'target_hst' => $otherHst,
-                    'status' => 'Belum',
+                    'status' => $status,
+                    'tanggal_selesai' => $status === 'Selesai' ? now() : null,
                     'keterangan' => $keteranganFinal,
                     'catatan' => $keteranganFinal,
                     'foto_kegiatan' => ! empty($uploadedPhotos) ? $uploadedPhotos : null,
                 ]);
+
+                if ($status === 'Selesai') {
+                    $this->stockService->deductForActivity($otherActivity);
+                }
 
                 $appliedOtherCrops[] = $otherCrop->nama_tanaman;
             }
@@ -684,6 +703,11 @@ class KalenderHstController extends Controller
             }
         }
 
+        $wasDeducted = (bool) $activity->stok_dipotong;
+        if ($wasDeducted) {
+            $this->stockService->restoreForActivity($activity);
+        }
+
         $activity->update([
             'nama_kegiatan' => $validated['nama_kegiatan'],
             'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
@@ -695,6 +719,10 @@ class KalenderHstController extends Controller
             'catatan' => $keteranganFinal,
             'foto_kegiatan' => ! empty($remainingPhotos) ? array_values($remainingPhotos) : null,
         ]);
+
+        if ($activity->status === 'Selesai') {
+            $this->stockService->deductForActivity($activity);
+        }
 
         return redirect()->back()->with('success', 'Data kegiatan perawatan berhasil diperbarui.');
     }
@@ -741,6 +769,13 @@ class KalenderHstController extends Controller
     public function toggleActivityStatus(Request $request, CropActivity $activity)
     {
         $newStatus = $activity->status === 'Selesai' ? 'Belum' : 'Selesai';
+
+        if ($newStatus === 'Selesai') {
+            $this->stockService->deductForActivity($activity);
+        } else {
+            $this->stockService->restoreForActivity($activity);
+        }
+
         $activity->update([
             'status' => $newStatus,
             'tanggal_selesai' => $newStatus === 'Selesai' ? now() : null,
@@ -750,15 +785,24 @@ class KalenderHstController extends Controller
             return response()->json([
                 'success' => true,
                 'status' => $newStatus,
-                'message' => 'Status kegiatan berhasil diperbarui.',
+                'stok_dipotong' => $activity->stok_dipotong,
+                'message' => $newStatus === 'Selesai'
+                    ? 'Status kegiatan selesai dan stok obat/perlengkapan berhasil dipotong.'
+                    : 'Status kegiatan dibatalkan dan stok obat/perlengkapan berhasil dikembalikan.',
             ]);
         }
 
-        return redirect()->back()->with('success', 'Status kegiatan berhasil diperbarui.');
+        return redirect()->back()->with('success', $newStatus === 'Selesai'
+            ? 'Kegiatan ditandai selesai! Stok obat/perlengkapan telah dipotong otomatis.'
+            : 'Status kegiatan diubah ke Belum! Stok obat/perlengkapan telah dikembalikan.');
     }
 
     public function destroyActivity(CropActivity $activity): RedirectResponse
     {
+        if ($activity->stok_dipotong) {
+            $this->stockService->restoreForActivity($activity);
+        }
+
         // Bersihkan seluruh file fisik foto dari Cloudinary / lokal
         foreach ($activity->foto_urls as $url) {
             $this->cloudinaryService->deleteImage($url);
@@ -766,6 +810,6 @@ class KalenderHstController extends Controller
 
         $activity->delete();
 
-        return redirect()->back()->with('success', 'Kegiatan perawatan dan file foto fisiknya berhasil dihapus.');
+        return redirect()->back()->with('success', 'Kegiatan perawatan berhasil dihapus dan stok yang pernah dipotong telah dikembalikan.');
     }
 }

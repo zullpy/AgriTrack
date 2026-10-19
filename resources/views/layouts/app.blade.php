@@ -399,19 +399,46 @@
                     @endif
                 </a>
 
-                <a href="/data-obat"
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
-                          {{ request()->is('data-obat*') ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
-                    <span class="w-8 h-8 rounded-lg {{ request()->is('data-obat*') ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
+                {{-- 2. Obat Tanaman (with submenus: Data Obat & Stok Obat) --}}
+                @php
+                    $isObatActive = request()->is('data-obat*') || request()->is('stok-obat*');
+                    $isDataObatPage = request()->is('data-obat*') && !request()->is('stok-obat*');
+                    $isStokObatPage = request()->is('stok-obat*');
+                @endphp
+                <div class="space-y-1" id="obat-menu-wrapper">
+                    <button type="button"
+                            onclick="toggleObatSubmenu()"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer
+                                   {{ $isObatActive ? 'nav-active text-primary-dark font-semibold' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-lg {{ $isObatActive ? 'bg-primary/10 text-primary-dark' : 'bg-gray-100 text-gray-500' }} flex items-center justify-center transition-colors">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
+                                </svg>
+                            </span>
+                            <span>Obat Tanaman</span>
+                        </div>
+                        <svg id="obat-chevron" class="w-4 h-4 text-gray-400 transition-transform duration-200 {{ $isObatActive ? 'rotate-180 text-primary' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
-                    </span>
-                    <span>Data Obat</span>
-                    @if(request()->is('data-obat*'))
-                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
-                    @endif
-                </a>
+                    </button>
+
+                    <div id="obat-submenu" class="pl-11 pr-2 space-y-1 {{ $isObatActive ? 'block' : 'hidden' }}">
+                        <a href="/data-obat"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isDataObatPage ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isDataObatPage ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Data Obat</span>
+                        </a>
+
+                        <a href="/stok-obat"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isStokObatPage ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isStokObatPage ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Stok Obat</span>
+                        </a>
+                    </div>
+                </div>
 
                 {{-- 3. Tahapan (with submenus) --}}
                 @php
@@ -481,8 +508,9 @@
                 @php
                     $isKeuanganActive = request()->is('keuangan*');
                     $activeKeuanganTab = request()->query('tab', 'riwayat');
+                    $isKeuanganLaporan = $isKeuanganActive && $activeKeuanganTab === 'laporan';
                     $isKeuanganStatistik = $isKeuanganActive && $activeKeuanganTab === 'statistik';
-                    $isKeuanganRiwayat = $isKeuanganActive && $activeKeuanganTab !== 'statistik';
+                    $isKeuanganRiwayat = $isKeuanganActive && $activeKeuanganTab !== 'statistik' && $activeKeuanganTab !== 'laporan';
                 @endphp
                 <div class="space-y-1" id="keuangan-menu-wrapper">
                     <button type="button"
@@ -519,6 +547,15 @@
                                   {{ $isKeuanganStatistik ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
                             <span class="w-1.5 h-1.5 rounded-full {{ $isKeuanganStatistik ? 'bg-primary' : 'bg-gray-300' }}"></span>
                             <span>Statistik</span>
+                        </a>
+
+                        <a href="/keuangan?tab=laporan"
+                           id="sidebar-link-keuangan-laporan"
+                           onclick="if (window.location.pathname === '/keuangan' && typeof setKeuanganSubmenu === 'function') { setKeuanganSubmenu('laporan'); return false; }"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isKeuanganLaporan ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isKeuanganLaporan ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Laporan Keuangan</span>
                         </a>
                     </div>
                 </div>
@@ -575,8 +612,8 @@
                       style="{{ $isDashboard ? 'color: #16a34a;' : 'color: #6b7280;' }}">Dashboard</span>
             </a>
 
-            {{-- 2. Data Obat --}}
-            @php $isDataObat = request()->is('data-obat*'); @endphp
+            {{-- 2. Data Obat / Stok --}}
+            @php $isDataObat = request()->is('data-obat*') || request()->is('stok-obat*'); @endphp
             <a href="/data-obat"
                class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
                style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
@@ -744,6 +781,19 @@
                 }
             });
         @endif
+
+        // Toggle Obat Submenu in Desktop Sidebar
+        window.toggleObatSubmenu = function() {
+            const submenu = document.getElementById('obat-submenu');
+            const chevron = document.getElementById('obat-chevron');
+            if (submenu) {
+                submenu.classList.toggle('hidden');
+                if (chevron) {
+                    chevron.classList.toggle('rotate-180');
+                    chevron.classList.toggle('text-primary');
+                }
+            }
+        };
 
         // Toggle Tahapan Submenu in Desktop Sidebar
         window.toggleTahapanSubmenu = function() {

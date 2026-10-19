@@ -84,6 +84,7 @@ class MedicineSyncController extends Controller
                         'dosis_anjuran' => $data['dosis_anjuran'] ?? null,
                         'interval_aplikasi' => $data['interval_aplikasi'] ?? null,
                         'harga' => isset($data['harga']) && is_numeric($data['harga']) ? (int) $data['harga'] : null,
+                        'stok' => isset($data['stok']) && is_numeric($data['stok']) ? (int) $data['stok'] : 0,
                         'kemasan_jumlah' => isset($data['kemasan_jumlah']) && is_numeric($data['kemasan_jumlah']) ? (float) $data['kemasan_jumlah'] : null,
                         'kemasan_satuan' => $data['kemasan_satuan'] ?? null,
                         'unsur_bahan' => $data['unsur_bahan'] ?? null,
@@ -145,6 +146,9 @@ class MedicineSyncController extends Controller
                             }
                             if (array_key_exists('harga', $data)) {
                                 $updateData['harga'] = is_numeric($data['harga']) ? (int) $data['harga'] : null;
+                            }
+                            if (array_key_exists('stok', $data)) {
+                                $updateData['stok'] = is_numeric($data['stok']) ? (int) $data['stok'] : 0;
                             }
                             if (array_key_exists('kemasan_jumlah', $data)) {
                                 $updateData['kemasan_jumlah'] = is_numeric($data['kemasan_jumlah']) ? (float) $data['kemasan_jumlah'] : null;

@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\Storage;
     'keterangan',
     'tanggal_beli',
     'toko_obat',
+    'stok',
+    'stok_volume',
 ])]
 class Medicine extends Model
 {
@@ -42,6 +44,16 @@ class Medicine extends Model
         'SP' => 'serbuk larut air',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (Medicine $medicine) {
+            $baseTotal = (float) ($medicine->base_total_unit ?: 1.0);
+            if (($medicine->stok_volume === null || (float) $medicine->stok_volume == 0.0) && (int) ($medicine->stok ?? 0) > 0) {
+                $medicine->stok_volume = (float) $medicine->stok * $baseTotal;
+            }
+        });
+    }
+
     protected $appends = [
         'formatted_harga',
         'foto_url',
@@ -53,6 +65,8 @@ class Medicine extends Model
         'base_total_unit',
         'harga_per_base_unit',
         'formatted_harga_per_base_unit',
+        'stok_label',
+        'stok_volume_label',
     ];
 
     /**
@@ -87,7 +101,21 @@ class Medicine extends Model
             return 'sachet';
         }
 
-        return $satuan !== '' ? $satuan : 'gram';
+        if ($satuan !== '') {
+            return $satuan;
+        }
+
+        $jenis = strtolower(trim((string) $this->jenis));
+        if (in_array($jenis, ['perlengkapan', 'peralatan', 'alat'], true)) {
+            return 'pcs';
+        }
+
+        $nama = strtolower(trim((string) $this->nama));
+        if (preg_match('/(karung|kresek|tali|rapia|mulsa|ajir|bambu|polybag|polibag|tray|selang|terpal|plastik)/i', $nama)) {
+            return 'pcs';
+        }
+
+        return 'gram';
     }
 
     /**
@@ -100,12 +128,12 @@ class Medicine extends Model
 
         // Jika data kemasan belum tersimpan di kolom, coba deteksi dari nama obat
         if ($jumlah <= 0) {
-            if (preg_match('/(\d+(?:[.,]\d+)?)\s*(kg|kilogram|gram|gr|g|liter|ltr|lt|l|ml|sachet)\b/i', $this->nama, $m)) {
+            if (preg_match('/(\d+(?:[.,]\d+)?)\s*(kg|kilogram|gram|gr|g|liter|ltr|lt|l|ml|sachet|pcs|buah|lembar|rol|roll|karung)\b/i', $this->nama, $m)) {
                 $jumlah = (float) str_replace(',', '.', $m[1]);
                 $satuan = strtolower($m[2]);
             } else {
                 $jumlah = 1.0;
-                $satuan = 'gram';
+                $satuan = $this->base_unit_label;
             }
         }
 
@@ -181,9 +209,44 @@ class Medicine extends Model
     {
         return [
             'harga' => 'integer',
+            'stok' => 'integer',
+            'stok_volume' => 'float',
             'kemasan_jumlah' => 'float',
             'tanggal_beli' => 'date',
         ];
+    }
+
+    /**
+     * Label stok (e.g. "5 botol", "10 (100 ml)", atau "5 unit").
+     */
+    public function getStokLabelAttribute(): string
+    {
+        $stok = (int) ($this->stok ?? 0);
+        if ($this->kemasan_label) {
+            $ks = strtolower(trim((string) $this->kemasan_satuan));
+            if (in_array($ks, ['ml', 'l', 'liter', 'gram', 'g', 'kg'])) {
+                return "{$stok} ({$this->kemasan_label})";
+            }
+
+            return "{$stok} {$this->kemasan_satuan}";
+        }
+
+        $satuan = $this->kemasan_satuan ? " {$this->kemasan_satuan}" : ' unit';
+
+        return "{$stok}{$satuan}";
+    }
+
+    /**
+     * Label volume stok presisi per satuan dasar (e.g. "170 ml", "950 gram", "8 pcs").
+     */
+    public function getStokVolumeLabelAttribute(): string
+    {
+        $vol = (float) ($this->stok_volume ?? ((float) ($this->stok ?? 0) * $this->base_total_unit));
+        $formatted = (float) $vol == (int) $vol
+            ? number_format($vol, 0, ',', '.')
+            : number_format($vol, 1, ',', '.');
+
+        return "{$formatted} {$this->base_unit_label}";
     }
 
     /**

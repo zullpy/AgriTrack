@@ -504,4 +504,231 @@ class KeuanganTest extends TestCase
             'parent_id' => $parent->id,
         ]);
     }
+
+    public function test_can_view_laporan_keuangan_tab_and_subtotal_report_when_empty(): void
+    {
+        $response = $this->get('/keuangan?tab=laporan');
+
+        $response->assertOk();
+        $response->assertSee('Laporan Keuangan');
+        $response->assertSee('Laporan Subtotal Keuangan');
+        $response->assertSee('Belum Ada Data Transaksi');
+    }
+
+    public function test_laporan_keuangan_computes_subtotals_per_category_and_subcategory_correctly(): void
+    {
+        // 1. Pengeluaran: Bibit & Benih
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Bibit & Benih',
+            'sub_kategori' => 'Benih Cabai Rawit',
+            'judul' => 'Beli benih cabai rawit',
+            'nominal' => 150000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Bibit & Benih',
+            'sub_kategori' => 'Benih Tomat Servo',
+            'judul' => 'Beli benih tomat',
+            'nominal' => 200000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Bibit & Benih',
+            'sub_kategori' => null, // Tanpa subkategori
+            'judul' => 'Bibit lain-lain',
+            'nominal' => 50000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        // 2. Pengeluaran: Pupuk
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pupuk & Nutrisi',
+            'sub_kategori' => 'Pupuk Organik',
+            'judul' => 'Beli pupuk kandang',
+            'nominal' => 300000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        // 3. Pemasukan: Penjualan Panen
+        FinancialTransaction::create([
+            'tipe' => 'pemasukan',
+            'kategori' => 'Hasil Panen',
+            'sub_kategori' => 'Panen Cabai',
+            'judul' => 'Jual cabai 50kg',
+            'nominal' => 1000000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $response = $this->get('/keuangan?tab=laporan');
+        $response->assertOk();
+
+        // Cek bahwa subtotal kategori muncul
+        $response->assertSee('Bibit & Benih');
+        $response->assertSee('Rp 400.000'); // Subtotal Bibit & Benih = 150k + 200k + 50k
+        $response->assertSee('Pupuk & Nutrisi');
+        $response->assertSee('Rp 300.000'); // Subtotal Pupuk
+        $response->assertSee('Hasil Panen');
+        $response->assertSee('Rp 1.000.000'); // Subtotal Hasil Panen
+
+        // Cek bahwa subtotal subkategori muncul
+        $response->assertSee('Benih Cabai Rawit');
+        $response->assertSee('Rp 150.000');
+        $response->assertSee('Benih Tomat Servo');
+        $response->assertSee('Rp 200.000');
+        $response->assertSee('Panen Cabai');
+
+        // Cek total dan saldo bersih
+        // Total Pengeluaran = 700.000, Total Pemasukan = 1.000.000, Saldo Bersih = 300.000
+        $response->assertSee('Rp 700.000');
+        $response->assertSee('Rp 300.000');
+
+        // Cek JSON API
+        $json = $this->getJson('/keuangan?tab=laporan');
+        $json->assertOk();
+        $json->assertJsonPath('laporanSubtotal.pengeluaran.total', 700000);
+        $json->assertJsonPath('laporanSubtotal.pemasukan.total', 1000000);
+        $json->assertJsonPath('laporanSubtotal.ringkasan.saldo_bersih', 300000);
+
+        $pengeluaranCats = collect($json->json('laporanSubtotal.pengeluaran.categories'));
+        $bibitCat = $pengeluaranCats->firstWhere('nama', 'Bibit & Benih');
+        $this->assertNotNull($bibitCat);
+        $this->assertEquals(400000, $bibitCat['subtotal']);
+        $this->assertCount(3, $bibitCat['subkategori']);
+    }
+
+    public function test_laporan_keuangan_respects_periode_filters(): void
+    {
+        // Transaksi bulan ini
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Alat Pertanian',
+            'sub_kategori' => 'Cangkul & Sabit',
+            'judul' => 'Beli Cangkul Baja',
+            'nominal' => 150000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        // Transaksi bulan lalu
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Alat Pertanian',
+            'sub_kategori' => 'Sprayer',
+            'judul' => 'Beli Tangki Semprot',
+            'nominal' => 500000,
+            'tanggal' => Carbon::now()->subMonths(2)->toDateString(),
+        ]);
+
+        // Filter bulan ini -> hanya 150.000
+        $resBulanIni = $this->getJson('/keuangan?periode=bulan_ini');
+        $resBulanIni->assertOk();
+        $resBulanIni->assertJsonPath('laporanSubtotal.pengeluaran.total', 150000);
+
+        // Filter semua -> 650.000
+        $resSemua = $this->getJson('/keuangan?periode=semua');
+        $resSemua->assertOk();
+        $resSemua->assertJsonPath('laporanSubtotal.pengeluaran.total', 650000);
+    }
+
+    public function test_laporan_keuangan_groups_nested_subcategories_with_arrow_separator(): void
+    {
+        // Setup transaksi mirip dengan real data pengguna:
+        // Pemeliharaan: Pemupukan › Pupuk & Pemupukan › HOK Pemupukan, Nyemprot › Obat & Nyemprot › HOK Penyemprotan
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pemeliharaan',
+            'sub_kategori' => 'Pemupukan › Pupuk',
+            'judul' => 'Beli Pupuk NPK Mutiara',
+            'nominal' => 1645000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pemeliharaan',
+            'sub_kategori' => 'Pemupukan › HOK Pemupukan',
+            'judul' => 'Upah Tenaga Kerja Pupuk',
+            'nominal' => 790000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pemeliharaan',
+            'sub_kategori' => 'Nyemprot › Obat',
+            'judul' => 'Beli Fungisida & Insektisida',
+            'nominal' => 680000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pemeliharaan',
+            'sub_kategori' => 'Nyemprot › HOK Penyemprotan',
+            'judul' => 'Upah Tenaga Kerja Semprot',
+            'nominal' => 635000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        // Kategori lain tanpa separator: Penanaman -> Bibit
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Penanaman',
+            'sub_kategori' => 'Bibit',
+            'judul' => 'Bibit Cabai Rawit',
+            'nominal' => 1000000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $response = $this->get('/keuangan?tab=laporan');
+        $response->assertOk();
+
+        // Verifikasi teks di view HTML
+        $response->assertSee('Pemeliharaan');
+        $response->assertSee('Pemupukan');
+        $response->assertSee('Pupuk');
+        $response->assertSee('HOK Pemupukan');
+        $response->assertSee('Nyemprot');
+        $response->assertSee('Obat');
+        $response->assertSee('HOK Penyemprotan');
+        $response->assertSee('Rp 2.435.000'); // Subtotal Pemupukan
+        $response->assertSee('Rp 1.645.000'); // Subtotal Pupuk
+        $response->assertSee('Rp 790.000');   // Subtotal HOK Pemupukan
+        $response->assertSee('Rp 1.315.000'); // Subtotal Nyemprot
+        $response->assertSee('2 sub-item');
+
+        // Verifikasi struktur JSON
+        $json = $this->getJson('/keuangan?tab=laporan');
+        $json->assertOk();
+
+        $pengeluaranCats = collect($json->json('laporanSubtotal.pengeluaran.categories'));
+        $pemeliharaanCat = $pengeluaranCats->firstWhere('nama', 'Pemeliharaan');
+        $this->assertNotNull($pemeliharaanCat);
+
+        // Hanya boleh ada 2 subkategori di tingkat parent (Pemupukan & Nyemprot)
+        $this->assertCount(2, $pemeliharaanCat['subkategori']);
+
+        $pemupukanSub = collect($pemeliharaanCat['subkategori'])->firstWhere('nama', 'Pemupukan');
+        $this->assertNotNull($pemupukanSub);
+        $this->assertEquals(2435000, $pemupukanSub['subtotal']);
+        $this->assertTrue($pemupukanSub['has_children']);
+        $this->assertCount(2, $pemupukanSub['children']);
+
+        $pupukChild = collect($pemupukanSub['children'])->firstWhere('nama', 'Pupuk');
+        $this->assertNotNull($pupukChild);
+        $this->assertEquals(1645000, $pupukChild['subtotal']);
+
+        $hokChild = collect($pemupukanSub['children'])->firstWhere('nama', 'HOK Pemupukan');
+        $this->assertNotNull($hokChild);
+        $this->assertEquals(790000, $hokChild['subtotal']);
+
+        $nyemprotSub = collect($pemeliharaanCat['subkategori'])->firstWhere('nama', 'Nyemprot');
+        $this->assertNotNull($nyemprotSub);
+        $this->assertEquals(1315000, $nyemprotSub['subtotal']);
+        $this->assertTrue($nyemprotSub['has_children']);
+        $this->assertCount(2, $nyemprotSub['children']);
+    }
 }

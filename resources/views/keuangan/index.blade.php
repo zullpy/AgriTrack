@@ -110,23 +110,25 @@
         </div>
     </div>
 
-    {{-- ── Sub Menu Tab Navigasi: Riwayat & Statistik ── --}}
+    {{-- ── Sub Menu Tab Navigasi: Riwayat & Statistik & Laporan ── --}}
     @php
         $activeTab = request()->query('tab', 'riwayat');
         $isStatistikActive = ($activeTab === 'statistik');
+        $isLaporanActive = ($activeTab === 'laporan');
+        $isRiwayatActive = (!$isStatistikActive && !$isLaporanActive);
     @endphp
 
-    <div class="flex items-center gap-2 border-b border-gray-200">
+    <div class="flex items-center gap-1 sm:gap-2 border-b border-gray-200 overflow-x-auto no-scrollbar">
         {{-- Tombol Sub Menu Riwayat --}}
         <button type="button"
                 onclick="setKeuanganSubmenu('riwayat')"
                 id="btn-subnav-riwayat"
-                class="subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm transition-all cursor-pointer {{ !$isStatistikActive ? 'font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl' : 'font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent' }}">
-            <svg class="w-4 h-4 {{ !$isStatistikActive ? 'text-emerald-600' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                class="subnav-tab-btn flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer {{ $isRiwayatActive ? 'font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl' : 'font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent' }}">
+            <svg class="w-4 h-4 {{ $isRiwayatActive ? 'text-emerald-600' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             <span>Riwayat</span>
-            <span id="subnav-badge-riwayat" class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold {{ !$isStatistikActive ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}">
+            <span id="subnav-badge-riwayat" class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold {{ $isRiwayatActive ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}">
                 {{ $totalTransaksi }}
             </span>
         </button>
@@ -135,7 +137,7 @@
         <button type="button"
                 onclick="setKeuanganSubmenu('statistik')"
                 id="btn-subnav-statistik"
-                class="subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm transition-all cursor-pointer {{ $isStatistikActive ? 'font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl' : 'font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent' }}">
+                class="subnav-tab-btn flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer {{ $isStatistikActive ? 'font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl' : 'font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent' }}">
             <svg class="w-4 h-4 {{ $isStatistikActive ? 'text-purple-600' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
@@ -145,10 +147,24 @@
                 Infografis
             </span>
         </button>
+
+        {{-- Tombol Sub Menu Laporan Keuangan (Subtotal) --}}
+        <button type="button"
+                onclick="setKeuanganSubmenu('laporan')"
+                id="btn-subnav-laporan"
+                class="subnav-tab-btn flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer {{ $isLaporanActive ? 'font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl' : 'font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent' }}">
+            <svg class="w-4 h-4 {{ $isLaporanActive ? 'text-blue-600' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Laporan Keuangan</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold {{ $isLaporanActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600' }}">
+                Subtotal
+            </span>
+        </button>
     </div>
 
     {{-- ── KONTEN SUB MENU 1: RIWAYAT ── --}}
-    <div id="submenu-content-riwayat" class="space-y-3.5 sm:space-y-6 {{ $isStatistikActive ? 'hidden' : '' }}">
+    <div id="submenu-content-riwayat" class="space-y-3.5 sm:space-y-6 {{ !$isRiwayatActive ? 'hidden' : '' }}">
 
         {{-- ── Metric Overview Cards (Ringkas & 1 Baris di Mobile) ── --}}
         <div class="grid grid-cols-3 gap-2 sm:gap-4">
@@ -738,6 +754,596 @@
         </div>
     </div>
     {{-- Akhir Konten Sub Menu 2: Statistik --}}
+
+    {{-- ── KONTEN SUB MENU 3: LAPORAN KEUANGAN (SUBTOTAL PER KATEGORI & SUBKATEGORI) ── --}}
+    <div id="submenu-content-laporan" class="space-y-3.5 sm:space-y-6 {{ !$isLaporanActive ? 'hidden' : '' }}">
+
+        {{-- Print Styles CSS for Official Financial Report --}}
+        <style>
+            @media print {
+                body {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    font-size: 11pt !important;
+                }
+                aside, nav, header, #sidebar, #mobile-nav,
+                .subnav-tab-btn, #btn-subnav-riwayat, #btn-subnav-statistik, #btn-subnav-laporan,
+                .no-print, button, input, .chart-type-btn {
+                    display: none !important;
+                }
+                #submenu-content-laporan {
+                    display: block !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 100% !important;
+                }
+                .laporan-print-header {
+                    display: block !important;
+                    margin-bottom: 20px !important;
+                    text-align: center !important;
+                    border-bottom: 2px solid #334155 !important;
+                    padding-bottom: 12px !important;
+                }
+                .laporan-table {
+                    border-collapse: collapse !important;
+                    width: 100% !important;
+                }
+                .laporan-table th, .laporan-table td {
+                    border: 1px solid #cbd5e1 !important;
+                    padding: 6px 10px !important;
+                }
+                .laporan-card {
+                    box-shadow: none !important;
+                    border: 1px solid #94a3b8 !important;
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                    margin-bottom: 20px !important;
+                }
+            }
+        </style>
+
+        {{-- Print-only Official Header --}}
+        <div class="hidden laporan-print-header text-center">
+            <h1 class="text-xl font-black text-gray-900 tracking-tight uppercase">LAPORAN KEUANGAN PERTANIAN</h1>
+            <h2 class="text-sm font-semibold text-gray-700">Rekapitulasi Subtotal Per Kategori & Subkategori</h2>
+            <p class="text-xs text-gray-500 mt-1">
+                Periode: <span class="font-bold print-label-periode">{{ $periode === 'bulan_ini' ? 'Bulan Ini' : ($periode === 'tahun_ini' ? 'Tahun Ini' : 'Semua Periode') }}</span> • Dicetak pada: {{ \Carbon\Carbon::now()->format('d M Y, H:i') }}
+            </p>
+        </div>
+
+        {{-- Header Kartu Laporan & Kontrol Filter --}}
+        <div class="bg-surface rounded-2xl border border-gray-200 p-3.5 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 bg-gradient-to-r from-slate-50/70 via-white to-blue-50/20 no-print">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </span>
+                    <h2 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight">
+                        Laporan Subtotal Keuangan
+                    </h2>
+                </div>
+                <p class="text-xs text-gray-500 mt-0.5 sm:ml-9">
+                    Ringkasan pembukuan hanya berupa subtotal per kategori dan subkategori untuk periode yang aktif.
+                </p>
+            </div>
+
+            {{-- Filter Tipe Laporan & Tombol Aksi --}}
+            <div class="flex flex-wrap items-center gap-2 self-start md:self-auto">
+                {{-- Segmented View Filter (Semua / Pengeluaran / Pemasukan) --}}
+                <div class="inline-flex rounded-xl bg-gray-100 p-1 border border-gray-200">
+                    <button type="button"
+                            onclick="setLaporanTypeFilter('semua')"
+                            id="laporan-filter-semua"
+                            class="laporan-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer bg-white text-gray-900 shadow-xs">
+                        Semua
+                    </button>
+                    <button type="button"
+                            onclick="setLaporanTypeFilter('pengeluaran')"
+                            id="laporan-filter-pengeluaran"
+                            class="laporan-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-gray-600 hover:text-gray-900">
+                        Pengeluaran
+                    </button>
+                    <button type="button"
+                            onclick="setLaporanTypeFilter('pemasukan')"
+                            id="laporan-filter-pemasukan"
+                            class="laporan-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-gray-600 hover:text-gray-900">
+                        Pemasukan
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Summary Metric Cards for Report --}}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+            {{-- Total Pengeluaran --}}
+            <div class="bg-surface rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-5 shadow-xs relative overflow-hidden flex flex-col justify-between">
+                <div class="flex items-center justify-between gap-1">
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
+                        Total Pengeluaran
+                    </span>
+                    <span class="w-6 h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-2 sm:mt-3">
+                    <p id="laporan-summary-pengeluaran" class="text-sm sm:text-xl font-black text-rose-600 truncate tracking-tight">
+                        {{ $laporanSubtotal['pengeluaran']['formatted_total'] ?? 'Rp 0' }}
+                    </p>
+                    <p id="laporan-count-pengeluaran" class="text-[11px] text-gray-500 mt-0.5">
+                        {{ count($laporanSubtotal['pengeluaran']['categories'] ?? []) }} Kategori Terdaftar
+                    </p>
+                </div>
+            </div>
+
+            {{-- Total Pemasukan --}}
+            <div class="bg-surface rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-5 shadow-xs relative overflow-hidden flex flex-col justify-between">
+                <div class="flex items-center justify-between gap-1">
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
+                        Total Pemasukan
+                    </span>
+                    <span class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-2 sm:mt-3">
+                    <p id="laporan-summary-pemasukan" class="text-sm sm:text-xl font-black text-emerald-600 truncate tracking-tight">
+                        {{ $laporanSubtotal['pemasukan']['formatted_total'] ?? 'Rp 0' }}
+                    </p>
+                    <p id="laporan-count-pemasukan" class="text-[11px] text-gray-500 mt-0.5">
+                        {{ count($laporanSubtotal['pemasukan']['categories'] ?? []) }} Kategori Terdaftar
+                    </p>
+                </div>
+            </div>
+
+            {{-- Saldo Bersih --}}
+            <div class="bg-surface rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-5 shadow-xs relative overflow-hidden flex flex-col justify-between">
+                <div class="flex items-center justify-between gap-1">
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
+                        Saldo Bersih
+                    </span>
+                    <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-2 sm:mt-3">
+                    <p id="laporan-summary-saldo" class="text-sm sm:text-xl font-black truncate tracking-tight {{ ($laporanSubtotal['ringkasan']['saldo_bersih'] ?? 0) >= 0 ? 'text-emerald-700' : 'text-rose-600' }}">
+                        {{ $laporanSubtotal['ringkasan']['formatted_saldo_bersih'] ?? 'Rp 0' }}
+                    </p>
+                    <p id="laporan-status-saldo" class="text-[11px] font-semibold mt-0.5 {{ ($laporanSubtotal['ringkasan']['saldo_bersih'] ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
+                        {{ ($laporanSubtotal['ringkasan']['saldo_bersih'] ?? 0) >= 0 ? '✓ Arus Kas Surplus / Sehat' : '⚠ Arus Kas Defisit' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Kotak Pencarian Cepat Kategori/Subkategori --}}
+        <div class="flex items-center justify-between gap-3 no-print">
+            <div class="relative w-full sm:w-80">
+                <input type="text"
+                       id="input-search-laporan"
+                       oninput="filterLaporanSearch(this.value)"
+                       placeholder="Cari kategori atau subkategori..."
+                       class="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                </svg>
+            </div>
+            <span id="laporan-filter-indicator" class="text-xs text-gray-500 hidden sm:inline">
+                Menampilkan seluruh subtotal kategori & subkategori
+            </span>
+        </div>
+
+        {{-- Empty State (Jika tidak ada transaksi pada filter periode) --}}
+        <div id="laporan-empty-state" class="p-8 sm:p-12 text-center bg-surface rounded-2xl border border-gray-200 shadow-xs {{ ($totalTransaksi > 0) ? 'hidden' : '' }}">
+            <div class="w-14 h-14 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <h3 class="text-xs sm:text-sm font-bold text-gray-800" id="laporan-empty-title">Belum Ada Data Transaksi</h3>
+            <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto" id="laporan-empty-desc">
+                Belum ada catatan transaksi pada periode ini untuk menghitung subtotal per kategori dan subkategori.
+            </p>
+        </div>
+
+        {{-- Area Konten Laporan Subtotal (Tabel Pengeluaran & Pemasukan) --}}
+        <div id="laporan-tables-container" class="space-y-4 sm:space-y-6 {{ ($totalTransaksi === 0) ? 'hidden' : '' }}">
+
+            {{-- ── TABEL 1: SUB-TOTAL PENGELUARAN ── --}}
+            <div id="laporan-section-pengeluaran" class="laporan-card bg-surface rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {{-- Table Section Header --}}
+                <div class="p-3.5 sm:p-4.5 border-b border-gray-200 bg-gradient-to-r from-rose-50/70 to-white flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 ring-4 ring-rose-100"></span>
+                        <h3 class="text-xs sm:text-sm font-extrabold text-gray-900 tracking-tight uppercase">
+                            Subtotal Pengeluaran (Beban Operasional)
+                        </h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500 font-medium hidden sm:inline">Total Beban:</span>
+                        <span id="laporan-badge-pengeluaran-total" class="px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-700 border border-rose-200">
+                            {{ $laporanSubtotal['pengeluaran']['formatted_total'] ?? 'Rp 0' }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Table Pengeluaran --}}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm laporan-table">
+                        <thead>
+                            <tr class="bg-gray-50/80 text-gray-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider border-b border-gray-200">
+                                <th class="py-2.5 sm:py-3 px-3 sm:px-4">Kategori & Subkategori</th>
+                                <th class="py-2.5 sm:py-3 px-2 sm:px-4 text-center whitespace-nowrap">Banyak Transaksi</th>
+                                <th class="py-2.5 sm:py-3 px-2 sm:px-4 text-center whitespace-nowrap">Proporsi</th>
+                                <th class="py-2.5 sm:py-3 px-3 sm:px-4 text-right whitespace-nowrap">Subtotal (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="laporan-tbody-pengeluaran" class="divide-y divide-gray-100">
+                            @forelse($laporanSubtotal['pengeluaran']['categories'] ?? [] as $cIdx => $cat)
+                                {{-- Baris Kategori Utama (Parent) --}}
+                                <tr class="laporan-cat-row bg-slate-50/60 hover:bg-slate-100/70 transition-colors font-bold text-gray-900 border-t border-gray-200"
+                                    data-cat-type="pengeluaran"
+                                    data-cat-name="{{ strtolower($cat['nama']) }}">
+                                    <td class="py-2.5 sm:py-3 px-3 sm:px-4">
+                                        <div class="flex items-center gap-2">
+                                            @if(count($cat['subkategori']) > 0)
+                                                <button type="button"
+                                                        onclick="toggleLaporanCategory('pengeluaran-cat-{{ $cIdx }}')"
+                                                        class="no-print p-0.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-transform">
+                                                    <svg class="w-3.5 h-3.5 transition-transform duration-200 rotate-90" id="icon-cat-pengeluaran-cat-{{ $cIdx }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+                                            @else
+                                                <span class="w-4 h-4 inline-block"></span>
+                                            @endif
+                                            <span class="text-rose-600 font-extrabold text-sm sm:text-base">▪</span>
+                                            <span class="font-extrabold text-gray-900">{{ $cat['nama'] }}</span>
+                                            <span class="no-print text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded ml-1">
+                                                {{ count($cat['subkategori']) }} sub
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-gray-600 font-medium">
+                                        {{ $cat['jumlah_transaksi'] }}x
+                                    </td>
+                                    <td class="py-2.5 sm:py-3 px-2 sm:px-4 text-center">
+                                        <span class="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
+                                            {{ $cat['persentase'] }}%
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-black text-rose-600">
+                                        {{ $cat['formatted_subtotal'] }}
+                                    </td>
+                                </tr>
+
+                                {{-- Baris-baris Subkategori & Sub-subkategori (Children) --}}
+                                @foreach($cat['subkategori'] as $sIdx => $sub)
+                                    @if(!empty($sub['has_children']) && count($sub['children']) > 0)
+                                        {{-- Parent Subkategori (misal: Pemupukan) --}}
+                                        <tr class="laporan-sub-row laporan-sub-parent-row group bg-gray-50/60 hover:bg-gray-100/70 font-semibold text-gray-800 pengeluaran-cat-{{ $cIdx }}"
+                                            data-cat-type="pengeluaran"
+                                            data-sub-name="{{ strtolower($sub['nama']) }}"
+                                            data-parent-name="{{ strtolower($cat['nama']) }}"
+                                            data-is-sub-parent="true">
+                                            <td class="py-2 pl-10 sm:pl-14 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-900" style="padding-left: clamp(2.5rem, 6vw, 3.5rem);">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-gray-400 font-mono text-xs select-none">├─</span>
+                                                    <span class="font-bold text-gray-800">{{ $sub['nama'] }}</span>
+                                                    <span class="no-print text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-2xs">
+                                                        {{ count($sub['children']) }} sub-item
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td class="py-2 px-2 sm:px-4 text-center text-xs font-semibold text-gray-700">
+                                                {{ $sub['jumlah_transaksi'] }}x
+                                            </td>
+                                            <td class="py-2 px-2 sm:px-4 text-center text-xs font-semibold text-gray-600">
+                                                {{ $sub['persentase_kategori'] }}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari kat.</span>
+                                            </td>
+                                            <td class="py-2 px-3 sm:px-4 text-right font-bold text-gray-900 text-xs sm:text-sm">
+                                                {{ $sub['formatted_subtotal'] }}
+                                            </td>
+                                        </tr>
+
+                                        {{-- Sub-subkategori (Children, misal: Pupuk & HOK Pemupukan) --}}
+                                        @foreach($sub['children'] as $child)
+                                            <tr class="laporan-sub-row laporan-sub-child-row group hover:bg-rose-50/30 transition-colors pengeluaran-cat-{{ $cIdx }}"
+                                                data-cat-type="pengeluaran"
+                                                data-sub-name="{{ strtolower($child['nama']) }}"
+                                                data-parent-sub-name="{{ strtolower($sub['nama']) }}"
+                                                data-parent-name="{{ strtolower($cat['nama']) }}"
+                                                data-is-child="true">
+                                                <td class="py-1.5 sm:py-2 pl-16 sm:pl-24 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-600" style="padding-left: clamp(4rem, 10vw, 5.75rem);">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-gray-300 font-mono text-xs select-none">└─</span>
+                                                        <span class="text-gray-700 font-medium">
+                                                            {{ $child['nama'] }}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-500">
+                                                    {{ $child['jumlah_transaksi'] }}x
+                                                </td>
+                                                <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-400">
+                                                    {{ $child['persentase_parent'] }}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari sub</span>
+                                                </td>
+                                                <td class="py-1.5 sm:py-2 px-3 sm:px-4 text-right font-medium text-gray-700 text-xs sm:text-sm">
+                                                    {{ $child['formatted_subtotal'] }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @else
+                                        {{-- Subkategori tunggal tanpa anak --}}
+                                        <tr class="laporan-sub-row group hover:bg-rose-50/20 transition-colors pengeluaran-cat-{{ $cIdx }}"
+                                            data-cat-type="pengeluaran"
+                                            data-sub-name="{{ strtolower($sub['nama']) }}"
+                                            data-parent-name="{{ strtolower($cat['nama']) }}">
+                                            <td class="py-1.5 sm:py-2 pl-10 sm:pl-14 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-700" style="padding-left: clamp(2.5rem, 6vw, 3.5rem);">
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="text-gray-300 font-mono text-xs select-none">└─</span>
+                                                    <span class="{{ $sub['is_tanpa_subkategori'] ? 'italic text-gray-400' : 'text-gray-700 font-medium' }}">
+                                                        {{ $sub['nama'] }}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-500">
+                                                {{ $sub['jumlah_transaksi'] }}x
+                                            </td>
+                                            <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-400">
+                                                {{ $sub['persentase_kategori'] }}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari kat.</span>
+                                            </td>
+                                            <td class="py-1.5 sm:py-2 px-3 sm:px-4 text-right font-semibold text-gray-800 text-xs sm:text-sm">
+                                                {{ $sub['formatted_subtotal'] }}
+                                            </td>
+                                        </tr>
+                                    @endif
+                                @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="py-8 text-center text-gray-400 text-xs italic">
+                                        Tidak ada pengeluaran pada periode ini.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-rose-50/80 border-t-2 border-rose-200 font-black text-rose-900 text-xs sm:text-sm">
+                                <td class="py-3 px-3 sm:px-4 uppercase tracking-wider font-extrabold" colspan="3">
+                                    TOTAL PENGELUARAN
+                                </td>
+                                <td id="laporan-tfoot-pengeluaran-total" class="py-3 px-3 sm:px-4 text-right font-black text-sm sm:text-base text-rose-700">
+                                    {{ $laporanSubtotal['pengeluaran']['formatted_total'] ?? 'Rp 0' }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            {{-- ── TABEL 2: SUB-TOTAL PEMASUKAN ── --}}
+            <div id="laporan-section-pemasukan" class="laporan-card bg-surface rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {{-- Table Section Header --}}
+                <div class="p-3.5 sm:p-4.5 border-b border-gray-200 bg-gradient-to-r from-emerald-50/70 to-white flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100"></span>
+                        <h3 class="text-xs sm:text-sm font-extrabold text-gray-900 tracking-tight uppercase">
+                            Subtotal Pemasukan (Pendapatan Usaha Tani)
+                        </h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500 font-medium hidden sm:inline">Total Pendapatan:</span>
+                        <span id="laporan-badge-pemasukan-total" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            {{ $laporanSubtotal['pemasukan']['formatted_total'] ?? 'Rp 0' }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Table Pemasukan --}}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm laporan-table">
+                        <thead>
+                            <tr class="bg-gray-50/80 text-gray-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider border-b border-gray-200">
+                                <th class="py-2.5 sm:py-3 px-3 sm:px-4">Kategori & Subkategori</th>
+                                <th class="py-2.5 sm:py-3 px-2 sm:px-4 text-center whitespace-nowrap">Banyak Transaksi</th>
+                                <th class="py-2.5 sm:py-3 px-2 sm:px-4 text-center whitespace-nowrap">Proporsi</th>
+                                <th class="py-2.5 sm:py-3 px-3 sm:px-4 text-right whitespace-nowrap">Subtotal (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="laporan-tbody-pemasukan" class="divide-y divide-gray-100">
+                            @forelse($laporanSubtotal['pemasukan']['categories'] ?? [] as $cIdx => $cat)
+                                {{-- Baris Kategori Utama (Parent) --}}
+                                <tr class="laporan-cat-row bg-slate-50/60 hover:bg-slate-100/70 transition-colors font-bold text-gray-900 border-t border-gray-200"
+                                    data-cat-type="pemasukan"
+                                    data-cat-name="{{ strtolower($cat['nama']) }}">
+                                    <td class="py-2.5 sm:py-3 px-3 sm:px-4">
+                                        <div class="flex items-center gap-2">
+                                            @if(count($cat['subkategori']) > 0)
+                                                <button type="button"
+                                                        onclick="toggleLaporanCategory('pemasukan-cat-{{ $cIdx }}')"
+                                                        class="no-print p-0.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-transform">
+                                                    <svg class="w-3.5 h-3.5 transition-transform duration-200 rotate-90" id="icon-cat-pemasukan-cat-{{ $cIdx }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+                                            @else
+                                                <span class="w-4 h-4 inline-block"></span>
+                                            @endif
+                                            <span class="text-emerald-600 font-extrabold text-sm sm:text-base">▪</span>
+                                            <span class="font-extrabold text-gray-900">{{ $cat['nama'] }}</span>
+                                            <span class="no-print text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded ml-1">
+                                                {{ count($cat['subkategori']) }} sub
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-gray-600 font-medium">
+                                        {{ $cat['jumlah_transaksi'] }}x
+                                    </td>
+                                    <td class="py-2.5 sm:py-3 px-2 sm:px-4 text-center">
+                                        <span class="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-100">
+                                            {{ $cat['persentase'] }}%
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-black text-emerald-600">
+                                        {{ $cat['formatted_subtotal'] }}
+                                    </td>
+                                </tr>
+
+                                {{-- Baris-baris Subkategori & Sub-subkategori (Children) --}}
+                                @foreach($cat['subkategori'] as $sIdx => $sub)
+                                    @if(!empty($sub['has_children']) && count($sub['children']) > 0)
+                                        {{-- Parent Subkategori --}}
+                                        <tr class="laporan-sub-row laporan-sub-parent-row group bg-gray-50/60 hover:bg-gray-100/70 font-semibold text-gray-800 pemasukan-cat-{{ $cIdx }}"
+                                            data-cat-type="pemasukan"
+                                            data-sub-name="{{ strtolower($sub['nama']) }}"
+                                            data-parent-name="{{ strtolower($cat['nama']) }}"
+                                            data-is-sub-parent="true">
+                                            <td class="py-2 pl-10 sm:pl-14 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-900" style="padding-left: clamp(2.5rem, 6vw, 3.5rem);">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-gray-400 font-mono text-xs select-none">├─</span>
+                                                    <span class="font-bold text-gray-800">{{ $sub['nama'] }}</span>
+                                                    <span class="no-print text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-2xs">
+                                                        {{ count($sub['children']) }} sub-item
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td class="py-2 px-2 sm:px-4 text-center text-xs font-semibold text-gray-700">
+                                                {{ $sub['jumlah_transaksi'] }}x
+                                            </td>
+                                            <td class="py-2 px-2 sm:px-4 text-center text-xs font-semibold text-gray-600">
+                                                {{ $sub['persentase_kategori'] }}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari kat.</span>
+                                            </td>
+                                            <td class="py-2 px-3 sm:px-4 text-right font-bold text-gray-900 text-xs sm:text-sm">
+                                                {{ $sub['formatted_subtotal'] }}
+                                            </td>
+                                        </tr>
+
+                                        {{-- Sub-subkategori (Children) --}}
+                                        @foreach($sub['children'] as $child)
+                                            <tr class="laporan-sub-row laporan-sub-child-row group hover:bg-emerald-50/30 transition-colors pemasukan-cat-{{ $cIdx }}"
+                                                data-cat-type="pemasukan"
+                                                data-sub-name="{{ strtolower($child['nama']) }}"
+                                                data-parent-sub-name="{{ strtolower($sub['nama']) }}"
+                                                data-parent-name="{{ strtolower($cat['nama']) }}"
+                                                data-is-child="true">
+                                                <td class="py-1.5 sm:py-2 pl-16 sm:pl-24 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-600" style="padding-left: clamp(4rem, 10vw, 5.75rem);">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-gray-300 font-mono text-xs select-none">└─</span>
+                                                        <span class="text-gray-700 font-medium">
+                                                            {{ $child['nama'] }}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-500">
+                                                    {{ $child['jumlah_transaksi'] }}x
+                                                </td>
+                                                <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-400">
+                                                    {{ $child['persentase_parent'] }}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari sub</span>
+                                                </td>
+                                                <td class="py-1.5 sm:py-2 px-3 sm:px-4 text-right font-medium text-gray-700 text-xs sm:text-sm">
+                                                    {{ $child['formatted_subtotal'] }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @else
+                                        {{-- Subkategori tunggal tanpa anak --}}
+                                        <tr class="laporan-sub-row group hover:bg-emerald-50/20 transition-colors pemasukan-cat-{{ $cIdx }}"
+                                            data-cat-type="pemasukan"
+                                            data-sub-name="{{ strtolower($sub['nama']) }}"
+                                            data-parent-name="{{ strtolower($cat['nama']) }}">
+                                            <td class="py-1.5 sm:py-2 pl-10 sm:pl-14 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-700" style="padding-left: clamp(2.5rem, 6vw, 3.5rem);">
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="text-gray-300 font-mono text-xs select-none">└─</span>
+                                                    <span class="{{ $sub['is_tanpa_subkategori'] ? 'italic text-gray-400' : 'text-gray-700 font-medium' }}">
+                                                        {{ $sub['nama'] }}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-500">
+                                                {{ $sub['jumlah_transaksi'] }}x
+                                            </td>
+                                            <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-400">
+                                                {{ $sub['persentase_kategori'] }}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari kat.</span>
+                                            </td>
+                                            <td class="py-1.5 sm:py-2 px-3 sm:px-4 text-right font-semibold text-gray-800 text-xs sm:text-sm">
+                                                {{ $sub['formatted_subtotal'] }}
+                                            </td>
+                                        </tr>
+                                    @endif
+                                @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="py-8 text-center text-gray-400 text-xs italic">
+                                        Tidak ada pemasukan pada periode ini.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-emerald-50/80 border-t-2 border-emerald-200 font-black text-emerald-900 text-xs sm:text-sm">
+                                <td class="py-3 px-3 sm:px-4 uppercase tracking-wider font-extrabold" colspan="3">
+                                    TOTAL PEMASUKAN
+                                </td>
+                                <td id="laporan-tfoot-pemasukan-total" class="py-3 px-3 sm:px-4 text-right font-black text-sm sm:text-base text-emerald-700">
+                                    {{ $laporanSubtotal['pemasukan']['formatted_total'] ?? 'Rp 0' }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            {{-- ── REKAPITULASI AKHIR (ARUS KAS BERSIH) ── --}}
+            <div id="laporan-section-rekap-bersih" class="laporan-card bg-surface rounded-2xl border border-gray-200 shadow-xs p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-emerald-50/30">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200/80 pb-3 mb-3">
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-black text-gray-900 uppercase tracking-wider">
+                            Ringkasan Arus Kas Bersih
+                        </h4>
+                        <p class="text-xs text-gray-500">
+                            Selisih total subtotal pemasukan dikurangi subtotal pengeluaran.
+                        </p>
+                    </div>
+                    <span id="laporan-rekap-status-badge" class="px-3 py-1 rounded-full text-xs font-bold self-start sm:self-auto {{ ($laporanSubtotal['ringkasan']['saldo_bersih'] ?? 0) >= 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200' }}">
+                        {{ ($laporanSubtotal['ringkasan']['saldo_bersih'] ?? 0) >= 0 ? 'SURPLUS' : 'DEFISIT' }}
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs sm:text-sm">
+                    <div class="p-3 rounded-xl bg-white border border-gray-200/70 flex items-center justify-between">
+                        <span class="text-gray-500 font-medium">Total Pemasukan:</span>
+                        <span id="laporan-rekap-pemasukan" class="font-extrabold text-emerald-600">
+                            {{ $laporanSubtotal['pemasukan']['formatted_total'] ?? 'Rp 0' }}
+                        </span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white border border-gray-200/70 flex items-center justify-between">
+                        <span class="text-gray-500 font-medium">Total Pengeluaran:</span>
+                        <span id="laporan-rekap-pengeluaran" class="font-extrabold text-rose-600">
+                            {{ $laporanSubtotal['pengeluaran']['formatted_total'] ?? 'Rp 0' }}
+                        </span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white border border-gray-200/70 flex items-center justify-between ring-2 ring-emerald-500/20">
+                        <span class="text-gray-900 font-bold">Saldo Bersih:</span>
+                        <span id="laporan-rekap-saldo" class="font-black text-sm sm:text-base {{ ($laporanSubtotal['ringkasan']['saldo_bersih'] ?? 0) >= 0 ? 'text-emerald-700' : 'text-rose-600' }}">
+                            {{ $laporanSubtotal['ringkasan']['formatted_saldo_bersih'] ?? 'Rp 0' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    {{-- Akhir Konten Sub Menu 3: Laporan --}}
 
 </div>
 
@@ -1864,6 +2470,14 @@
             if (typeof renderCategoryStatsChart === 'function') {
                 renderCategoryStatsChart(currentTransaksiList);
             }
+            if (typeof renderLaporanKeuangan === 'function') {
+                renderLaporanKeuangan(currentTransaksiList);
+            }
+        }
+
+        const printPeriodeLabel = document.querySelector('.print-label-periode');
+        if (printPeriodeLabel) {
+            printPeriodeLabel.textContent = periode === 'bulan_ini' ? 'Bulan Ini' : (periode === 'tahun_ini' ? 'Tahun Ini' : 'Semua Periode');
         }
     }
     window.loadKeuanganData = loadKeuanganData;
@@ -2054,81 +2668,109 @@
     }
 
     // ── Manajemen Sub Menu Keuangan (Riwayat vs Statistik) ──
+    // ── Manajemen Sub Menu Keuangan (Riwayat vs Statistik vs Laporan) ──
     let currentSubmenu = '{{ request()->query("tab", "riwayat") }}';
 
     function setKeuanganSubmenu(tab) {
         currentSubmenu = tab;
         const contentRiwayat = document.getElementById('submenu-content-riwayat');
         const contentStatistik = document.getElementById('submenu-content-statistik');
+        const contentLaporan = document.getElementById('submenu-content-laporan');
         const btnRiwayat = document.getElementById('btn-subnav-riwayat');
         const btnStatistik = document.getElementById('btn-subnav-statistik');
+        const btnLaporan = document.getElementById('btn-subnav-laporan');
         const sidebarRiwayat = document.getElementById('sidebar-link-keuangan-riwayat');
         const sidebarStatistik = document.getElementById('sidebar-link-keuangan-statistik');
+        const sidebarLaporan = document.getElementById('sidebar-link-keuangan-laporan');
 
-        if (tab === 'statistik') {
-            if (contentRiwayat) contentRiwayat.classList.add('hidden');
-            if (contentStatistik) contentStatistik.classList.remove('hidden');
+        // Hide all contents
+        if (contentRiwayat) contentRiwayat.classList.add('hidden');
+        if (contentStatistik) contentStatistik.classList.add('hidden');
+        if (contentLaporan) contentLaporan.classList.add('hidden');
 
-            if (btnRiwayat) {
-                btnRiwayat.className = 'subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent transition-all cursor-pointer';
-                const icon = btnRiwayat.querySelector('svg');
-                if (icon) icon.className = 'w-4 h-4 text-gray-400';
-                const badge = document.getElementById('subnav-badge-riwayat');
-                if (badge) badge.className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-gray-100 text-gray-600';
+        // Reset all tab buttons
+        const inactiveBtnClass = 'subnav-tab-btn flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 text-xs sm:text-sm whitespace-nowrap font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent transition-all cursor-pointer';
+        const activeBtnClass = 'subnav-tab-btn flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 text-xs sm:text-sm whitespace-nowrap font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl transition-all cursor-pointer';
+
+        if (btnRiwayat) {
+            btnRiwayat.className = inactiveBtnClass;
+            const icon = btnRiwayat.querySelector('svg');
+            if (icon) icon.className = 'w-4 h-4 text-gray-400';
+            const badge = document.getElementById('subnav-badge-riwayat');
+            if (badge) badge.className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-gray-100 text-gray-600';
+        }
+        if (btnStatistik) {
+            btnStatistik.className = inactiveBtnClass;
+            const icon = btnStatistik.querySelector('svg');
+            if (icon) icon.className = 'w-4 h-4 text-gray-400';
+        }
+        if (btnLaporan) {
+            btnLaporan.className = inactiveBtnClass;
+            const icon = btnLaporan.querySelector('svg');
+            if (icon) icon.className = 'w-4 h-4 text-gray-400';
+        }
+
+        // Reset all sidebar links
+        const resetSidebar = (el) => {
+            if (!el) return;
+            el.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-text-secondary hover:text-text hover:bg-gray-50';
+            const dot = el.querySelector('span');
+            if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-300';
+        };
+        const activateSidebar = (el) => {
+            if (!el) return;
+            el.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-primary-dark font-semibold bg-emerald-100';
+            const dot = el.querySelector('span');
+            if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-primary';
+        };
+
+        resetSidebar(sidebarRiwayat);
+        resetSidebar(sidebarStatistik);
+        resetSidebar(sidebarLaporan);
+
+        if (tab === 'laporan') {
+            if (contentLaporan) contentLaporan.classList.remove('hidden');
+            if (btnLaporan) {
+                btnLaporan.className = activeBtnClass;
+                const icon = btnLaporan.querySelector('svg');
+                if (icon) icon.className = 'w-4 h-4 text-blue-600';
             }
+            activateSidebar(sidebarLaporan);
+
+            if (typeof renderLaporanKeuangan === 'function') {
+                renderLaporanKeuangan(currentTransaksiList);
+            }
+        } else if (tab === 'statistik') {
+            if (contentStatistik) contentStatistik.classList.remove('hidden');
             if (btnStatistik) {
-                btnStatistik.className = 'subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl transition-all cursor-pointer';
+                btnStatistik.className = activeBtnClass;
                 const icon = btnStatistik.querySelector('svg');
                 if (icon) icon.className = 'w-4 h-4 text-purple-600';
             }
-
-            if (sidebarRiwayat) {
-                sidebarRiwayat.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-text-secondary hover:text-text hover:bg-gray-50';
-                const dot = sidebarRiwayat.querySelector('span');
-                if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-300';
-            }
-            if (sidebarStatistik) {
-                sidebarStatistik.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-primary-dark font-semibold bg-emerald-100';
-                const dot = sidebarStatistik.querySelector('span');
-                if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-primary';
-            }
+            activateSidebar(sidebarStatistik);
 
             if (typeof renderCategoryStatsChart === 'function') {
                 renderCategoryStatsChart(currentTransaksiList);
             }
         } else {
+            // Default: riwayat
             if (contentRiwayat) contentRiwayat.classList.remove('hidden');
-            if (contentStatistik) contentStatistik.classList.add('hidden');
-
             if (btnRiwayat) {
-                btnRiwayat.className = 'subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-extrabold text-emerald-800 bg-emerald-50/70 border-b-2 border-emerald-600 rounded-t-xl transition-all cursor-pointer';
+                btnRiwayat.className = activeBtnClass;
                 const icon = btnRiwayat.querySelector('svg');
                 if (icon) icon.className = 'w-4 h-4 text-emerald-600';
                 const badge = document.getElementById('subnav-badge-riwayat');
                 if (badge) badge.className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-100 text-emerald-800';
             }
-            if (btnStatistik) {
-                btnStatistik.className = 'subnav-tab-btn flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-900 border-b-2 border-transparent transition-all cursor-pointer';
-                const icon = btnStatistik.querySelector('svg');
-                if (icon) icon.className = 'w-4 h-4 text-gray-400';
-            }
-
-            if (sidebarRiwayat) {
-                sidebarRiwayat.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-primary-dark font-semibold bg-emerald-100';
-                const dot = sidebarRiwayat.querySelector('span');
-                if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-primary';
-            }
-            if (sidebarStatistik) {
-                sidebarStatistik.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-text-secondary hover:text-text hover:bg-gray-50';
-                const dot = sidebarStatistik.querySelector('span');
-                if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-300';
-            }
+            activateSidebar(sidebarRiwayat);
         }
 
         try {
             const url = new URL(window.location.href);
             if (tab === 'statistik') {
                 url.searchParams.set('tab', 'statistik');
+            } else if (tab === 'laporan') {
+                url.searchParams.set('tab', 'laporan');
             } else {
                 url.searchParams.delete('tab');
             }
@@ -2136,6 +2778,574 @@
         } catch (e) {}
     }
     window.setKeuanganSubmenu = setKeuanganSubmenu;
+
+    // ── Manajemen Laporan Keuangan (Rekap Subtotal Kategori & Subkategori) ──
+    let currentLaporanTypeFilter = 'semua';
+    let isLaporanSubCollapsed = false;
+
+    function setLaporanTypeFilter(type) {
+        currentLaporanTypeFilter = type;
+        ['semua', 'pengeluaran', 'pemasukan'].forEach(t => {
+            const btn = document.getElementById('laporan-filter-' + t);
+            if (btn) {
+                if (t === type) {
+                    btn.className = 'laporan-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer bg-white text-gray-900 shadow-xs';
+                } else {
+                    btn.className = 'laporan-type-btn py-1 sm:py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-gray-600 hover:text-gray-900';
+                }
+            }
+        });
+
+        const secPengeluaran = document.getElementById('laporan-section-pengeluaran');
+        const secPemasukan = document.getElementById('laporan-section-pemasukan');
+        const secRekap = document.getElementById('laporan-section-rekap-bersih');
+
+        if (type === 'pengeluaran') {
+            if (secPengeluaran) secPengeluaran.classList.remove('hidden');
+            if (secPemasukan) secPemasukan.classList.add('hidden');
+            if (secRekap) secRekap.classList.add('hidden');
+        } else if (type === 'pemasukan') {
+            if (secPengeluaran) secPengeluaran.classList.add('hidden');
+            if (secPemasukan) secPemasukan.classList.remove('hidden');
+            if (secRekap) secRekap.classList.add('hidden');
+        } else {
+            if (secPengeluaran) secPengeluaran.classList.remove('hidden');
+            if (secPemasukan) secPemasukan.classList.remove('hidden');
+            if (secRekap) secRekap.classList.remove('hidden');
+        }
+
+        // Re-apply search filter if any
+        const searchInput = document.getElementById('input-search-laporan');
+        if (searchInput && searchInput.value) {
+            filterLaporanSearch(searchInput.value);
+        }
+    }
+    window.setLaporanTypeFilter = setLaporanTypeFilter;
+
+    function toggleAllLaporanAccordion() {
+        isLaporanSubCollapsed = !isLaporanSubCollapsed;
+        const subRows = document.querySelectorAll('.laporan-sub-row');
+        const icon = document.getElementById('icon-toggle-all-laporan');
+        const text = document.getElementById('text-toggle-all-laporan');
+
+        subRows.forEach(row => {
+            row.style.display = isLaporanSubCollapsed ? 'none' : '';
+        });
+
+        const catIcons = document.querySelectorAll('[id^="icon-cat-"]');
+        catIcons.forEach(ic => {
+            if (isLaporanSubCollapsed) {
+                ic.classList.remove('rotate-90');
+                ic.classList.add('rotate-0');
+            } else {
+                ic.classList.remove('rotate-0');
+                ic.classList.add('rotate-90');
+            }
+        });
+
+        if (text) text.textContent = isLaporanSubCollapsed ? 'Buka Sub' : 'Tutup Sub';
+        if (icon) {
+            if (isLaporanSubCollapsed) {
+                icon.classList.remove('rotate-0');
+                icon.classList.add('rotate-180');
+            } else {
+                icon.classList.remove('rotate-180');
+                icon.classList.add('rotate-0');
+            }
+        }
+    }
+    window.toggleAllLaporanAccordion = toggleAllLaporanAccordion;
+
+    function toggleLaporanCategory(catClass) {
+        const rows = document.querySelectorAll('.' + catClass);
+        const icon = document.getElementById('icon-cat-' + catClass);
+        let isNowHidden = false;
+
+        rows.forEach(r => {
+            if (r.style.display === 'none') {
+                r.style.display = '';
+                isNowHidden = false;
+            } else {
+                r.style.display = 'none';
+                isNowHidden = true;
+            }
+        });
+
+        if (icon) {
+            if (isNowHidden) {
+                icon.classList.remove('rotate-90');
+                icon.classList.add('rotate-0');
+            } else {
+                icon.classList.remove('rotate-0');
+                icon.classList.add('rotate-90');
+            }
+        }
+    }
+    window.toggleLaporanCategory = toggleLaporanCategory;
+
+    function filterLaporanSearch(query) {
+        const q = (query || '').trim().toLowerCase();
+        const catRows = document.querySelectorAll('.laporan-cat-row');
+        const subRows = document.querySelectorAll('.laporan-sub-row');
+        const indicator = document.getElementById('laporan-filter-indicator');
+
+        if (!q) {
+            catRows.forEach(cr => { cr.style.display = ''; });
+            subRows.forEach(sr => { sr.style.display = isLaporanSubCollapsed ? 'none' : ''; });
+            if (indicator) indicator.textContent = 'Menampilkan seluruh subtotal kategori & subkategori';
+            return;
+        }
+
+        if (indicator) indicator.textContent = `Menyaring dengan kata kunci: "${query}"`;
+
+        catRows.forEach(catRow => {
+            const catName = (catRow.getAttribute('data-cat-name') || '').toLowerCase();
+            const catMatches = catName.includes(q);
+            const parentTable = catRow.closest('tbody');
+            let hasMatchingChild = false;
+
+            const relatedSubs = parentTable ? Array.from(parentTable.querySelectorAll(`.laporan-sub-row[data-parent-name="${catName}"]`)) : [];
+
+            // Detect matched parent subcategories
+            const parentSubMatched = {};
+            relatedSubs.forEach(subRow => {
+                const subName = (subRow.getAttribute('data-sub-name') || '').toLowerCase();
+                const parentSubName = (subRow.getAttribute('data-parent-sub-name') || '').toLowerCase();
+                const isChild = subRow.getAttribute('data-is-child') === 'true';
+                const isSubParent = subRow.getAttribute('data-is-sub-parent') === 'true';
+
+                if (isChild && subName.includes(q)) {
+                    if (parentSubName) parentSubMatched[parentSubName] = true;
+                }
+                if (isSubParent && subName.includes(q)) {
+                    parentSubMatched[subName] = true;
+                }
+            });
+
+            relatedSubs.forEach(subRow => {
+                const subName = (subRow.getAttribute('data-sub-name') || '').toLowerCase();
+                const parentSubName = (subRow.getAttribute('data-parent-sub-name') || '').toLowerCase();
+                const isChild = subRow.getAttribute('data-is-child') === 'true';
+                const isSubParent = subRow.getAttribute('data-is-sub-parent') === 'true';
+
+                let visible = false;
+                if (catMatches) {
+                    visible = true;
+                } else if (isSubParent) {
+                    visible = subName.includes(q) || !!parentSubMatched[subName];
+                } else if (isChild) {
+                    visible = subName.includes(q) || (parentSubName && parentSubName.includes(q));
+                } else {
+                    visible = subName.includes(q);
+                }
+
+                if (visible) {
+                    subRow.style.display = '';
+                    hasMatchingChild = true;
+                } else {
+                    subRow.style.display = 'none';
+                }
+            });
+
+            if (catMatches || hasMatchingChild) {
+                catRow.style.display = '';
+            } else {
+                catRow.style.display = 'none';
+            }
+        });
+    }
+    window.filterLaporanSearch = filterLaporanSearch;
+
+    function calculateClientSubtotalReport(list) {
+        const report = {
+            pengeluaran: { total: 0, formatted_total: 'Rp 0', categories: [] },
+            pemasukan: { total: 0, formatted_total: 'Rp 0', categories: [] },
+            ringkasan: { total_pemasukan: 0, total_pengeluaran: 0, saldo_bersih: 0 }
+        };
+
+        ['pengeluaran', 'pemasukan'].forEach(tipe => {
+            const group = (list || []).filter(t => t.tipe === tipe);
+            let totalTipe = 0;
+            const catMap = {};
+
+            group.forEach(t => {
+                const catName = (t.kategori || 'Lainnya').trim();
+                const rawSub = (t.sub_kategori || '').trim();
+                const nominal = parseFloat(t.nominal) || 0;
+                totalTipe += nominal;
+
+                if (!catMap[catName]) {
+                    catMap[catName] = {
+                        nama: catName,
+                        subtotal: 0,
+                        jumlah_transaksi: 0,
+                        subkategoriMap: {}
+                    };
+                }
+                catMap[catName].subtotal += nominal;
+                catMap[catName].jumlah_transaksi += 1;
+
+                if (rawSub === '') {
+                    const subKey = '— (Tanpa Subkategori)';
+                    if (!catMap[catName].subkategoriMap[subKey]) {
+                        catMap[catName].subkategoriMap[subKey] = {
+                            nama: subKey,
+                            is_tanpa_subkategori: true,
+                            subtotal: 0,
+                            jumlah_transaksi: 0,
+                            has_children: false,
+                            childrenMap: {},
+                            _direct_nominal: 0,
+                            _direct_count: 0
+                        };
+                    }
+                    catMap[catName].subkategoriMap[subKey].subtotal += nominal;
+                    catMap[catName].subkategoriMap[subKey].jumlah_transaksi += 1;
+                } else {
+                    const parts = rawSub.split(/\s*[›>]\s*/);
+                    const subName = parts[0].trim();
+                    const childName = (parts.length > 1) ? parts.slice(1).join(' › ').trim() : null;
+
+                    if (!catMap[catName].subkategoriMap[subName]) {
+                        catMap[catName].subkategoriMap[subName] = {
+                            nama: subName,
+                            is_tanpa_subkategori: false,
+                            subtotal: 0,
+                            jumlah_transaksi: 0,
+                            has_children: false,
+                            childrenMap: {},
+                            _direct_nominal: 0,
+                            _direct_count: 0
+                        };
+                    }
+                    catMap[catName].subkategoriMap[subName].subtotal += nominal;
+                    catMap[catName].subkategoriMap[subName].jumlah_transaksi += 1;
+
+                    if (childName) {
+                        catMap[catName].subkategoriMap[subName].has_children = true;
+                        if (!catMap[catName].subkategoriMap[subName].childrenMap[childName]) {
+                            catMap[catName].subkategoriMap[subName].childrenMap[childName] = {
+                                nama: childName,
+                                subtotal: 0,
+                                jumlah_transaksi: 0
+                            };
+                        }
+                        catMap[catName].subkategoriMap[subName].childrenMap[childName].subtotal += nominal;
+                        catMap[catName].subkategoriMap[subName].childrenMap[childName].jumlah_transaksi += 1;
+                    } else {
+                        catMap[catName].subkategoriMap[subName]._direct_nominal += nominal;
+                        catMap[catName].subkategoriMap[subName]._direct_count += 1;
+                    }
+                }
+            });
+
+            const categories = Object.values(catMap).sort((a, b) => b.subtotal - a.subtotal);
+            categories.forEach(c => {
+                c.persentase = totalTipe > 0 ? Math.round((c.subtotal / totalTipe) * 1000) / 10 : 0;
+                c.formatted_subtotal = formatRupiah(c.subtotal);
+
+                const subs = Object.values(c.subkategoriMap).sort((a, b) => b.subtotal - a.subtotal);
+                subs.forEach(s => {
+                    s.persentase_kategori = c.subtotal > 0 ? Math.round((s.subtotal / c.subtotal) * 1000) / 10 : 0;
+                    s.formatted_subtotal = formatRupiah(s.subtotal);
+
+                    if (s.has_children && s.childrenMap) {
+                        if (s._direct_nominal > 0) {
+                            s.childrenMap['Lainnya / Umum'] = {
+                                nama: 'Lainnya / Umum',
+                                subtotal: s._direct_nominal,
+                                jumlah_transaksi: s._direct_count
+                            };
+                        }
+                        const children = Object.values(s.childrenMap).sort((a, b) => b.subtotal - a.subtotal);
+                        children.forEach(ch => {
+                            ch.persentase_parent = s.subtotal > 0 ? Math.round((ch.subtotal / s.subtotal) * 1000) / 10 : 0;
+                            ch.formatted_subtotal = formatRupiah(ch.subtotal);
+                        });
+                        s.children = children;
+                    } else {
+                        s.children = [];
+                    }
+                    delete s.childrenMap;
+                    delete s._direct_nominal;
+                    delete s._direct_count;
+                });
+                c.subkategori = subs;
+            });
+
+            report[tipe].total = totalTipe;
+            report[tipe].formatted_total = formatRupiah(totalTipe);
+            report[tipe].categories = categories;
+        });
+
+        report.ringkasan.total_pemasukan = report.pemasukan.total;
+        report.ringkasan.total_pengeluaran = report.pengeluaran.total;
+        report.ringkasan.saldo_bersih = report.pemasukan.total - report.pengeluaran.total;
+        report.ringkasan.formatted_total_pemasukan = formatRupiah(report.ringkasan.total_pemasukan);
+        report.ringkasan.formatted_total_pengeluaran = formatRupiah(report.ringkasan.total_pengeluaran);
+        report.ringkasan.formatted_saldo_bersih = formatRupiah(report.ringkasan.saldo_bersih);
+
+        return report;
+    }
+
+    function renderLaporanKeuangan(list) {
+        if (!list) list = currentTransaksiList || [];
+
+        const emptyState = document.getElementById('laporan-empty-state');
+        const tablesContainer = document.getElementById('laporan-tables-container');
+
+        if (!list || list.length === 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+            if (tablesContainer) tablesContainer.classList.add('hidden');
+
+            const sPengeluaran = document.getElementById('laporan-summary-pengeluaran');
+            const cPengeluaran = document.getElementById('laporan-count-pengeluaran');
+            const sPemasukan = document.getElementById('laporan-summary-pemasukan');
+            const cPemasukan = document.getElementById('laporan-count-pemasukan');
+            const sSaldo = document.getElementById('laporan-summary-saldo');
+            const stSaldo = document.getElementById('laporan-status-saldo');
+
+            if (sPengeluaran) sPengeluaran.textContent = 'Rp 0';
+            if (cPengeluaran) cPengeluaran.textContent = '0 Kategori Terdaftar';
+            if (sPemasukan) sPemasukan.textContent = 'Rp 0';
+            if (cPemasukan) cPemasukan.textContent = '0 Kategori Terdaftar';
+            if (sSaldo) {
+                sSaldo.textContent = 'Rp 0';
+                sSaldo.className = 'text-sm sm:text-xl font-black truncate tracking-tight text-emerald-700';
+            }
+            if (stSaldo) {
+                stSaldo.textContent = '✓ Arus Kas Seimbang';
+                stSaldo.className = 'text-[11px] font-semibold mt-0.5 text-emerald-600';
+            }
+            return;
+        }
+
+        if (emptyState) emptyState.classList.add('hidden');
+        if (tablesContainer) tablesContainer.classList.remove('hidden');
+
+        const report = calculateClientSubtotalReport(list);
+
+        // Update Summary Cards
+        const elPengeluaran = document.getElementById('laporan-summary-pengeluaran');
+        const elCountPengeluaran = document.getElementById('laporan-count-pengeluaran');
+        const elPemasukan = document.getElementById('laporan-summary-pemasukan');
+        const elCountPemasukan = document.getElementById('laporan-count-pemasukan');
+        const elSaldo = document.getElementById('laporan-summary-saldo');
+        const elStatusSaldo = document.getElementById('laporan-status-saldo');
+
+        if (elPengeluaran) elPengeluaran.textContent = report.pengeluaran.formatted_total;
+        if (elCountPengeluaran) elCountPengeluaran.textContent = `${report.pengeluaran.categories.length} Kategori Terdaftar`;
+        if (elPemasukan) elPemasukan.textContent = report.pemasukan.formatted_total;
+        if (elCountPemasukan) elCountPemasukan.textContent = `${report.pemasukan.categories.length} Kategori Terdaftar`;
+
+        const isSurplus = report.ringkasan.saldo_bersih >= 0;
+        if (elSaldo) {
+            elSaldo.textContent = report.ringkasan.formatted_saldo_bersih;
+            elSaldo.className = `text-sm sm:text-xl font-black truncate tracking-tight ${isSurplus ? 'text-emerald-700' : 'text-rose-600'}`;
+        }
+        if (elStatusSaldo) {
+            elStatusSaldo.textContent = isSurplus ? '✓ Arus Kas Surplus / Sehat' : '⚠ Arus Kas Defisit';
+            elStatusSaldo.className = `text-[11px] font-semibold mt-0.5 ${isSurplus ? 'text-emerald-600' : 'text-rose-600'}`;
+        }
+
+        // Update Section Header Badges & Table Footers
+        const bPengeluaran = document.getElementById('laporan-badge-pengeluaran-total');
+        const fPengeluaran = document.getElementById('laporan-tfoot-pengeluaran-total');
+        const bPemasukan = document.getElementById('laporan-badge-pemasukan-total');
+        const fPemasukan = document.getElementById('laporan-tfoot-pemasukan-total');
+
+        if (bPengeluaran) bPengeluaran.textContent = report.pengeluaran.formatted_total;
+        if (fPengeluaran) fPengeluaran.textContent = report.pengeluaran.formatted_total;
+        if (bPemasukan) bPemasukan.textContent = report.pemasukan.formatted_total;
+        if (fPemasukan) fPemasukan.textContent = report.pemasukan.formatted_total;
+
+        // Update Bottom Net Cash Flow Card
+        const rkPemasukan = document.getElementById('laporan-rekap-pemasukan');
+        const rkPengeluaran = document.getElementById('laporan-rekap-pengeluaran');
+        const rkSaldo = document.getElementById('laporan-rekap-saldo');
+        const rkBadge = document.getElementById('laporan-rekap-status-badge');
+
+        if (rkPemasukan) rkPemasukan.textContent = report.pemasukan.formatted_total;
+        if (rkPengeluaran) rkPengeluaran.textContent = report.pengeluaran.formatted_total;
+        if (rkSaldo) {
+            rkSaldo.textContent = report.ringkasan.formatted_saldo_bersih;
+            rkSaldo.className = `font-black text-sm sm:text-base ${isSurplus ? 'text-emerald-700' : 'text-rose-600'}`;
+        }
+        if (rkBadge) {
+            rkBadge.textContent = isSurplus ? 'SURPLUS' : 'DEFISIT';
+            rkBadge.className = `px-3 py-1 rounded-full text-xs font-bold self-start sm:self-auto ${isSurplus ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'}`;
+        }
+
+        // Render Table Body for Pengeluaran
+        const tbodyPengeluaran = document.getElementById('laporan-tbody-pengeluaran');
+        if (tbodyPengeluaran) {
+            tbodyPengeluaran.innerHTML = buildLaporanTbodyHtml(report.pengeluaran.categories, 'pengeluaran');
+        }
+
+        // Render Table Body for Pemasukan
+        const tbodyPemasukan = document.getElementById('laporan-tbody-pemasukan');
+        if (tbodyPemasukan) {
+            tbodyPemasukan.innerHTML = buildLaporanTbodyHtml(report.pemasukan.categories, 'pemasukan');
+        }
+
+        // Re-apply current type filter & search
+        setLaporanTypeFilter(currentLaporanTypeFilter);
+    }
+    window.renderLaporanKeuangan = renderLaporanKeuangan;
+
+    function buildLaporanTbodyHtml(categories, type) {
+        if (!categories || categories.length === 0) {
+            const label = type === 'pengeluaran' ? 'pengeluaran' : 'pemasukan';
+            return `<tr><td colspan="4" class="py-8 text-center text-gray-400 text-xs italic">Tidak ada ${label} pada periode ini.</td></tr>`;
+        }
+
+        const isExpense = (type === 'pengeluaran');
+        const bulletColor = isExpense ? 'text-rose-600' : 'text-emerald-600';
+        const subtotalColor = isExpense ? 'text-rose-600' : 'text-emerald-600';
+        const pctBadge = isExpense ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-800 border-emerald-100';
+        const childRowHover = isExpense ? 'hover:bg-rose-50/30' : 'hover:bg-emerald-50/30';
+        const subRowHover = isExpense ? 'hover:bg-rose-50/20' : 'hover:bg-emerald-50/20';
+
+        let html = '';
+        categories.forEach((cat, cIdx) => {
+            const catId = `${type}-cat-${cIdx}`;
+            const subCount = cat.subkategori ? cat.subkategori.length : 0;
+            const hasSubs = subCount > 0;
+            const subDisplay = isLaporanSubCollapsed ? 'style="display: none;"' : '';
+            const iconRotate = isLaporanSubCollapsed ? 'rotate-0' : 'rotate-90';
+
+            html += `
+                <tr class="laporan-cat-row bg-slate-50/60 hover:bg-slate-100/70 transition-colors font-bold text-gray-900 border-t border-gray-200"
+                    data-cat-type="${type}"
+                    data-cat-name="${escapeHtml(cat.nama.toLowerCase())}">
+                    <td class="py-2.5 sm:py-3 px-3 sm:px-4">
+                        <div class="flex items-center gap-2">
+                            ${hasSubs ? `
+                                <button type="button"
+                                        onclick="toggleLaporanCategory('${catId}')"
+                                        class="no-print p-0.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-transform">
+                                    <svg class="w-3.5 h-3.5 transition-transform duration-200 ${iconRotate}" id="icon-cat-${catId}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            ` : `<span class="w-4 h-4 inline-block"></span>`}
+                            <span class="${bulletColor} font-extrabold text-sm sm:text-base">▪</span>
+                            <span class="font-extrabold text-gray-900">${escapeHtml(cat.nama)}</span>
+                            <span class="no-print text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded ml-1">
+                                ${subCount} sub
+                            </span>
+                        </div>
+                    </td>
+                    <td class="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-gray-600 font-medium">
+                        ${cat.jumlah_transaksi}x
+                    </td>
+                    <td class="py-2.5 sm:py-3 px-2 sm:px-4 text-center">
+                        <span class="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${pctBadge} border">
+                            ${cat.persentase}%
+                        </span>
+                    </td>
+                    <td class="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-black ${subtotalColor}">
+                        ${cat.formatted_subtotal}
+                    </td>
+                </tr>
+            `;
+
+            if (cat.subkategori) {
+                cat.subkategori.forEach(sub => {
+                    const hasChildren = sub.has_children && sub.children && sub.children.length > 0;
+
+                    if (hasChildren) {
+                        html += `
+                            <tr class="laporan-sub-row laporan-sub-parent-row group bg-gray-50/60 hover:bg-gray-100/70 font-semibold text-gray-800 ${catId}"
+                                ${subDisplay}
+                                data-cat-type="${type}"
+                                data-sub-name="${escapeHtml(sub.nama.toLowerCase())}"
+                                data-parent-name="${escapeHtml(cat.nama.toLowerCase())}"
+                                data-is-sub-parent="true">
+                                <td class="py-2 pl-10 sm:pl-14 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-900" style="padding-left: clamp(2.5rem, 6vw, 3.5rem);">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-400 font-mono text-xs select-none">├─</span>
+                                        <span class="font-bold text-gray-800">${escapeHtml(sub.nama)}</span>
+                                        <span class="no-print text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-2xs">
+                                            ${sub.children.length} sub-item
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="py-2 px-2 sm:px-4 text-center text-xs font-semibold text-gray-700">
+                                    ${sub.jumlah_transaksi}x
+                                </td>
+                                <td class="py-2 px-2 sm:px-4 text-center text-xs font-semibold text-gray-600">
+                                    ${sub.persentase_kategori}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari kat.</span>
+                                </td>
+                                <td class="py-2 px-3 sm:px-4 text-right font-bold text-gray-900 text-xs sm:text-sm">
+                                    ${sub.formatted_subtotal}
+                                </td>
+                            </tr>
+                        `;
+
+                        sub.children.forEach(child => {
+                            html += `
+                                <tr class="laporan-sub-row laporan-sub-child-row group ${childRowHover} transition-colors ${catId}"
+                                    ${subDisplay}
+                                    data-cat-type="${type}"
+                                    data-sub-name="${escapeHtml(child.nama.toLowerCase())}"
+                                    data-parent-sub-name="${escapeHtml(sub.nama.toLowerCase())}"
+                                    data-parent-name="${escapeHtml(cat.nama.toLowerCase())}"
+                                    data-is-child="true">
+                                    <td class="py-1.5 sm:py-2 pl-16 sm:pl-24 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-600" style="padding-left: clamp(4rem, 10vw, 5.75rem);">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-gray-300 font-mono text-xs select-none">└─</span>
+                                            <span class="text-gray-700 font-medium">
+                                                ${escapeHtml(child.nama)}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-500">
+                                        ${child.jumlah_transaksi}x
+                                    </td>
+                                    <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-400">
+                                        ${child.persentase_parent}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari sub</span>
+                                    </td>
+                                    <td class="py-1.5 sm:py-2 px-3 sm:px-4 text-right font-medium text-gray-700 text-xs sm:text-sm">
+                                        ${child.formatted_subtotal}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        const isMuted = sub.is_tanpa_subkategori;
+                        html += `
+                            <tr class="laporan-sub-row group ${subRowHover} transition-colors ${catId}"
+                                ${subDisplay}
+                                data-cat-type="${type}"
+                                data-sub-name="${escapeHtml(sub.nama.toLowerCase())}"
+                                data-parent-name="${escapeHtml(cat.nama.toLowerCase())}">
+                                <td class="py-1.5 sm:py-2 pl-10 sm:pl-14 pr-3 sm:pr-4 text-xs sm:text-sm text-gray-700" style="padding-left: clamp(2.5rem, 6vw, 3.5rem);">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-gray-300 font-mono text-xs select-none">└─</span>
+                                        <span class="${isMuted ? 'italic text-gray-400' : 'text-gray-700 font-medium'}">
+                                            ${escapeHtml(sub.nama)}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-500">
+                                    ${sub.jumlah_transaksi}x
+                                </td>
+                                <td class="py-1.5 sm:py-2 px-2 sm:px-4 text-center text-xs text-gray-400">
+                                    ${sub.persentase_kategori}% <span class="text-[9px] text-gray-400 hidden sm:inline">dari kat.</span>
+                                </td>
+                                <td class="py-1.5 sm:py-2 px-3 sm:px-4 text-right font-semibold text-gray-800 text-xs sm:text-sm">
+                                    ${sub.formatted_subtotal}
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+            }
+        });
+
+        return html;
+    }
 
     // ── Palet Warna Infografis Statistik Kategori (Harmonis & Vibrant Sesuai Gambar) ──
     const CHART_PALETTE = [
@@ -3117,12 +4327,15 @@
             }
             if (currentSubmenu === 'statistik') {
                 url.searchParams.set('tab', 'statistik');
+            } else if (currentSubmenu === 'laporan') {
+                url.searchParams.set('tab', 'laporan');
             } else {
                 url.searchParams.delete('tab');
             }
             window.history.pushState(null, '', url.toString());
         } catch (e) {
-            const newUrl = '/keuangan' + (periode !== 'semua' ? '?periode=' + encodeURIComponent(periode) : '') + (currentSubmenu === 'statistik' ? (periode !== 'semua' ? '&tab=statistik' : '?tab=statistik') : '');
+            const tabParam = (currentSubmenu === 'statistik' || currentSubmenu === 'laporan') ? '&tab=' + currentSubmenu : '';
+            const newUrl = '/keuangan' + (periode !== 'semua' ? '?periode=' + encodeURIComponent(periode) : '') + tabParam;
             window.history.pushState(null, '', newUrl);
         }
 
@@ -3139,6 +4352,8 @@
         const initialTab = urlParams.get('tab') || '{{ request()->query("tab", "riwayat") }}';
         if (initialTab === 'statistik') {
             setKeuanganSubmenu('statistik');
+        } else if (initialTab === 'laporan') {
+            setKeuanganSubmenu('laporan');
         } else {
             setKeuanganSubmenu('riwayat');
         }

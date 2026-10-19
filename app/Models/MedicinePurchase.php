@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
     'medicine_id',
     'toko_obat',
     'harga',
+    'jumlah',
     'tanggal_beli',
     'foto_nota',
     'catatan',
@@ -23,6 +24,7 @@ class MedicinePurchase extends Model
     {
         return [
             'harga' => 'integer',
+            'jumlah' => 'integer',
             'tanggal_beli' => 'date',
         ];
     }
