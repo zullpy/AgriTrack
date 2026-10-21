@@ -384,11 +384,7 @@
                                 </span>
                             @endif
 
-                            @if ($medicine->kemasan_label)
-                                <span class="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 inline-block mt-1">
-                                    {{ $medicine->kemasan_label }}@if ($medicine->formatted_harga_per_base_unit) • {{ $medicine->formatted_harga_per_base_unit }}@endif
-                                </span>
-                            @endif
+
                         </div>
                     </div>
 
@@ -478,7 +474,14 @@
                                         <div class="space-y-1.5">
                                             @foreach ($medicine->purchases as $p)
                                                 <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-gray-200/80">
-                                                    <span class="font-semibold text-gray-800">{{ $p->toko_obat ?? 'Toko tidak dicatat' }}</span>
+                                                    <div>
+                                                        <span class="font-semibold text-gray-800 block">{{ $p->toko_obat ?? 'Toko tidak dicatat' }}</span>
+                                                        @if ($p->kemasan_label || ($p->jumlah && $p->jumlah > 1))
+                                                            <span class="text-[10px] text-gray-500 block">
+                                                                {{ $p->jumlah ? $p->jumlah . ' unit' : '' }}{{ $p->kemasan_label ? ' (' . $p->kemasan_label . ')' : '' }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
                                                     <div class="text-right">
                                                         <span class="font-bold text-green-700 block">{{ $p->formatted_harga ?: '—' }}</span>
                                                         @if ($p->tanggal_beli)
@@ -667,11 +670,7 @@
                                         <span class="text-gray-400 text-xs font-medium">—</span>
                                     @endif
 
-                                    @if ($medicine->kemasan_label)
-                                        <span class="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">
-                                            {{ $medicine->kemasan_label }}@if ($medicine->formatted_harga_per_base_unit) • {{ $medicine->formatted_harga_per_base_unit }}@endif
-                                        </span>
-                                    @endif
+
                                 </td>
                                 <td class="px-5 py-4 pr-6 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-1">
@@ -1122,8 +1121,14 @@ window.openMedicineDetail = function(id) {
     const modalStokEl = document.getElementById('modal-stok');
     if (modalStokEl) {
         const stokVal = (data.stok !== undefined && data.stok !== null) ? Number(data.stok) : 0;
-        const kemasanSuffix = data.kemasan_label ? ` (${data.kemasan_label})` : ' Unit';
-        modalStokEl.textContent = `${stokVal}${kemasanSuffix}`;
+        if (data.stok_label) {
+            modalStokEl.textContent = data.kemasan_label && !data.stok_label.includes(data.kemasan_label)
+                ? `${data.stok_label} (${data.kemasan_label})`
+                : data.stok_label;
+        } else {
+            const kemasanSuffix = data.kemasan_label ? ` (${data.kemasan_label})` : ' Unit';
+            modalStokEl.textContent = `${stokVal} unit${kemasanSuffix}`;
+        }
     }
 
     // Fase Tanaman

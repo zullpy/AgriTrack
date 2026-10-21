@@ -12,19 +12,22 @@ use Illuminate\Support\Facades\Storage;
     'toko_obat',
     'harga',
     'jumlah',
+    'kemasan_jumlah',
+    'kemasan_satuan',
     'tanggal_beli',
     'foto_nota',
     'catatan',
 ])]
 class MedicinePurchase extends Model
 {
-    protected $appends = ['formatted_harga', 'foto_url'];
+    protected $appends = ['formatted_harga', 'foto_url', 'kemasan_label'];
 
     protected function casts(): array
     {
         return [
             'harga' => 'integer',
             'jumlah' => 'integer',
+            'kemasan_jumlah' => 'float',
             'tanggal_beli' => 'date',
         ];
     }
@@ -32,6 +35,19 @@ class MedicinePurchase extends Model
     public function medicine(): BelongsTo
     {
         return $this->belongsTo(Medicine::class);
+    }
+
+    public function getKemasanLabelAttribute(): ?string
+    {
+        if ($this->kemasan_jumlah === null || ! $this->kemasan_satuan) {
+            return null;
+        }
+
+        $formattedJumlah = (float) $this->kemasan_jumlah == (int) $this->kemasan_jumlah
+            ? (string) (int) $this->kemasan_jumlah
+            : (string) (float) $this->kemasan_jumlah;
+
+        return "{$formattedJumlah} {$this->kemasan_satuan}";
     }
 
     public function getFormattedHargaAttribute(): ?string

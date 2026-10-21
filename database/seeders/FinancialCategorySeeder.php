@@ -115,6 +115,11 @@ class FinancialCategorySeeder extends Seeder
                 'tipe' => 'pengeluaran',
                 'urutan' => 7,
             ],
+            [
+                'nama' => 'Pembelian Obat/Pupuk',
+                'tipe' => 'pengeluaran',
+                'urutan' => 8,
+            ],
         ];
 
         foreach ($categories as $catData) {

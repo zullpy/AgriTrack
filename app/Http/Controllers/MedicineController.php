@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FinancialCategory;
+use App\Models\FinancialTransaction;
 use App\Models\Medicine;
 use App\Models\MedicineCategory;
 use App\Models\MedicinePurchase;
@@ -229,17 +231,31 @@ class MedicineController extends Controller
                         }
                         $updatePurchaseData['foto_nota'] = $p['foto_nota'];
                     }
+                    if (! empty($p['kemasan_jumlah'])) {
+                        $updatePurchaseData['kemasan_jumlah'] = $p['kemasan_jumlah'];
+                    }
+                    if (! empty($p['kemasan_satuan'])) {
+                        $updatePurchaseData['kemasan_satuan'] = $p['kemasan_satuan'];
+                    }
                     $updatePurchaseData['jumlah'] = ($existingPurchase->jumlah ?? 0) + $qty;
 
                     $existingPurchase->update($updatePurchaseData);
                     $updatedStores[] = $existingPurchase->toko_obat;
                 } else {
                     // Nama toko baru: buat baris pembelian baru
+                    if (! isset($p['kemasan_jumlah'])) {
+                        $p['kemasan_jumlah'] = $existing->kemasan_jumlah;
+                    }
+                    if (! isset($p['kemasan_satuan'])) {
+                        $p['kemasan_satuan'] = $existing->kemasan_satuan;
+                    }
                     $newP = $existing->purchases()->create($p);
                     if (! empty($newP->toko_obat)) {
                         $addedStores[] = $newP->toko_obat;
                     }
                 }
+
+                $this->recordPurchaseExpense($existing, $p);
             }
 
             // Perbarui data utama obat dengan data terbaru jika ada
@@ -365,7 +381,14 @@ class MedicineController extends Controller
 
         // Simpan riwayat pembelian obat
         foreach ($purchasesToAdd as $p) {
+            if (! isset($p['kemasan_jumlah'])) {
+                $p['kemasan_jumlah'] = $medicine->kemasan_jumlah;
+            }
+            if (! isset($p['kemasan_satuan'])) {
+                $p['kemasan_satuan'] = $medicine->kemasan_satuan;
+            }
             $medicine->purchases()->create($p);
+            $this->recordPurchaseExpense($medicine, $p);
         }
 
         return redirect('/data-obat')->with('success', "Data obat '{$medicine->nama}' berhasil ditambahkan.");
@@ -536,6 +559,8 @@ class MedicineController extends Controller
                         'toko_obat' => $pData['toko_obat'] ?? $purchase->toko_obat,
                         'harga' => $cleanPrice,
                         'jumlah' => ! empty($pData['jumlah']) ? (int) $pData['jumlah'] : ($purchase->jumlah ?? 1),
+                        'kemasan_jumlah' => $pData['kemasan_jumlah'] ?? $purchase->kemasan_jumlah ?? $medicine->kemasan_jumlah,
+                        'kemasan_satuan' => $pData['kemasan_satuan'] ?? $purchase->kemasan_satuan ?? $medicine->kemasan_satuan,
                         'tanggal_beli' => ! empty($pData['tanggal_beli']) ? $pData['tanggal_beli'] : null,
                         'catatan' => $pData['catatan'] ?? $purchase->catatan,
                     ];
@@ -552,11 +577,21 @@ class MedicineController extends Controller
                         'toko_obat' => $pData['toko_obat'] ?? null,
                         'harga' => $cleanPrice,
                         'jumlah' => ! empty($pData['jumlah']) ? (int) $pData['jumlah'] : 1,
+                        'kemasan_jumlah' => $pData['kemasan_jumlah'] ?? $medicine->kemasan_jumlah,
+                        'kemasan_satuan' => $pData['kemasan_satuan'] ?? $medicine->kemasan_satuan,
                         'tanggal_beli' => ! empty($pData['tanggal_beli']) ? $pData['tanggal_beli'] : null,
                         'catatan' => $pData['catatan'] ?? null,
                         'foto_nota' => $pFoto ?? ($allPhotoPaths[0] ?? null),
                     ]);
                     $existingIds[] = $newPurchase->id;
+                    $this->recordPurchaseExpense($medicine, [
+                        'toko_obat' => $newPurchase->toko_obat,
+                        'harga' => $newPurchase->harga,
+                        'jumlah' => $newPurchase->jumlah,
+                        'tanggal_beli' => $newPurchase->tanggal_beli?->toDateString(),
+                        'catatan' => $newPurchase->catatan,
+                        'foto_nota' => $newPurchase->foto_nota,
+                    ]);
                 }
             }
 
@@ -624,6 +659,8 @@ class MedicineController extends Controller
             'toko_obat' => 'nullable|string|max:255',
             'harga' => 'nullable|integer|min:0',
             'jumlah' => 'nullable|integer|min:1',
+            'kemasan_jumlah' => 'nullable|numeric|min:0',
+            'kemasan_satuan' => 'nullable|string|max:50',
             'tanggal_beli' => 'nullable|date',
             'catatan' => 'nullable|string|max:1000',
             'foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
@@ -635,6 +672,10 @@ class MedicineController extends Controller
         }
 
         $jumlahBeli = $validated['jumlah'] ?? 1;
+        $kemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null
+            ? (float) $validated['kemasan_jumlah']
+            : null;
+        $kemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
 
         // Cek jika toko yang sama sudah tercatat sebelumnya di riwayat
         $storeName = trim($validated['toko_obat'] ?? '');
@@ -658,6 +699,12 @@ class MedicineController extends Controller
             if ($isPriceDifferent) {
                 $purchaseUpdate['harga'] = $cleanHarga;
             }
+            if ($kemasanJumlah !== null) {
+                $purchaseUpdate['kemasan_jumlah'] = $kemasanJumlah;
+            }
+            if ($kemasanSatuan !== null) {
+                $purchaseUpdate['kemasan_satuan'] = $kemasanSatuan;
+            }
             if (! empty($validated['catatan'])) {
                 $purchaseUpdate['catatan'] = $validated['catatan'];
             }
@@ -673,6 +720,8 @@ class MedicineController extends Controller
                 'toko_obat' => $validated['toko_obat'] ?? null,
                 'harga' => $cleanHarga,
                 'jumlah' => $jumlahBeli,
+                'kemasan_jumlah' => $kemasanJumlah ?? $medicine->kemasan_jumlah,
+                'kemasan_satuan' => $kemasanSatuan ?? $medicine->kemasan_satuan,
                 'tanggal_beli' => $tanggalBeli,
                 'catatan' => $validated['catatan'] ?? null,
                 'foto_nota' => $fotoNotaPath,
@@ -680,6 +729,13 @@ class MedicineController extends Controller
         }
 
         // Perbarui data master obat: stok bertambah & tanggal diperbarui
+        if ($kemasanJumlah !== null) {
+            $medicine->kemasan_jumlah = $kemasanJumlah;
+        }
+        if ($kemasanSatuan !== null) {
+            $medicine->kemasan_satuan = $kemasanSatuan;
+        }
+
         $baseTotal = (float) ($medicine->base_total_unit ?: 1.0);
         $currentVolume = ((float) ($medicine->stok_volume ?? 0) > 0)
             ? (float) $medicine->stok_volume
@@ -692,6 +748,12 @@ class MedicineController extends Controller
             'stok_volume' => $newVolume,
             'tanggal_beli' => $tanggalBeli,
         ];
+        if ($kemasanJumlah !== null) {
+            $masterUpdates['kemasan_jumlah'] = $kemasanJumlah;
+        }
+        if ($kemasanSatuan !== null) {
+            $masterUpdates['kemasan_satuan'] = $kemasanSatuan;
+        }
 
         // Jika harga beda: update harga. Jika sama: cuma update tanggal
         if ($isPriceDifferent) {
@@ -708,6 +770,15 @@ class MedicineController extends Controller
         }
 
         $medicine->update($masterUpdates);
+
+        $this->recordPurchaseExpense($medicine, [
+            'toko_obat' => $validated['toko_obat'] ?? $storeName,
+            'harga' => $cleanHarga ?? $medicine->harga,
+            'jumlah' => $jumlahBeli,
+            'tanggal_beli' => $tanggalBeli,
+            'catatan' => $validated['catatan'] ?? null,
+            'foto_nota' => $fotoNotaPath,
+        ]);
 
         $tglFormatted = Carbon::parse($tanggalBeli)->translatedFormat('d M Y');
         $msg = $isPriceDifferent
@@ -770,6 +841,43 @@ class MedicineController extends Controller
             'message' => 'File foto berhasil dihapus.',
             'remaining_count' => count($remaining),
             'remaining_paths' => $remaining,
+        ]);
+    }
+
+    /**
+     * Catat pembelian obat sebagai pengeluaran keuangan otomatis.
+     *
+     * @param  array<string, mixed>  $purchaseData
+     */
+    private function recordPurchaseExpense(Medicine $medicine, array $purchaseData): void
+    {
+        $harga = $purchaseData['harga'] ?? null;
+        $harga = $harga !== null && $harga !== '' ? (int) $harga : (int) ($medicine->harga ?? 0);
+        $jumlah = max(1, (int) ($purchaseData['jumlah'] ?? 1));
+        $nominal = $harga * $jumlah;
+
+        if ($nominal <= 0) {
+            return;
+        }
+
+        $toko = trim((string) ($purchaseData['toko_obat'] ?? ''));
+        $catatan = trim((string) ($purchaseData['catatan'] ?? ''));
+
+        $keterangan = $toko !== '' ? "Toko: {$toko}" : null;
+        if ($catatan !== '') {
+            $keterangan = $keterangan ? "{$keterangan} • {$catatan}" : $catatan;
+        }
+
+        FinancialCategory::ensureCategoryHierarchy('Pembelian Obat/Pupuk', null, 'pengeluaran');
+
+        FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'judul' => "Pembelian {$medicine->nama}",
+            'nominal' => $nominal,
+            'tanggal' => $purchaseData['tanggal_beli'] ?? now()->toDateString(),
+            'keterangan' => $keterangan,
+            'foto_nota' => $purchaseData['foto_nota'] ?? null,
         ]);
     }
 
@@ -1166,6 +1274,11 @@ class MedicineController extends Controller
                 ->whereRaw('LOWER(TRIM(toko_obat)) = ?', [strtolower($toko)])
                 ->first();
 
+            $kemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null
+                ? (float) $validated['kemasan_jumlah']
+                : null;
+            $kemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+
             if ($existingPurchase) {
                 $purchaseUpdate = [
                     'jumlah' => ($existingPurchase->jumlah ?? 0) + $jumlahBeli,
@@ -1175,16 +1288,32 @@ class MedicineController extends Controller
                 if ($isPriceDifferent) {
                     $purchaseUpdate['harga'] = $cleanHarga;
                 }
+                if ($kemasanJumlah !== null) {
+                    $purchaseUpdate['kemasan_jumlah'] = $kemasanJumlah;
+                }
+                if ($kemasanSatuan !== null) {
+                    $purchaseUpdate['kemasan_satuan'] = $kemasanSatuan;
+                }
                 $existingPurchase->update($purchaseUpdate);
             } else {
                 $medicine->purchases()->create([
                     'toko_obat' => $toko,
                     'harga' => $cleanHarga,
                     'jumlah' => $jumlahBeli,
+                    'kemasan_jumlah' => $kemasanJumlah ?? $medicine->kemasan_jumlah,
+                    'kemasan_satuan' => $kemasanSatuan ?? $medicine->kemasan_satuan,
                     'tanggal_beli' => $tanggalBeli,
                     'catatan' => $catatan,
                 ]);
             }
+
+            $this->recordPurchaseExpense($medicine, [
+                'toko_obat' => $toko,
+                'harga' => $cleanHarga,
+                'jumlah' => $jumlahBeli,
+                'tanggal_beli' => $tanggalBeli,
+                'catatan' => $catatan,
+            ]);
 
             $tglFormatted = Carbon::parse($tanggalBeli)->translatedFormat('d M Y');
             $successMsg = $isPriceDifferent
@@ -1205,13 +1334,18 @@ class MedicineController extends Controller
             );
         }
 
+        $kemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null
+            ? (float) $validated['kemasan_jumlah']
+            : null;
+        $kemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+
         $newMedicine = Medicine::create([
             'nama' => trim($validated['nama']),
             'jenis' => ! empty($validated['jenis']) ? $validated['jenis'] : 'Fungisida',
             'tanaman_sasaran' => ! empty($validated['tanaman_sasaran']) ? $validated['tanaman_sasaran'] : 'Umum / Semua Tanaman',
             'dosis_anjuran' => $validated['dosis_anjuran'] ?? null,
-            'kemasan_jumlah' => $validated['kemasan_jumlah'] ?? null,
-            'kemasan_satuan' => ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null,
+            'kemasan_jumlah' => $kemasanJumlah,
+            'kemasan_satuan' => $kemasanSatuan,
             'harga' => $cleanHarga,
             'stok' => $jumlahBeli,
             'toko_obat' => $toko,
@@ -1224,6 +1358,16 @@ class MedicineController extends Controller
         ]);
 
         $newMedicine->purchases()->create([
+            'toko_obat' => $toko,
+            'harga' => $cleanHarga,
+            'jumlah' => $jumlahBeli,
+            'kemasan_jumlah' => $kemasanJumlah,
+            'kemasan_satuan' => $kemasanSatuan,
+            'tanggal_beli' => $tanggalBeli,
+            'catatan' => $catatan,
+        ]);
+
+        $this->recordPurchaseExpense($newMedicine, [
             'toko_obat' => $toko,
             'harga' => $cleanHarga,
             'jumlah' => $jumlahBeli,

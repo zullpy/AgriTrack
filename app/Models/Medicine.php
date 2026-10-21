@@ -217,18 +217,23 @@ class Medicine extends Model
     }
 
     /**
-     * Label stok (e.g. "5 botol", "10 (100 ml)", atau "5 unit").
+     * Label stok (e.g. "8 botol", "32 kemasan", "5 sachet", atau "10 pcs").
      */
     public function getStokLabelAttribute(): string
     {
         $stok = (int) ($this->stok ?? 0);
-        if ($this->kemasan_label) {
-            $ks = strtolower(trim((string) $this->kemasan_satuan));
-            if (in_array($ks, ['ml', 'l', 'liter', 'gram', 'g', 'kg'])) {
-                return "{$stok} ({$this->kemasan_label})";
-            }
+        $ks = strtolower(trim((string) $this->kemasan_satuan));
 
-            return "{$stok} {$this->kemasan_satuan}";
+        if (in_array($ks, ['botol', 'sachet', 'pcs', 'unit', 'bungkus', 'pack', 'sak', 'kotak', 'jerigen', 'rol', 'roll', 'lembar', 'karung'], true)) {
+            return "{$stok} {$ks}";
+        }
+
+        if (in_array($ks, ['ml', 'l', 'liter', 'ltr', 'lt'], true)) {
+            return "{$stok} botol";
+        }
+
+        if (in_array($ks, ['kg', 'kilogram', 'gram', 'gr', 'g'], true)) {
+            return "{$stok} kemasan";
         }
 
         $satuan = $this->kemasan_satuan ? " {$this->kemasan_satuan}" : ' unit';
@@ -238,15 +243,34 @@ class Medicine extends Model
 
     /**
      * Label volume stok presisi per satuan dasar (e.g. "170 ml", "950 gram", "8 pcs").
+     * Otomatis menyertakan konversi ke gram jika kg, atau ke ml jika liter (e.g. "64 kg (64.000 gram)").
      */
     public function getStokVolumeLabelAttribute(): string
     {
         $vol = (float) ($this->stok_volume ?? ((float) ($this->stok ?? 0) * $this->base_total_unit));
+        $baseUnit = $this->base_unit_label;
+
+        if ($baseUnit === 'gram' && $vol >= 1000) {
+            $volKg = $vol / 1000.0;
+            $formattedKg = rtrim(rtrim(number_format($volKg, 2, ',', '.'), '0'), ',');
+            $formattedGram = number_format($vol, (fmod($vol, 1.0) !== 0.0 ? 1 : 0), ',', '.');
+
+            return "{$formattedKg} kg ({$formattedGram} gram)";
+        }
+
+        if ($baseUnit === 'ml' && $vol >= 1000) {
+            $volL = $vol / 1000.0;
+            $formattedL = rtrim(rtrim(number_format($volL, 2, ',', '.'), '0'), ',');
+            $formattedMl = number_format($vol, (fmod($vol, 1.0) !== 0.0 ? 1 : 0), ',', '.');
+
+            return "{$formattedL} liter ({$formattedMl} ml)";
+        }
+
         $formatted = (float) $vol == (int) $vol
             ? number_format($vol, 0, ',', '.')
             : number_format($vol, 1, ',', '.');
 
-        return "{$formatted} {$this->base_unit_label}";
+        return "{$formatted} {$baseUnit}";
     }
 
     /**

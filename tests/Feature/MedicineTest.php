@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\FinancialTransaction;
 use App\Models\Medicine;
 use App\Models\MedicineCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1104,5 +1105,210 @@ class MedicineTest extends TestCase
             'jumlah' => 6,
             'toko_obat' => 'Toko Barokah Tani',
         ]);
+    }
+
+    public function test_record_purchase_stores_and_updates_kemasan_satuan_and_ukuran(): void
+    {
+        // 1. Test quick purchase updating kemasan
+        $medicine = Medicine::create([
+            'nama' => 'Curacron 500 EC Test',
+            'jenis' => 'Insektisida',
+            'tanaman_sasaran' => 'Cabai',
+            'harga' => 70000,
+            'stok' => 1,
+            'kemasan_jumlah' => 100,
+            'kemasan_satuan' => 'ml',
+        ]);
+
+        $response = $this->post("/data-obat/{$medicine->id}/pembelian", [
+            'toko_obat' => 'Toko Makmur Tani',
+            'harga' => 'Rp 75.000',
+            'jumlah' => 3,
+            'kemasan_jumlah' => 250,
+            'kemasan_satuan' => 'ml',
+            'tanggal_beli' => '2026-10-20',
+            'catatan' => 'Beli botol 250ml',
+        ]);
+
+        $response->assertRedirect();
+        $medicine->refresh();
+
+        $this->assertEquals(250, $medicine->kemasan_jumlah);
+        $this->assertEquals('ml', $medicine->kemasan_satuan);
+        $this->assertEquals(4, $medicine->stok); // 1 + 3
+
+        $this->assertDatabaseHas('medicine_purchases', [
+            'medicine_id' => $medicine->id,
+            'toko_obat' => 'Toko Makmur Tani',
+            'kemasan_jumlah' => 250,
+            'kemasan_satuan' => 'ml',
+            'jumlah' => 3,
+        ]);
+
+        $latestPurchase = $medicine->purchases()->first();
+        $this->assertEquals('250 ml', $latestPurchase->kemasan_label);
+
+        // 2. Test general purchase for new medicine with kemasan
+        $responseNew = $this->post('/stok-obat/pembelian', [
+            'nama' => 'Daconil 75 WP Super',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Bawang',
+            'toko_obat' => 'Toko Agro Lestari',
+            'harga' => 'Rp 50.000',
+            'jumlah' => 2,
+            'kemasan_jumlah' => 500,
+            'kemasan_satuan' => 'gram',
+            'tanggal_beli' => '2026-10-20',
+        ]);
+
+        $responseNew->assertRedirect();
+
+        $newMed = Medicine::where('nama', 'Daconil 75 WP Super')->first();
+        $this->assertNotNull($newMed);
+        $this->assertEquals(500, $newMed->kemasan_jumlah);
+        $this->assertEquals('gram', $newMed->kemasan_satuan);
+        $this->assertEquals('500 gram', $newMed->kemasan_label);
+        $this->assertEquals(2, $newMed->stok);
+        $this->assertEquals(1000.0, (float) $newMed->stok_volume);
+
+        $this->assertDatabaseHas('medicine_purchases', [
+            'medicine_id' => $newMed->id,
+            'kemasan_jumlah' => 500,
+            'kemasan_satuan' => 'gram',
+            'jumlah' => 2,
+            'toko_obat' => 'Toko Agro Lestari',
+        ]);
+    }
+
+    public function test_recording_purchase_creates_expense_transaction_automatically(): void
+    {
+        $medicine = Medicine::create([
+            'nama' => 'Gramoxone 276 SL',
+            'jenis' => 'Herbisida',
+            'tanaman_sasaran' => 'Gulma Umum',
+            'harga' => 80000,
+            'stok' => 2,
+        ]);
+
+        $this->post("/data-obat/{$medicine->id}/pembelian", [
+            'toko_obat' => 'Toko Sumber Makmur',
+            'harga' => 'Rp 88.000',
+            'jumlah' => 5,
+            'tanggal_beli' => '2026-10-19',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'judul' => 'Pembelian Gramoxone 276 SL',
+            'nominal' => 440000,
+            'tanggal' => '2026-10-19 00:00:00',
+        ]);
+
+        $this->assertDatabaseHas('financial_categories', [
+            'parent_id' => null,
+            'nama' => 'Pembelian Obat/Pupuk',
+            'tipe' => 'pengeluaran',
+        ]);
+
+        $expense = FinancialTransaction::latest('id')->first();
+        $this->assertStringContainsString('Toko Sumber Makmur', (string) $expense->keterangan);
+    }
+
+    public function test_purchase_recorded_from_medicine_form_creates_expense_transaction(): void
+    {
+        $this->post('/data-obat', [
+            'nama' => 'Antracol Baru 70 WP',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Semua Sayuran',
+            'purchases' => [
+                [
+                    'toko_obat' => 'Toko Barokah Tani',
+                    'harga' => 65000,
+                    'jumlah' => 2,
+                    'tanggal_beli' => '2026-10-20',
+                ],
+            ],
+        ])->assertRedirect('/data-obat');
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'judul' => 'Pembelian Antracol Baru 70 WP',
+            'nominal' => 130000,
+            'tanggal' => '2026-10-20 00:00:00',
+        ]);
+    }
+
+    public function test_editing_existing_purchase_history_does_not_duplicate_expense(): void
+    {
+        $medicine = Medicine::create([
+            'nama' => 'Dithane M-45',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Cabai',
+            'harga' => 85000,
+            'stok' => 3,
+        ]);
+
+        $this->post("/data-obat/{$medicine->id}/pembelian", [
+            'toko_obat' => 'Toko Tani Makmur',
+            'harga' => 85000,
+            'jumlah' => 1,
+            'tanggal_beli' => '2026-10-19',
+        ])->assertRedirect();
+
+        $purchase = $medicine->purchases()->first();
+        $this->assertNotNull($purchase);
+        $this->assertEquals(1, FinancialTransaction::count());
+
+        $this->put("/data-obat/{$medicine->id}", [
+            'nama' => 'Dithane M-45',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Cabai',
+            'harga' => 90000,
+            'purchases' => [
+                [
+                    'id' => $purchase->id,
+                    'toko_obat' => 'Toko Tani Makmur',
+                    'harga' => 90000,
+                    'tanggal_beli' => '2026-10-20',
+                ],
+            ],
+        ])->assertRedirect('/data-obat');
+
+        $this->assertEquals(1, FinancialTransaction::count());
+        $this->assertDatabaseHas('financial_transactions', [
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'nominal' => 85000,
+        ]);
+    }
+
+    public function test_stok_label_and_stok_volume_label_formatting(): void
+    {
+        $solidMedicine = Medicine::create([
+            'nama' => 'Pupuk Organik Super',
+            'jenis' => 'Pupuk',
+            'tanaman_sasaran' => 'Semua Tanaman',
+            'kemasan_jumlah' => 2,
+            'kemasan_satuan' => 'kg',
+            'stok' => 32,
+            'stok_volume' => 64000,
+        ]);
+
+        $this->assertEquals('32 kemasan', $solidMedicine->stok_label);
+        $this->assertEquals('64 kg (64.000 gram)', $solidMedicine->stok_volume_label);
+
+        $liquidMedicine = Medicine::create([
+            'nama' => 'Pestisida Cair',
+            'jenis' => 'Insektisida',
+            'tanaman_sasaran' => 'Cabai',
+            'kemasan_jumlah' => 1,
+            'kemasan_satuan' => 'liter',
+            'stok' => 5,
+            'stok_volume' => 5000,
+        ]);
+
+        $this->assertEquals('5 botol', $liquidMedicine->stok_label);
+        $this->assertEquals('5 liter (5.000 ml)', $liquidMedicine->stok_volume_label);
     }
 }

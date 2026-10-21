@@ -263,10 +263,14 @@
                     </div>
 
                     {{-- Info Pembelian Terakhir --}}
-                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-200/70 grid grid-cols-2 gap-2 text-xs">
+                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-200/70 grid grid-cols-3 gap-2 text-xs">
                         <div>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Harga Beli Terakhir</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Harga Beli</span>
                             <span class="font-bold text-green-700 tabular-nums">{{ $med->formatted_harga ?: '—' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Kemasan</span>
+                            <span class="font-semibold text-gray-800 truncate block">{{ $med->kemasan_label ?: '—' }}</span>
                         </div>
                         <div>
                             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Toko Obat</span>
@@ -511,6 +515,30 @@
 
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">
+                            Ukuran & Satuan Kemasan
+                        </label>
+                        <div class="flex items-center gap-1.5">
+                            <input type="number"
+                                   step="any"
+                                   min="0"
+                                   name="kemasan_jumlah"
+                                   id="gp-kemasan-jumlah-input"
+                                   placeholder="e.g. 500 / 1"
+                                   class="w-1/2 text-xs font-semibold px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white tabular-nums">
+                            <select name="kemasan_satuan"
+                                    id="gp-kemasan-satuan-select"
+                                    class="w-1/2 text-xs font-bold text-gray-700 px-2.5 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white">
+                                <option value="kg">kg</option>
+                                <option value="gram">gram</option>
+                                <option value="liter">liter</option>
+                                <option value="ml">ml</option>
+                            </select>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">Ukuran isi per kemasan (misal 500 ml atau 1 kg).</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">
                             Jumlah Beli (Qty) <span class="text-red-500">*</span>
                         </label>
                         <input type="number"
@@ -520,9 +548,10 @@
                                value="1"
                                required
                                class="w-full text-xs font-bold px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white tabular-nums">
+                        <p class="text-[10px] text-gray-400 mt-1">Banyaknya botol / kemasan yang dibeli.</p>
                     </div>
 
-                    <div>
+                    <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-gray-700 mb-1">
                             Tanggal Beli
                         </label>
@@ -633,6 +662,30 @@
 
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">
+                            Ukuran & Satuan Kemasan
+                        </label>
+                        <div class="flex items-center gap-1.5">
+                            <input type="number"
+                                   step="any"
+                                   min="0"
+                                   name="kemasan_jumlah"
+                                   id="qp-kemasan-jumlah-input"
+                                   placeholder="e.g. 500 / 1"
+                                   class="w-1/2 text-xs font-semibold px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white tabular-nums">
+                            <select name="kemasan_satuan"
+                                    id="qp-kemasan-satuan-select"
+                                    class="w-1/2 text-xs font-bold text-gray-700 px-2.5 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white">
+                                <option value="kg">kg</option>
+                                <option value="gram">gram</option>
+                                <option value="liter">liter</option>
+                                <option value="ml">ml</option>
+                            </select>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">Ukuran isi per kemasan (misal 500 ml atau 1 kg).</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">
                             Jumlah Beli (Qty) <span class="text-red-500">*</span>
                         </label>
                         <input type="number"
@@ -642,9 +695,10 @@
                                value="1"
                                required
                                class="w-full text-xs font-bold px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white tabular-nums">
+                        <p class="text-[10px] text-gray-400 mt-1">Banyaknya botol / kemasan yang dibeli.</p>
                     </div>
 
-                    <div>
+                    <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-gray-700 mb-1">
                             Tanggal Beli
                         </label>
@@ -736,6 +790,7 @@ function renderMedicineSuggestions(query) {
                 <div class="text-xs font-bold text-gray-900 truncate">${escapeHtml(m.nama)}</div>
                 <div class="text-[11px] text-gray-500 truncate flex items-center gap-1.5 mt-0.5">
                     <span class="px-1.5 py-0.2 rounded bg-gray-100 text-gray-700 font-semibold">${escapeHtml(m.jenis)}</span>
+                    ${m.kemasan_label ? `<span class="px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 font-semibold border border-amber-200/60">${escapeHtml(m.kemasan_label)}</span>` : ''}
                     ${m.toko_obat ? `<span class="truncate">Toko: ${escapeHtml(m.toko_obat)}</span>` : ''}
                 </div>
             </div>
@@ -768,6 +823,8 @@ function selectMedicine(id) {
     const medIdInput = document.getElementById('gp-medicine-id');
     const tokoInput = document.getElementById('gp-toko-input');
     const hargaInput = document.getElementById('gp-harga-input');
+    const kemasanJumlahInput = document.getElementById('gp-kemasan-jumlah-input');
+    const kemasanSatuanSelect = document.getElementById('gp-kemasan-satuan-select');
     const clearBtn = document.getElementById('gp-clear-name-btn');
     const statusBox = document.getElementById('gp-selected-status');
     const newMedFields = document.getElementById('gp-new-med-fields');
@@ -780,6 +837,13 @@ function selectMedicine(id) {
     if (med.toko_obat) tokoInput.value = med.toko_obat;
     if (med.harga > 0) {
         hargaInput.value = 'Rp ' + Number(med.harga).toLocaleString('id-ID');
+    }
+
+    if (kemasanJumlahInput) {
+        kemasanJumlahInput.value = med.kemasan_jumlah !== null && med.kemasan_jumlah !== undefined ? med.kemasan_jumlah : '';
+    }
+    if (kemasanSatuanSelect) {
+        kemasanSatuanSelect.value = med.kemasan_satuan || 'kg';
     }
 
     if (newMedFields) newMedFields.classList.add('hidden');
@@ -808,6 +872,8 @@ function selectNewMedicine(typedName) {
     selectedMedicine = null;
     const namaInput = document.getElementById('gp-nama-input');
     const medIdInput = document.getElementById('gp-medicine-id');
+    const kemasanJumlahInput = document.getElementById('gp-kemasan-jumlah-input');
+    const kemasanSatuanSelect = document.getElementById('gp-kemasan-satuan-select');
     const clearBtn = document.getElementById('gp-clear-name-btn');
     const statusBox = document.getElementById('gp-selected-status');
     const newMedFields = document.getElementById('gp-new-med-fields');
@@ -816,6 +882,9 @@ function selectNewMedicine(typedName) {
     namaInput.value = typedName.trim();
     medIdInput.value = '';
     if (clearBtn) clearBtn.classList.remove('hidden');
+
+    if (kemasanJumlahInput) kemasanJumlahInput.value = '';
+    if (kemasanSatuanSelect) kemasanSatuanSelect.value = 'kg';
 
     if (newMedFields) newMedFields.classList.remove('hidden');
 
@@ -831,6 +900,8 @@ function clearMedicineLookup() {
     selectedMedicine = null;
     const namaInput = document.getElementById('gp-nama-input');
     const medIdInput = document.getElementById('gp-medicine-id');
+    const kemasanJumlahInput = document.getElementById('gp-kemasan-jumlah-input');
+    const kemasanSatuanSelect = document.getElementById('gp-kemasan-satuan-select');
     const clearBtn = document.getElementById('gp-clear-name-btn');
     const statusBox = document.getElementById('gp-selected-status');
     const newMedFields = document.getElementById('gp-new-med-fields');
@@ -840,6 +911,8 @@ function clearMedicineLookup() {
         namaInput.value = '';
     }
     if (medIdInput) medIdInput.value = '';
+    if (kemasanJumlahInput) kemasanJumlahInput.value = '';
+    if (kemasanSatuanSelect) kemasanSatuanSelect.value = 'kg';
     if (clearBtn) clearBtn.classList.add('hidden');
     if (statusBox) statusBox.classList.add('hidden');
     if (newMedFields) newMedFields.classList.add('hidden');
@@ -912,13 +985,16 @@ window.openQuickPurchaseModal = function(medicine) {
     const resultStokEl = document.getElementById('qp-stok-result');
     const tokoInput = document.getElementById('qp-toko-input');
     const hargaInput = document.getElementById('qp-harga-input');
+    const kemasanJumlahInput = document.getElementById('qp-kemasan-jumlah-input');
+    const kemasanSatuanSelect = document.getElementById('qp-kemasan-satuan-select');
     const jumlahInput = document.getElementById('qp-jumlah-input');
     const catatanInput = document.getElementById('qp-catatan-input');
 
     if (!modal || !form) return;
 
     form.action = `/data-obat/${medicine.id}/pembelian`;
-    nameEl.textContent = `${medicine.nama} (${medicine.jenis || 'Obat Pertanian'})`;
+    const kemasanLabel = medicine.kemasan_label ? ` • ${medicine.kemasan_label}` : '';
+    nameEl.textContent = `${medicine.nama} (${medicine.jenis || 'Obat Pertanian'})${kemasanLabel}`;
 
     const currentStok = parseInt(medicine.stok) || 0;
     currentStokEl.textContent = currentStok;
@@ -937,6 +1013,12 @@ window.openQuickPurchaseModal = function(medicine) {
 
     tokoInput.value = defaultToko;
     hargaInput.value = defaultHarga;
+    if (kemasanJumlahInput) {
+        kemasanJumlahInput.value = medicine.kemasan_jumlah !== null && medicine.kemasan_jumlah !== undefined ? medicine.kemasan_jumlah : '';
+    }
+    if (kemasanSatuanSelect) {
+        kemasanSatuanSelect.value = medicine.kemasan_satuan || 'kg';
+    }
     catatanInput.value = '';
 
     modal.classList.remove('hidden');

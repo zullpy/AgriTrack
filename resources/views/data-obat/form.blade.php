@@ -399,9 +399,6 @@
                                 <option value="gram" {{ $currentSatuan === 'gram' ? 'selected' : '' }}>gram</option>
                                 <option value="liter" {{ in_array($currentSatuan, ['liter', 'l']) ? 'selected' : '' }}>liter</option>
                                 <option value="ml" {{ $currentSatuan === 'ml' ? 'selected' : '' }}>ml</option>
-                                <option value="sachet" {{ $currentSatuan === 'sachet' ? 'selected' : '' }}>sachet</option>
-                                <option value="botol" {{ $currentSatuan === 'botol' ? 'selected' : '' }}>botol</option>
-                                <option value="pcs" {{ $currentSatuan === 'pcs' ? 'selected' : '' }}>pcs</option>
                             </select>
                         </div>
                         <p class="text-[11px] text-gray-500 mt-1">Konversi dosis otomatis.</p>
@@ -676,7 +673,7 @@
                                     </button>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
                                         <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nama Toko</label>
                                         <input type="text"
@@ -696,15 +693,6 @@
                                                    placeholder="Contoh: 68.000"
                                                    class="purchase-harga-input w-full pl-8 pr-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-semibold">
                                         </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[11px] font-semibold text-gray-600 mb-1">Jumlah Beli</label>
-                                        <input type="number"
-                                               min="1"
-                                               name="purchases[{{ $index }}][jumlah]"
-                                               value="{{ $purchase->jumlah ?? 1 }}"
-                                               placeholder="1"
-                                               class="purchase-jumlah-input w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-bold">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-semibold text-gray-600 mb-1">Tanggal Beli</label>
@@ -1436,7 +1424,7 @@ function applyMedicineAutofill(matched) {
                             </svg>
                         </button>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nama Toko</label>
                             <input type="text"
@@ -1456,15 +1444,6 @@ function applyMedicineAutofill(matched) {
                                        placeholder="Contoh: 68.000"
                                        class="purchase-harga-input w-full pl-8 pr-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-semibold">
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Jumlah Beli</label>
-                            <input type="number"
-                                   min="1"
-                                   name="purchases[${idx}][jumlah]"
-                                   value="${p.jumlah || 1}"
-                                   placeholder="1"
-                                   class="purchase-jumlah-input w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-bold">
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">Tanggal Beli</label>
@@ -1548,7 +1527,7 @@ window.addPurchaseRow = function() {
                 </svg>
             </button>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
                 <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nama Toko</label>
                 <input type="text"
@@ -1566,15 +1545,6 @@ window.addPurchaseRow = function() {
                            placeholder="Contoh: 70.000"
                            class="purchase-harga-input w-full pl-8 pr-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-semibold">
                 </div>
-            </div>
-            <div>
-                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Jumlah Beli</label>
-                <input type="number"
-                       min="1"
-                       name="purchases[${nextIndex}][jumlah]"
-                       value="1"
-                       placeholder="1"
-                       class="purchase-jumlah-input w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs text-gray-900 font-bold">
             </div>
             <div>
                 <label class="block text-[11px] font-semibold text-gray-600 mb-1">Tanggal Beli</label>

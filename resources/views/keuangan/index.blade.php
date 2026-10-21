@@ -291,7 +291,7 @@
             {{-- Desktop Table View --}}
             <div class="hidden sm:block overflow-x-auto">
                 <table class="w-full text-left text-xs">
-                    <thead class="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold uppercase tracking-wider">
+                    {{-- <thead class="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold uppercase tracking-wider">
                         <tr>
                             <th class="px-5 py-3">Tanggal</th>
                             <th class="px-5 py-3">Tipe</th>
@@ -301,7 +301,7 @@
                             <th class="px-5 py-3 text-right">Nominal</th>
                             <th class="px-5 py-3 text-center">Aksi</th>
                         </tr>
-                    </thead>
+                    </thead> --}}
                     <tbody id="transaksi-table-body" class="divide-y divide-gray-100">
                         @php
                             $catOrderMap = [];
