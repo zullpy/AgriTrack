@@ -1412,4 +1412,42 @@ class MedicineTest extends TestCase
         $this->assertNotNull($newPurchase->foto_nota);
         Storage::disk('public')->assertExists($newPurchase->foto_nota);
     }
+
+    public function test_purchase_with_base64_photo_uploads_successfully(): void
+    {
+        Storage::fake('public');
+
+        $medicine = Medicine::create([
+            'nama' => 'Amistartop 325 SC Base64 Test',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Bawang Merah',
+            'harga' => 150000,
+            'stok' => 2,
+        ]);
+
+        $sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+        $response = $this->post("/data-obat/{$medicine->id}/pembelian", [
+            'toko_obat' => 'Toko Tani Mandiri',
+            'harga' => 150000,
+            'jumlah' => 1,
+            'tanggal_beli' => '2026-10-22',
+            'foto_nota_base64' => $sampleBase64,
+        ]);
+
+        $response->assertRedirect();
+
+        $purchase = $medicine->purchases()->first();
+        $this->assertNotNull($purchase);
+        $this->assertNotNull($purchase->foto_nota);
+        $this->assertNotNull($purchase->foto_url);
+
+        $medicine->refresh();
+        $this->assertContains($purchase->foto_nota, $medicine->foto_paths);
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'foto_nota' => $purchase->foto_nota,
+        ]);
+    }
 }

@@ -224,6 +224,10 @@ class KeuanganSyncController extends Controller
                     if ($catId) {
                         $cat = FinancialCategory::find($catId);
                         if ($cat) {
+                            $oldNama = $cat->nama;
+                            $oldParentId = $cat->parent_id;
+                            $oldHierarchy = FinancialCategory::getCategoryHierarchyPath($cat);
+
                             $parentId = array_key_exists('parent_id', $data) ? (! empty($data['parent_id']) ? (int) $data['parent_id'] : null) : $cat->parent_id;
                             if ($parentId && isset($idMappings[$parentId])) {
                                 $parentId = $idMappings[$parentId];
@@ -235,6 +239,9 @@ class KeuanganSyncController extends Controller
                                 'nama' => $data['nama'] ?? $cat->nama,
                                 'keterangan' => array_key_exists('keterangan', $data) ? $data['keterangan'] : $cat->keterangan,
                             ]);
+
+                            FinancialCategory::cascadeCategoryUpdate($cat, $oldNama, $oldParentId, $oldHierarchy);
+
                             $processedCount++;
                         }
                     }

@@ -493,7 +493,7 @@
                 </button>
             </div>
 
-            <form id="general-purchase-form" action="/stok-obat/pembelian" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto flex-1">
+            <form id="general-purchase-form" action="/stok-obat/pembelian" method="POST" class="p-6 space-y-4 overflow-y-auto flex-1">
                 @csrf
 
                 {{-- Input Ketik Nama Obat dengan Autocomplete Otomatis --}}
@@ -677,7 +677,6 @@
                            class="hidden">
                     <input type="file"
                            id="gp-foto-nota"
-                           name="foto_nota"
                            accept="image/*"
                            onchange="handlePurchasePhotoSelected(this, 'gp')"
                            class="hidden">
@@ -745,7 +744,7 @@
                 </button>
             </div>
 
-            <form id="quick-purchase-form" method="POST" action="" enctype="multipart/form-data" class="p-6 space-y-4">
+            <form id="quick-purchase-form" method="POST" action="" class="p-6 space-y-4">
                 @csrf
                 <input type="hidden" name="foto_nota_base64" id="qp-foto-nota-base64">
 
@@ -871,7 +870,6 @@
                            class="hidden">
                     <input type="file"
                            id="qp-foto-nota"
-                           name="foto_nota"
                            accept="image/*"
                            onchange="handlePurchasePhotoSelected(this, 'qp')"
                            class="hidden">
@@ -1190,8 +1188,8 @@ async function compressPurchasePhoto(file) {
             const img = new Image();
             img.src = e.target.result;
             img.onload = () => {
-                const maxWidth = 1024;
-                const maxHeight = 1024;
+                const maxWidth = 850;
+                const maxHeight = 850;
                 let width = img.width;
                 let height = img.height;
 
@@ -1241,7 +1239,7 @@ async function compressPurchasePhoto(file) {
                     }, 'image/jpeg', quality);
                 }
 
-                attemptCompression(0.6);
+                attemptCompression(0.55);
             };
             img.onerror = () => resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: e.target.result, savings: 0 });
         };
@@ -1294,16 +1292,9 @@ window.handlePurchasePhotoSelected = async function(input, prefix) {
         base64Input.value = result.dataUrl;
     }
 
-    // Sinkronkan file terkompresi ke input file utama form (name="foto_nota") jika didukung
+    // Bersihkan file biner pada picker agar tidak mengirim payload multipart
     if (targetInput) {
-        try {
-            const dt = new DataTransfer();
-            dt.items.add(finalFile);
-            targetInput.files = dt.files;
-        } catch (e) {
-            // Jika browser HP tidak mendukung DataTransfer, kosongkan targetInput agar file 10MB mentah tidak terkirim
-            targetInput.value = '';
-        }
+        targetInput.value = '';
     }
 
     if (previewCard && previewImg && previewName && previewSize) {
@@ -1557,20 +1548,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Pastikan foto tersinkron saat form pembelian disubmit & cegah kirim file mentah raksasa
+    // Pastikan foto tersinkron saat form pembelian disubmit & cegah kirim request multipart
     ['general-purchase-form', 'quick-purchase-form'].forEach(formId => {
         const form = document.getElementById(formId);
         if (!form) return;
         const prefix = formId === 'general-purchase-form' ? 'gp' : 'qp';
         form.addEventListener('submit', function() {
-            const base64Input = document.getElementById(prefix + '-foto-nota-base64');
             const targetInput = document.getElementById(prefix + '-foto-nota');
             const camInput = document.getElementById(prefix + '-foto-camera');
-            if (base64Input && base64Input.value) {
-                if (camInput) camInput.value = '';
-                if (targetInput && targetInput.files && targetInput.files[0] && targetInput.files[0].size > 300 * 1024) {
-                    targetInput.value = '';
-                }
+            if (targetInput) {
+                targetInput.value = '';
+                targetInput.disabled = true;
+            }
+            if (camInput) {
+                camInput.value = '';
+                camInput.disabled = true;
+            }
+
+            // Pastikan form dikirim murni url-encoded (Bukan multipart/form-data) untuk mencegah blokir WAF OpenResty 403
+            form.removeAttribute('enctype');
+            form.enctype = 'application/x-www-form-urlencoded';
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                const span = submitBtn.querySelector('span');
+                if (span) span.innerText = 'Menyimpan...';
             }
         });
     });

@@ -1850,26 +1850,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Submit listener: cegah WAF 403 Forbidden di hosting dengan memastikan file biner raksasa tidak dikirim ganda
+    // Submit listener: cegah WAF 403 Forbidden di hosting dengan memastikan request tidak dikirim sebagai multipart jika foto sudah di-base64
     const formMedicine = document.getElementById('form-medicine');
     if (formMedicine) {
         formMedicine.addEventListener('submit', () => {
             const base64Container = document.getElementById('base64-inputs-container');
-            if (cameraInput) cameraInput.value = '';
+            if (cameraInput) {
+                cameraInput.value = '';
+                cameraInput.disabled = true;
+            }
 
             if (base64Container && base64Container.children.length > 0 && fileInput) {
-                let hasHeavyFile = false;
-                if (fileInput.files) {
-                    for (let i = 0; i < fileInput.files.length; i++) {
-                        if (fileInput.files[i].size > 300 * 1024) {
-                            hasHeavyFile = true;
-                            break;
-                        }
-                    }
-                }
-                if (hasHeavyFile) {
-                    fileInput.value = '';
-                }
+                fileInput.value = '';
+                fileInput.disabled = true;
+                formMedicine.removeAttribute('enctype');
+                formMedicine.enctype = 'application/x-www-form-urlencoded';
+            } else if (fileInput && (!fileInput.files || fileInput.files.length === 0)) {
+                fileInput.disabled = true;
+                formMedicine.removeAttribute('enctype');
+                formMedicine.enctype = 'application/x-www-form-urlencoded';
             }
         });
     }

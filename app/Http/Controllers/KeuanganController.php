@@ -434,7 +434,13 @@ class KeuanganController extends Controller
             'keterangan' => 'nullable|string|max:255',
         ]);
 
+        $oldNama = $category->nama;
+        $oldParentId = $category->parent_id;
+        $oldHierarchy = FinancialCategory::getCategoryHierarchyPath($category);
+
         $category->update($validated);
+
+        FinancialCategory::cascadeCategoryUpdate($category, $oldNama, $oldParentId, $oldHierarchy);
 
         $label = $category->parent_id ? 'Sub-kategori' : 'Kategori';
 

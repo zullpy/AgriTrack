@@ -931,12 +931,12 @@ class MedicineController extends Controller
      */
     private function uploadSinglePhotoOrBase64(mixed $file, ?string $base64 = null): ?string
     {
-        if ($file && $file instanceof UploadedFile && $file->isValid()) {
-            return $this->uploadSinglePhoto($file);
-        }
-
         if (! empty($base64) && is_string($base64) && str_starts_with($base64, 'data:image/')) {
             return $this->uploadBase64Photo($base64);
+        }
+
+        if ($file && $file instanceof UploadedFile && $file->isValid()) {
+            return $this->uploadSinglePhoto($file);
         }
 
         return null;
@@ -1114,6 +1114,33 @@ class MedicineController extends Controller
 
             if ($oldName !== $category->nama) {
                 Medicine::where('jenis', $oldName)->update(['jenis' => $category->nama]);
+
+                // Sinkronkan juga riwayat pengeluaran pembelian obat di tabel financial_transactions
+                FinancialTransaction::where(function ($q) {
+                    $q->where('kategori', 'Pembelian Obat/Pupuk')
+                        ->orWhereRaw('LOWER(TRIM(kategori)) = ?', ['pembelian obat/pupuk']);
+                })
+                    ->where(function ($q) use ($oldName) {
+                        $q->where('sub_kategori', $oldName)
+                            ->orWhereRaw('LOWER(TRIM(sub_kategori)) = ?', [strtolower(trim($oldName))]);
+                    })
+                    ->update(['sub_kategori' => $category->nama]);
+
+                // Sinkronkan juga di financial_categories jika ada sub-kategori bernama sama di bawah 'Pembelian Obat/Pupuk'
+                $pembelianParent = FinancialCategory::whereNull('parent_id')
+                    ->where(function ($q) {
+                        $q->where('nama', 'Pembelian Obat/Pupuk')
+                            ->orWhereRaw('LOWER(TRIM(nama)) = ?', ['pembelian obat/pupuk']);
+                    })->first();
+
+                if ($pembelianParent) {
+                    FinancialCategory::where('parent_id', $pembelianParent->id)
+                        ->where(function ($q) use ($oldName) {
+                            $q->where('nama', $oldName)
+                                ->orWhereRaw('LOWER(TRIM(nama)) = ?', [strtolower(trim($oldName))]);
+                        })
+                        ->update(['nama' => $category->nama]);
+                }
             }
 
             if ($request->expectsJson() || $request->ajax()) {

@@ -7,6 +7,7 @@ use App\Models\CropHarvest;
 use App\Models\FinancialCategory;
 use App\Models\FinancialTransaction;
 use App\Models\Medicine;
+use App\Models\MedicineCategory;
 use App\Models\MedicinePurchase;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -730,5 +731,196 @@ class KeuanganTest extends TestCase
         $this->assertEquals(1315000, $nyemprotSub['subtotal']);
         $this->assertTrue($nyemprotSub['has_children']);
         $this->assertCount(2, $nyemprotSub['children']);
+    }
+
+    public function test_editing_main_category_updates_all_existing_financial_transactions(): void
+    {
+        $parent = FinancialCategory::create([
+            'nama' => 'Olah Lahan Awal',
+            'parent_id' => null,
+            'tipe' => 'pengeluaran',
+        ]);
+
+        $trx1 = FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Olah Lahan Awal',
+            'sub_kategori' => null,
+            'judul' => 'Sewa Traktor',
+            'nominal' => 200000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $trx2 = FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Olah Lahan Awal',
+            'sub_kategori' => 'Bahan Bakar',
+            'judul' => 'Beli Solar',
+            'nominal' => 50000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $response = $this->put('/keuangan/kategori/'.$parent->id, [
+            'nama' => 'Persiapan Lahan',
+            'tipe' => 'pengeluaran',
+            'parent_id' => null,
+        ]);
+
+        $response->assertRedirect('/keuangan');
+
+        $this->assertDatabaseHas('financial_categories', [
+            'id' => $parent->id,
+            'nama' => 'Persiapan Lahan',
+        ]);
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'id' => $trx1->id,
+            'kategori' => 'Persiapan Lahan',
+            'sub_kategori' => null,
+        ]);
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'id' => $trx2->id,
+            'kategori' => 'Persiapan Lahan',
+            'sub_kategori' => 'Bahan Bakar',
+        ]);
+
+        $this->assertDatabaseMissing('financial_transactions', [
+            'kategori' => 'Olah Lahan Awal',
+        ]);
+    }
+
+    public function test_editing_subcategory_updates_all_existing_financial_transactions_and_nested_paths(): void
+    {
+        $root = FinancialCategory::create([
+            'nama' => 'Panen',
+            'parent_id' => null,
+            'tipe' => 'pengeluaran',
+        ]);
+
+        $sub = FinancialCategory::create([
+            'nama' => 'BOP Panen',
+            'parent_id' => $root->id,
+            'tipe' => 'pengeluaran',
+        ]);
+
+        $subSub = FinancialCategory::create([
+            'nama' => 'Mamin',
+            'parent_id' => $sub->id,
+            'tipe' => 'pengeluaran',
+        ]);
+
+        $trx1 = FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Panen',
+            'sub_kategori' => 'BOP Panen',
+            'judul' => 'Biaya Umum Panen',
+            'nominal' => 100000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $trx2 = FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Panen',
+            'sub_kategori' => 'BOP Panen › Mamin',
+            'judul' => 'Makan Siang Petik',
+            'nominal' => 75000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $trx3 = FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Panen',
+            'sub_kategori' => 'BOP Panen › HOK Panen',
+            'judul' => 'Upah Petik',
+            'nominal' => 250000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        // 1. Edit Sub-kategori: "BOP Panen" -> "Operasional Panen"
+        $response = $this->put('/keuangan/kategori/'.$sub->id, [
+            'nama' => 'Operasional Panen',
+            'parent_id' => $root->id,
+            'tipe' => 'pengeluaran',
+        ]);
+        $response->assertRedirect('/keuangan');
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'id' => $trx1->id,
+            'kategori' => 'Panen',
+            'sub_kategori' => 'Operasional Panen',
+        ]);
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'id' => $trx2->id,
+            'kategori' => 'Panen',
+            'sub_kategori' => 'Operasional Panen › Mamin',
+        ]);
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'id' => $trx3->id,
+            'kategori' => 'Panen',
+            'sub_kategori' => 'Operasional Panen › HOK Panen',
+        ]);
+
+        // 2. Edit Sub-sub-kategori: "Mamin" -> "Konsumsi Pekerja"
+        $responseSub = $this->put('/keuangan/kategori/'.$subSub->id, [
+            'nama' => 'Konsumsi Pekerja',
+            'parent_id' => $sub->id,
+            'tipe' => 'pengeluaran',
+        ]);
+        $responseSub->assertRedirect('/keuangan');
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'id' => $trx2->id,
+            'kategori' => 'Panen',
+            'sub_kategori' => 'Operasional Panen › Konsumsi Pekerja',
+        ]);
+    }
+
+    public function test_editing_medicine_category_updates_all_existing_purchase_expense_transactions(): void
+    {
+        $medCat = MedicineCategory::create([
+            'nama' => 'Fungisida Lama',
+            'warna' => 'purple',
+            'urutan' => 1,
+        ]);
+
+        $med = Medicine::create([
+            'nama' => 'Antracol 70 WP',
+            'jenis' => 'Fungisida Lama',
+            'tanaman_sasaran' => 'Tomat',
+            'harga' => 50000,
+            'stok' => 5,
+        ]);
+
+        $trx = FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'sub_kategori' => 'Fungisida Lama',
+            'judul' => 'Beli Antracol 70 WP',
+            'nominal' => 50000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        $response = $this->put('/data-obat/kategori/'.$medCat->id, [
+            'nama' => 'Fungisida & Bakterisida',
+            'warna' => 'purple',
+        ]);
+
+        $this->assertDatabaseHas('medicine_categories', [
+            'id' => $medCat->id,
+            'nama' => 'Fungisida & Bakterisida',
+        ]);
+
+        $this->assertDatabaseHas('medicines', [
+            'id' => $med->id,
+            'jenis' => 'Fungisida & Bakterisida',
+        ]);
+
+        $this->assertDatabaseHas('financial_transactions', [
+            'id' => $trx->id,
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'sub_kategori' => 'Fungisida & Bakterisida',
+        ]);
     }
 }
