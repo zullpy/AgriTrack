@@ -390,9 +390,41 @@
 
                     {{-- Row 2: Nama Obat (Kuning Prioritas) & Sasaran Obat --}}
                     <div class="w-full min-w-0 space-y-1.5">
-                        <h2 class="text-base font-bold text-gray-900 leading-snug tracking-tight break-words">
-                            {{ $medicine->nama }}
-                        </h2>
+                        <div class="flex items-center gap-3">
+                            @php $mPhotos = $medicine->foto_urls; @endphp
+                            @if(!empty($mPhotos))
+                                <button type="button"
+                                        onclick="openMedicineDetail({{ $medicine->id }})"
+                                        class="shrink-0 cursor-pointer relative group focus:outline-none"
+                                        title="Lihat Foto / Nota">
+                                    <img src="{{ $mPhotos[0] }}" alt="{{ $medicine->nama }}" class="w-11 h-11 object-cover rounded-xl border border-gray-200 shadow-2xs group-hover:scale-105 transition-transform">
+                                    <span class="absolute -bottom-1 -right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold shadow-2xs">
+                                        {{ count($mPhotos) }}
+                                    </span>
+                                </button>
+                            @else
+                                <div class="w-11 h-11 rounded-xl bg-gray-100 border border-gray-200/80 flex items-center justify-center shrink-0 text-gray-400">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                    </svg>
+                                </div>
+                            @endif
+                            <div class="min-w-0 flex-1">
+                                <h2 class="text-base font-bold text-gray-900 leading-snug tracking-tight break-words">
+                                    {{ $medicine->nama }}
+                                </h2>
+                                @if(!empty($mPhotos))
+                                    <button type="button"
+                                            onclick="openMedicineDetail({{ $medicine->id }})"
+                                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100 mt-1 cursor-pointer whitespace-nowrap">
+                                        <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                                        </svg>
+                                        <span>Foto/Nota ({{ count($mPhotos) }})</span>
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
                         @if ($medicine->sasaran_obat)
                             <div>
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 border border-emerald-200/80 text-emerald-900 break-words">
@@ -561,15 +593,15 @@
                 <table class="w-full text-sm text-left">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-200 text-[11px] font-bold text-gray-600 uppercase tracking-wider">
-                            <th class="px-5 py-3.5">Nama Obat</th>
-                            <th class="px-4 py-3.5">Kategori</th>
-                            <th class="px-4 py-3.5">Cara Kerja</th>
-                            <th class="px-4 py-3.5">Formulasi</th>
-                            <th class="px-4 py-3.5">Sasaran</th>
-                            <th class="px-5 py-3.5">Tanaman Sasaran</th>
-                            <th class="px-4 py-3.5">Dosis</th>
+                            <th class="px-5 py-3.5 min-w-[220px]">Nama Obat</th>
+                            <th class="px-4 py-3.5 whitespace-nowrap">Kategori</th>
+                            <th class="px-4 py-3.5 whitespace-nowrap">Cara Kerja</th>
+                            <th class="px-4 py-3.5 whitespace-nowrap">Formulasi</th>
+                            <th class="px-4 py-3.5 min-w-[130px]">Sasaran</th>
+                            <th class="px-5 py-3.5 min-w-[130px]">Tanaman Sasaran</th>
+                            <th class="px-4 py-3.5 whitespace-nowrap">Dosis</th>
                             <th class="px-5 py-3.5 whitespace-nowrap">Harga & Toko</th>
-                            <th class="px-5 py-3.5 text-right pr-6">Aksi</th>
+                            <th class="px-5 py-3.5 text-right pr-6 whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -579,8 +611,42 @@
                                 $ckBadge  = $getCaraKerjaBadge($medicine->cara_kerja);
                             @endphp
                             <tr class="hover:bg-gray-50/60 transition-colors group">
-                                <td class="px-5 py-4">
-                                    <div class="font-bold text-gray-900 leading-snug">{{ $medicine->nama }}</div>
+                                <td class="px-5 py-3.5">
+                                    @php $mPhotos = $medicine->foto_urls; @endphp
+                                    <div class="flex items-center gap-3">
+                                        @if(!empty($mPhotos))
+                                            <button type="button"
+                                                    onclick="openMedicineDetail({{ $medicine->id }})"
+                                                    class="relative group shrink-0 cursor-pointer focus:outline-none"
+                                                    title="Lihat Foto / Nota Obat ({{ count($mPhotos) }})">
+                                                <img src="{{ $mPhotos[0] }}" alt="{{ $medicine->nama }}" class="w-10 h-10 object-cover rounded-xl border border-gray-200 group-hover:scale-105 group-hover:border-emerald-400 group-hover:shadow-xs transition-all shadow-2xs">
+                                                <span class="absolute -bottom-1 -right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold shadow-2xs">
+                                                    {{ count($mPhotos) }}
+                                                </span>
+                                            </button>
+                                        @else
+                                            <div class="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200/80 flex items-center justify-center shrink-0 text-gray-400">
+                                                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                                </svg>
+                                            </div>
+                                        @endif
+                                        <div class="min-w-0 flex-1">
+                                            <div class="font-bold text-gray-900 leading-snug truncate" title="{{ $medicine->nama }}">{{ $medicine->nama }}</div>
+                                            @if(!empty($mPhotos))
+                                                <div class="mt-1">
+                                                    <button type="button"
+                                                            onclick="openMedicineDetail({{ $medicine->id }})"
+                                                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100 transition-colors whitespace-nowrap cursor-pointer">
+                                                        <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                                                        </svg>
+                                                        <span>Foto/Nota ({{ count($mPhotos) }})</span>
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-4">
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold {{ $catBadge['bg'] }} {{ $catBadge['text'] }}">
@@ -1038,6 +1104,20 @@ window.openMedicineDetail = function(id) {
             }
         }
 
+        window.focusReceiptInGallery = function(url) {
+            if (!url) return;
+            fotoContainer.classList.remove('hidden');
+            const idx = photos.findIndex(u => u === url || u.endsWith(url) || url.endsWith(u));
+            if (idx !== -1) {
+                selectModalPhoto(idx);
+            } else {
+                fotoImg.src = url;
+                fotoLink.href = url;
+                if (fotoCounter) fotoCounter.textContent = 'Foto Nota Pembelian';
+            }
+            fotoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        };
+
         if (photos.length > 1 && fotoThumbnails) {
             fotoThumbnails.innerHTML = '';
             photos.forEach((url, pIdx) => {
@@ -1062,6 +1142,14 @@ window.openMedicineDetail = function(id) {
             fotoThumbnails.innerHTML = '';
             fotoThumbnails.classList.add('hidden');
         }
+        window.focusReceiptInGallery = function(url) {
+            if (!url) return;
+            fotoImg.src = url;
+            fotoLink.href = url;
+            if (fotoCounter) fotoCounter.textContent = 'Foto Nota Pembelian';
+            fotoContainer.classList.remove('hidden');
+            fotoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        };
     }
 
     // Kategori Badge
@@ -1181,7 +1269,7 @@ window.openMedicineDetail = function(id) {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'bg-white p-3 rounded-xl border border-gray-200/90 shadow-xs flex items-center justify-between gap-3 text-xs';
             itemDiv.innerHTML = `
-                <div class="space-y-0.5 min-w-0">
+                <div class="space-y-0.5 min-w-0 flex-1">
                     <div class="font-bold text-gray-900 flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                         <span class="truncate">${p.toko_obat || 'Toko tidak dicatat'}</span>
@@ -1190,11 +1278,33 @@ window.openMedicineDetail = function(id) {
                         Tanggal: <span class="font-medium text-gray-700">${pDate}</span>
                         ${p.catatan ? `<span class="block text-gray-500 italic mt-0.5">"${p.catatan}"</span>` : ''}
                     </div>
+                    ${p.foto_url ? `
+                        <div class="pt-1.5 flex items-center gap-2">
+                            <button type="button" 
+                                    onclick="focusReceiptInGallery('${p.foto_url}')" 
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] font-bold transition-colors cursor-pointer">
+                                <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                                </svg>
+                                <span>Buka Nota di Foto</span>
+                            </button>
+                            <a href="${p.foto_url}" target="_blank" class="text-[10px] text-gray-400 hover:text-gray-600 underline">Tab Baru</a>
+                        </div>
+                    ` : ''}
                 </div>
                 <div class="text-right shrink-0">
                     <span class="text-sm font-bold text-green-700 tabular-nums block">
                         ${p.formatted_harga || (p.harga ? 'Rp ' + Number(p.harga).toLocaleString('id-ID') : '—')}
                     </span>
+                    ${p.foto_url ? `
+                        <div class="mt-1 flex justify-end">
+                            <img src="${p.foto_url}" 
+                                 alt="Nota" 
+                                 class="w-10 h-10 object-cover rounded-lg border border-gray-200 shadow-2xs hover:scale-105 hover:border-emerald-400 transition-all cursor-pointer" 
+                                 onclick="focusReceiptInGallery('${p.foto_url}')" 
+                                 title="Klik untuk lihat foto nota">
+                        </div>
+                    ` : ''}
                 </div>
             `;
             purchasesList.appendChild(itemDiv);
@@ -1213,11 +1323,12 @@ window.openMedicineDetail = function(id) {
             }
         }
         let formattedPrice = data.formatted_harga || (data.harga ? 'Rp ' + Number(data.harga).toLocaleString('id-ID') : '—');
+        const fallbackPhoto = data.foto_url || (Array.isArray(data.foto_urls) && data.foto_urls.length > 0 ? data.foto_urls[0] : null);
 
         const itemDiv = document.createElement('div');
         itemDiv.className = 'bg-white p-3 rounded-xl border border-gray-200/90 shadow-xs flex items-center justify-between gap-3 text-xs';
         itemDiv.innerHTML = `
-            <div class="space-y-0.5 min-w-0">
+            <div class="space-y-0.5 min-w-0 flex-1">
                 <div class="font-bold text-gray-900 flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                     <span class="truncate">${data.toko_obat || 'Toko tidak dicatat'}</span>
@@ -1225,11 +1336,32 @@ window.openMedicineDetail = function(id) {
                 <div class="text-[11px] text-gray-500">
                     Tanggal: <span class="font-medium text-gray-700">${pDate}</span>
                 </div>
+                ${fallbackPhoto ? `
+                    <div class="pt-1.5 flex items-center gap-2">
+                        <button type="button" 
+                                onclick="focusReceiptInGallery('${fallbackPhoto}')" 
+                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] font-bold transition-colors cursor-pointer">
+                            <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                            </svg>
+                            <span>Buka Nota di Foto</span>
+                        </button>
+                    </div>
+                ` : ''}
             </div>
             <div class="text-right shrink-0">
                 <span class="text-sm font-bold text-green-700 tabular-nums block">
                     ${formattedPrice}
                 </span>
+                ${fallbackPhoto ? `
+                    <div class="mt-1 flex justify-end">
+                        <img src="${fallbackPhoto}" 
+                             alt="Nota" 
+                             class="w-10 h-10 object-cover rounded-lg border border-gray-200 shadow-2xs hover:scale-105 hover:border-emerald-400 transition-all cursor-pointer" 
+                             onclick="focusReceiptInGallery('${fallbackPhoto}')" 
+                             title="Klik untuk lihat foto nota">
+                    </div>
+                ` : ''}
             </div>
         `;
         purchasesList.appendChild(itemDiv);

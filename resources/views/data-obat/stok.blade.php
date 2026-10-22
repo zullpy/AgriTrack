@@ -221,15 +221,48 @@
         <div class="block lg:hidden space-y-3">
             @foreach ($medicines as $med)
                 <div class="bg-surface rounded-2xl border border-gray-200 p-4 shadow-xs space-y-3">
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="space-y-1">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-800">
-                                {{ $med->jenis }}
-                            </span>
-                            <h2 class="text-base font-bold text-gray-900 leading-tight">{{ $med->nama }}</h2>
-                            @if($med->tanaman_sasaran)
-                                <span class="text-xs text-gray-500 block">Sasaran: {{ $med->tanaman_sasaran }}</span>
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3 min-w-0 flex-1">
+                            @php $medPhotos = $med->foto_urls; @endphp
+                            @if(!empty($medPhotos))
+                                <button type="button"
+                                        onclick="openPhotoViewerModal({{ json_encode($medPhotos) }}, '{{ addslashes($med->nama) }}')"
+                                        class="relative group shrink-0 cursor-pointer mt-0.5 focus:outline-none"
+                                        title="Lihat Foto / Nota ({{ count($medPhotos) }})">
+                                    <img src="{{ $medPhotos[0] }}" alt="{{ $med->nama }}" class="w-11 h-11 object-cover rounded-xl border border-amber-200 shadow-2xs">
+                                    <span class="absolute -bottom-1 -right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-amber-600 text-white text-[9px] font-bold shadow-2xs">
+                                        {{ count($medPhotos) }}
+                                    </span>
+                                </button>
+                            @else
+                                <div class="w-11 h-11 rounded-xl bg-gray-100 border border-gray-200/80 flex items-center justify-center shrink-0 text-gray-400 mt-0.5">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                    </svg>
+                                </div>
                             @endif
+                            <div class="space-y-1 min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-800">
+                                        {{ $med->jenis }}
+                                    </span>
+                                    @if(!empty($medPhotos))
+                                        <button type="button"
+                                                onclick="openPhotoViewerModal({{ json_encode($medPhotos) }}, '{{ addslashes($med->nama) }}')"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer whitespace-nowrap"
+                                                title="Lihat Foto / Nota ({{ count($medPhotos) }})">
+                                            <svg class="w-3 h-3 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                                            </svg>
+                                            <span>Nota ({{ count($medPhotos) }})</span>
+                                        </button>
+                                    @endif
+                                </div>
+                                <h2 class="text-base font-bold text-gray-900 leading-tight">{{ $med->nama }}</h2>
+                                @if($med->tanaman_sasaran)
+                                    <span class="text-xs text-gray-500 block truncate">Sasaran: {{ $med->tanaman_sasaran }}</span>
+                                @endif
+                            </div>
                         </div>
 
                         {{-- Badge Stok Mobile --}}
@@ -304,23 +337,57 @@
                 <table class="w-full text-sm text-left">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-200 text-[11px] font-bold text-gray-600 uppercase tracking-wider">
-                            <th class="px-5 py-3.5">Nama Obat & Kategori</th>
-                            <th class="px-4 py-3.5 text-center">Status & Sisa Stok</th>
-                            <th class="px-4 py-3.5">Kemasan</th>
-                            <th class="px-5 py-3.5">Harga Beli Terakhir</th>
-                            <th class="px-4 py-3.5">Toko Terakhir</th>
-                            <th class="px-4 py-3.5">Tanggal Beli</th>
-                            <th class="px-5 py-3.5 text-right pr-6">Aksi</th>
+                            <th class="px-5 py-3.5 min-w-[220px]">Nama Obat & Kategori</th>
+                            <th class="px-4 py-3.5 text-center whitespace-nowrap">Status & Sisa Stok</th>
+                            <th class="px-4 py-3.5 whitespace-nowrap">Kemasan</th>
+                            <th class="px-5 py-3.5 whitespace-nowrap">Harga Beli Terakhir</th>
+                            <th class="px-4 py-3.5 whitespace-nowrap">Toko Terakhir</th>
+                            <th class="px-4 py-3.5 whitespace-nowrap">Tanggal Beli</th>
+                            <th class="px-5 py-3.5 text-right pr-6 whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @foreach ($medicines as $med)
                             <tr class="hover:bg-gray-50/60 transition-colors">
-                                <td class="px-5 py-4">
-                                    <div class="font-bold text-gray-900 leading-snug">{{ $med->nama }}</div>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-100 text-gray-700 mt-1">
-                                        {{ $med->jenis }}
-                                    </span>
+                                <td class="px-5 py-3.5">
+                                    @php $medPhotos = $med->foto_urls; @endphp
+                                    <div class="flex items-center gap-3">
+                                        @if(!empty($medPhotos))
+                                            <button type="button"
+                                                    onclick="openPhotoViewerModal({{ json_encode($medPhotos) }}, '{{ addslashes($med->nama) }}')"
+                                                    class="relative group shrink-0 cursor-pointer focus:outline-none"
+                                                    title="Lihat foto / nota ({{ count($medPhotos) }})">
+                                                <img src="{{ $medPhotos[0] }}" alt="{{ $med->nama }}" class="w-10 h-10 object-cover rounded-xl border border-amber-200 group-hover:scale-105 group-hover:border-amber-400 group-hover:shadow-xs transition-all shadow-2xs">
+                                                <span class="absolute -bottom-1 -right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-amber-600 text-white text-[9px] font-bold shadow-2xs">
+                                                    {{ count($medPhotos) }}
+                                                </span>
+                                            </button>
+                                        @else
+                                            <div class="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200/80 flex items-center justify-center shrink-0 text-gray-400">
+                                                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                                </svg>
+                                            </div>
+                                        @endif
+                                        <div class="min-w-0 flex-1">
+                                            <div class="font-bold text-gray-900 leading-snug truncate" title="{{ $med->nama }}">{{ $med->nama }}</div>
+                                            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-gray-700 whitespace-nowrap">
+                                                    {{ $med->jenis }}
+                                                </span>
+                                                @if(!empty($medPhotos))
+                                                    <button type="button"
+                                                            onclick="openPhotoViewerModal({{ json_encode($medPhotos) }}, '{{ addslashes($med->nama) }}')"
+                                                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 hover:bg-amber-100 transition-colors whitespace-nowrap cursor-pointer">
+                                                        <svg class="w-3 h-3 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                                                        </svg>
+                                                        <span>Nota ({{ count($medPhotos) }})</span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-4 text-center whitespace-nowrap">
                                     @if(($med->stok ?? 0) > 3)
@@ -426,7 +493,7 @@
                 </button>
             </div>
 
-            <form action="/stok-obat/pembelian" method="POST" class="p-6 space-y-4 overflow-y-auto flex-1">
+            <form id="general-purchase-form" action="/stok-obat/pembelian" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto flex-1">
                 @csrf
 
                 {{-- Input Ketik Nama Obat dengan Autocomplete Otomatis --}}
@@ -573,6 +640,67 @@
                            class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white">
                 </div>
 
+                {{-- Foto Nota Pembelian (Kamera & Galeri) --}}
+                <div class="space-y-2 pt-2 border-t border-gray-100">
+                    <label class="block text-xs font-bold text-gray-700">
+                        Foto Bukti / Nota Pembelian <span class="text-gray-400 font-normal">(Opsional)</span>
+                    </label>
+
+                    {{-- Tombol Buka Kamera & Pilih Galeri --}}
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" 
+                                onclick="document.getElementById('gp-foto-camera').click()"
+                                class="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/>
+                            </svg>
+                            <span>Buka Kamera</span>
+                        </button>
+                        <button type="button" 
+                                onclick="document.getElementById('gp-foto-nota').click()"
+                                class="py-2.5 px-3 rounded-xl bg-white hover:bg-gray-50 active:scale-95 text-gray-700 border border-gray-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                            </svg>
+                            <span>Pilih Galeri</span>
+                        </button>
+                    </div>
+
+                    {{-- Hidden Inputs --}}
+                    <input type="file"
+                           id="gp-foto-camera"
+                           accept="image/*"
+                           capture="environment"
+                           onchange="handlePurchasePhotoSelected(this, 'gp')"
+                           class="hidden">
+                    <input type="file"
+                           id="gp-foto-nota"
+                           name="foto_nota"
+                           accept="image/*"
+                           onchange="handlePurchasePhotoSelected(this, 'gp')"
+                           class="hidden">
+
+                    {{-- Preview Card --}}
+                    <div id="gp-foto-preview-card" class="hidden items-center justify-between p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <img id="gp-foto-preview-img" src="" class="w-12 h-12 object-cover rounded-lg border border-amber-300 shrink-0">
+                            <div class="min-w-0">
+                                <p id="gp-foto-preview-name" class="text-xs font-semibold text-gray-800 truncate"></p>
+                                <p id="gp-foto-preview-size" class="text-[10px] text-gray-500"></p>
+                            </div>
+                        </div>
+                        <button type="button"
+                                onclick="clearPurchasePhoto('gp')"
+                                class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Hapus foto">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
                     <button type="button"
                             onclick="closeGeneralPurchaseModal()"
@@ -616,7 +744,7 @@
                 </button>
             </div>
 
-            <form id="quick-purchase-form" method="POST" action="" class="p-6 space-y-4">
+            <form id="quick-purchase-form" method="POST" action="" enctype="multipart/form-data" class="p-6 space-y-4">
                 @csrf
                 <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs">
                     <div>
@@ -721,6 +849,67 @@
                            class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white">
                 </div>
 
+                {{-- Foto Nota Pembelian (Kamera & Galeri) --}}
+                <div class="space-y-2 pt-2 border-t border-gray-100">
+                    <label class="block text-xs font-bold text-gray-700">
+                        Foto Bukti / Nota Pembelian <span class="text-gray-400 font-normal">(Opsional)</span>
+                    </label>
+
+                    {{-- Tombol Buka Kamera & Pilih Galeri --}}
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" 
+                                onclick="document.getElementById('qp-foto-camera').click()"
+                                class="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/>
+                            </svg>
+                            <span>Buka Kamera</span>
+                        </button>
+                        <button type="button" 
+                                onclick="document.getElementById('qp-foto-nota').click()"
+                                class="py-2.5 px-3 rounded-xl bg-white hover:bg-gray-50 active:scale-95 text-gray-700 border border-gray-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                            </svg>
+                            <span>Pilih Galeri</span>
+                        </button>
+                    </div>
+
+                    {{-- Hidden Inputs --}}
+                    <input type="file"
+                           id="qp-foto-camera"
+                           accept="image/*"
+                           capture="environment"
+                           onchange="handlePurchasePhotoSelected(this, 'qp')"
+                           class="hidden">
+                    <input type="file"
+                           id="qp-foto-nota"
+                           name="foto_nota"
+                           accept="image/*"
+                           onchange="handlePurchasePhotoSelected(this, 'qp')"
+                           class="hidden">
+
+                    {{-- Preview Card --}}
+                    <div id="qp-foto-preview-card" class="hidden items-center justify-between p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <img id="qp-foto-preview-img" src="" class="w-12 h-12 object-cover rounded-lg border border-amber-300 shrink-0">
+                            <div class="min-w-0">
+                                <p id="qp-foto-preview-name" class="text-xs font-semibold text-gray-800 truncate"></p>
+                                <p id="qp-foto-preview-size" class="text-[10px] text-gray-500"></p>
+                            </div>
+                        </div>
+                        <button type="button"
+                                onclick="clearPurchasePhoto('qp')"
+                                class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Hapus foto">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
                     <button type="button"
                             onclick="closeQuickPurchaseModal()"
@@ -736,6 +925,45 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    {{-- ══════════════════════════════════════════════════════════════════ --}}
+    {{-- ── MODAL VIEWER FOTO / NOTA OBAT (#photo-viewer-modal) ── --}}
+    {{-- ══════════════════════════════════════════════════════════════════ --}}
+    <div id="photo-viewer-modal"
+         class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-xs items-center justify-center p-3 sm:p-4 transition-opacity duration-200"
+         onclick="if(event.target === this) closePhotoViewerModal()">
+        <div class="bg-surface rounded-2xl border border-gray-200 shadow-2xl max-w-xl w-full overflow-hidden animate-scale-up"
+             onclick="event.stopPropagation()">
+            <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/80">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                    <h3 id="pv-title" class="text-sm font-bold text-gray-900 truncate">Foto Obat / Nota</h3>
+                </div>
+                <button type="button"
+                        onclick="closePhotoViewerModal()"
+                        class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4 space-y-3">
+                <div class="rounded-xl overflow-hidden border border-gray-200 bg-gray-950/5 relative group flex items-center justify-center min-h-[220px]">
+                    <img id="pv-image" src="" alt="Foto / Nota" class="w-full max-h-[60vh] object-contain rounded-lg">
+                    <div id="pv-counter" class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/65 text-white text-[11px] font-semibold backdrop-blur-xs">
+                        Foto 1
+                    </div>
+                    <a id="pv-link" href="#" target="_blank" class="absolute bottom-2.5 right-2.5 px-3 py-1.5 rounded-xl bg-black/75 hover:bg-black text-white text-xs font-semibold backdrop-blur-xs flex items-center gap-1.5 transition-colors shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                        </svg>
+                        <span>Ukuran Penuh</span>
+                    </a>
+                </div>
+                <div id="pv-thumbnails" class="hidden flex items-center gap-2 overflow-x-auto pb-1"></div>
+            </div>
         </div>
     </div>
 
@@ -932,6 +1160,7 @@ function hideMedicineSuggestions() {
 window.openGeneralPurchaseModal = function() {
     const modal = document.getElementById('general-purchase-modal');
     if (!modal) return;
+    clearPurchasePhoto('gp');
     clearMedicineLookup();
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -949,6 +1178,7 @@ window.openGeneralPurchaseModal = function() {
 window.closeGeneralPurchaseModal = function() {
     const modal = document.getElementById('general-purchase-modal');
     if (!modal) return;
+    clearPurchasePhoto('gp');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     document.body.classList.remove('overflow-hidden');
@@ -972,10 +1202,244 @@ function recalcGeneralStok() {
     if (resStokEl) resStokEl.textContent = currentStok + qty;
 }
 
+// ── Fungsi Kompresi Foto Otomatis (~80% kompresi) via Canvas ──
+async function compressPurchasePhoto(file) {
+    if (!file || !file.type.startsWith('image/')) {
+        return { file, originalSize: file ? file.size : 0, compressedSize: file ? file.size : 0, dataUrl: null, savings: 0 };
+    }
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const maxWidth = 1280;
+                const maxHeight = 1280;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth || height > maxHeight) {
+                    if (width > height) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    } else {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || 'nota_obat';
+
+                function attemptCompression(quality) {
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: e.target.result, savings: 0 });
+                            return;
+                        }
+                        if (blob.size >= file.size && quality > 0.25) {
+                            attemptCompression(Math.max(0.2, quality - 0.15));
+                            return;
+                        }
+                        if (blob.size < file.size) {
+                            const compressedFile = new File([blob], `${baseName}.jpg`, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now(),
+                            });
+                            const savings = Math.round(((file.size - blob.size) / file.size) * 100);
+                            resolve({
+                                file: compressedFile,
+                                originalSize: file.size,
+                                compressedSize: blob.size,
+                                dataUrl: canvas.toDataURL('image/jpeg', quality),
+                                savings: savings
+                            });
+                        } else {
+                            resolve({
+                                file: file,
+                                originalSize: file.size,
+                                compressedSize: file.size,
+                                dataUrl: e.target.result,
+                                savings: 0
+                            });
+                        }
+                    }, 'image/jpeg', quality);
+                }
+
+                attemptCompression(0.5);
+            };
+            img.onerror = () => resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: e.target.result, savings: 0 });
+        };
+        reader.onerror = () => resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: null, savings: 0 });
+    });
+}
+
+// ── Photo Handler for Purchases (Kamera & Galeri) ──
+window.handlePurchasePhotoSelected = async function(input, prefix) {
+    if (!input.files || !input.files[0]) return;
+    const rawFile = input.files[0];
+    const targetInput = document.getElementById(prefix + '-foto-nota');
+
+    const previewCard = document.getElementById(prefix + '-foto-preview-card');
+    const previewImg = document.getElementById(prefix + '-foto-preview-img');
+    const previewName = document.getElementById(prefix + '-foto-preview-name');
+    const previewSize = document.getElementById(prefix + '-foto-preview-size');
+
+    if (previewCard) {
+        previewCard.classList.remove('hidden');
+        previewCard.classList.add('flex');
+    }
+    if (previewName) previewName.innerText = rawFile.name || 'Foto Nota';
+    if (previewSize) previewSize.innerText = 'Mengompres foto (~80%)...';
+
+    let result = { file: rawFile, dataUrl: null, savings: 0 };
+    try {
+        result = await compressPurchasePhoto(rawFile);
+    } catch (e) {
+        console.warn('Kompresi nota error, memakai file asli:', e);
+        result = { file: rawFile, dataUrl: null, savings: 0 };
+    }
+
+    const finalFile = result.file;
+
+    // Sinkronkan file terkompresi ke input file utama form (name="foto_nota")
+    if (targetInput) {
+        try {
+            const dt = new DataTransfer();
+            dt.items.add(finalFile);
+            targetInput.files = dt.files;
+        } catch (e) {
+            console.warn('DataTransfer sync fallback:', e);
+        }
+    }
+
+    if (previewCard && previewImg && previewName && previewSize) {
+        previewName.innerText = finalFile.name || 'Foto Nota';
+        const finalKb = Math.round(finalFile.size / 1024);
+        if (result.savings > 0) {
+            previewSize.innerText = `${finalKb} KB (Hemat ${result.savings}%)`;
+        } else {
+            previewSize.innerText = `${finalKb} KB`;
+        }
+
+        if (result.dataUrl) {
+            previewImg.src = result.dataUrl;
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+            };
+            reader.readAsDataURL(finalFile);
+        }
+    }
+};
+
+window.clearPurchasePhoto = function(prefix) {
+    const mainInput = document.getElementById(prefix + '-foto-nota');
+    const cameraInput = document.getElementById(prefix + '-foto-camera');
+    if (mainInput) mainInput.value = '';
+    if (cameraInput) cameraInput.value = '';
+
+    const previewCard = document.getElementById(prefix + '-foto-preview-card');
+    const previewImg = document.getElementById(prefix + '-foto-preview-img');
+    if (previewCard) {
+        previewCard.classList.add('hidden');
+        previewCard.classList.remove('flex');
+    }
+    if (previewImg) previewImg.src = '';
+};
+
+// ── Photo Viewer Modal Functions ──
+let currentViewerPhotos = [];
+let currentViewerIndex = 0;
+
+window.openPhotoViewerModal = function(rawPhotos, title) {
+    const photos = (Array.isArray(rawPhotos) ? rawPhotos : [rawPhotos]).filter(u => typeof u === 'string' && u.trim().length > 0 && u.trim() !== '/storage' && !u.endsWith('/storage/'));
+    if (!photos.length) return;
+
+    currentViewerPhotos = photos;
+    currentViewerIndex = 0;
+
+    const modal = document.getElementById('photo-viewer-modal');
+    const titleEl = document.getElementById('pv-title');
+    const imgEl = document.getElementById('pv-image');
+    const linkEl = document.getElementById('pv-link');
+    const counterEl = document.getElementById('pv-counter');
+    const thumbsContainer = document.getElementById('pv-thumbnails');
+
+    if (titleEl) titleEl.textContent = title ? `Foto / Nota: ${title}` : 'Foto Obat / Nota';
+
+    function setViewerPhoto(idx) {
+        currentViewerIndex = idx;
+        if (imgEl) imgEl.src = photos[idx];
+        if (linkEl) linkEl.href = photos[idx];
+        if (counterEl) {
+            counterEl.textContent = photos.length > 1 ? `Foto ${idx + 1} dari ${photos.length}` : 'Foto Nota';
+        }
+        if (thumbsContainer) {
+            thumbsContainer.querySelectorAll('.pv-thumb-btn').forEach((btn, bIdx) => {
+                if (bIdx === idx) {
+                    btn.className = 'pv-thumb-btn shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 border-amber-500 ring-2 ring-amber-400/30 transition-all cursor-pointer';
+                } else {
+                    btn.className = 'pv-thumb-btn shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-gray-200 opacity-60 hover:opacity-100 transition-all cursor-pointer';
+                }
+            });
+        }
+    }
+
+    if (thumbsContainer) {
+        if (photos.length > 1) {
+            thumbsContainer.innerHTML = '';
+            photos.forEach((url, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = idx === 0 
+                    ? 'pv-thumb-btn shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 border-amber-500 ring-2 ring-amber-400/30 transition-all cursor-pointer'
+                    : 'pv-thumb-btn shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-gray-200 opacity-60 hover:opacity-100 transition-all cursor-pointer';
+                btn.onclick = () => setViewerPhoto(idx);
+                btn.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+                thumbsContainer.appendChild(btn);
+            });
+            thumbsContainer.classList.remove('hidden');
+        } else {
+            thumbsContainer.innerHTML = '';
+            thumbsContainer.classList.add('hidden');
+        }
+    }
+
+    setViewerPhoto(0);
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+};
+
+window.closePhotoViewerModal = function() {
+    const modal = document.getElementById('photo-viewer-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    document.body.classList.remove('overflow-hidden');
+};
+
 // ── Quick Purchase Modal Functions ──
 window.openQuickPurchaseModal = function(medicine) {
     if (!medicine) return;
     currentQuickMed = medicine;
+
+    clearPurchasePhoto('qp');
 
     const modal = document.getElementById('quick-purchase-modal');
     const form = document.getElementById('quick-purchase-form');
@@ -1030,6 +1494,7 @@ window.openQuickPurchaseModal = function(medicine) {
 window.closeQuickPurchaseModal = function() {
     const modal = document.getElementById('quick-purchase-modal');
     if (modal) {
+        clearPurchasePhoto('qp');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
@@ -1117,6 +1582,24 @@ document.addEventListener('DOMContentLoaded', () => {
             this.value = val ? 'Rp ' + parseInt(val, 10).toLocaleString('id-ID') : '';
         });
     }
+
+    // Pastikan foto tersinkron saat form pembelian disubmit
+    ['general-purchase-form', 'quick-purchase-form'].forEach(formId => {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        const prefix = formId === 'general-purchase-form' ? 'gp' : 'qp';
+        form.addEventListener('submit', function() {
+            const camInput = document.getElementById(prefix + '-foto-camera');
+            const targetInput = document.getElementById(prefix + '-foto-nota');
+            if ((!targetInput || !targetInput.files || !targetInput.files.length) && camInput && camInput.files && camInput.files.length) {
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(camInput.files[0]);
+                    targetInput.files = dt.files;
+                } catch(e) {}
+            }
+        });
+    });
 });
 
 document.addEventListener('keydown', (e) => {

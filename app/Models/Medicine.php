@@ -330,19 +330,21 @@ class Medicine extends Model
                 $trimmed = trim($path);
                 if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
                     $urls[] = $trimmed;
+                } elseif (str_starts_with($trimmed, '/storage/')) {
+                    $urls[] = $trimmed;
+                } elseif (str_starts_with($trimmed, 'storage/')) {
+                    $urls[] = '/'.$trimmed;
                 } else {
                     $urls[] = Storage::disk('public')->url($trimmed);
                 }
             }
         }
 
-        // Cek jika ada foto pada salah satu pembelian jika foto utama kosong
-        if (empty($urls)) {
-            $purchases = $this->relationLoaded('purchases') ? $this->purchases : $this->purchases()->get();
-            foreach ($purchases as $p) {
-                if ($p->foto_url && ! in_array($p->foto_url, $urls, true)) {
-                    $urls[] = $p->foto_url;
-                }
+        // Sertakan juga foto nota dari semua riwayat pembelian obat (jika belum ada di list)
+        $purchases = $this->relationLoaded('purchases') ? $this->purchases : $this->purchases()->get();
+        foreach ($purchases as $p) {
+            if ($p->foto_url && ! in_array($p->foto_url, $urls, true)) {
+                $urls[] = $p->foto_url;
             }
         }
 

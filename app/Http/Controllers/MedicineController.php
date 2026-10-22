@@ -1219,7 +1219,13 @@ class MedicineController extends Controller
             'catatan' => 'nullable|string|max:1000',
             'tanaman_sasaran' => 'nullable|string|max:255',
             'dosis_anjuran' => 'nullable|string|max:255',
+            'foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
+
+        $fotoNotaPath = null;
+        if ($request->hasFile('foto_nota')) {
+            $fotoNotaPath = $this->uploadSinglePhoto($request->file('foto_nota'));
+        }
 
         $medicine = null;
         if (! empty($validated['medicine_id'])) {
@@ -1267,6 +1273,11 @@ class MedicineController extends Controller
                 $medicine->harga = $cleanHarga;
             }
 
+            if ($fotoNotaPath) {
+                $combined = array_values(array_unique(array_merge($medicine->foto_paths, [$fotoNotaPath])));
+                $medicine->foto_nota = json_encode($combined);
+            }
+
             $medicine->save();
 
             // Record purchase di riwayat pembelian per toko
@@ -1294,6 +1305,12 @@ class MedicineController extends Controller
                 if ($kemasanSatuan !== null) {
                     $purchaseUpdate['kemasan_satuan'] = $kemasanSatuan;
                 }
+                if ($fotoNotaPath) {
+                    if ($existingPurchase->foto_nota && $existingPurchase->foto_nota !== $fotoNotaPath) {
+                        $this->cloudinaryService->deleteImage($existingPurchase->foto_nota);
+                    }
+                    $purchaseUpdate['foto_nota'] = $fotoNotaPath;
+                }
                 $existingPurchase->update($purchaseUpdate);
             } else {
                 $medicine->purchases()->create([
@@ -1304,6 +1321,7 @@ class MedicineController extends Controller
                     'kemasan_satuan' => $kemasanSatuan ?? $medicine->kemasan_satuan,
                     'tanggal_beli' => $tanggalBeli,
                     'catatan' => $catatan,
+                    'foto_nota' => $fotoNotaPath,
                 ]);
             }
 
@@ -1313,6 +1331,7 @@ class MedicineController extends Controller
                 'jumlah' => $jumlahBeli,
                 'tanggal_beli' => $tanggalBeli,
                 'catatan' => $catatan,
+                'foto_nota' => $fotoNotaPath,
             ]);
 
             $tglFormatted = Carbon::parse($tanggalBeli)->translatedFormat('d M Y');
@@ -1350,6 +1369,7 @@ class MedicineController extends Controller
             'stok' => $jumlahBeli,
             'toko_obat' => $toko,
             'tanggal_beli' => $tanggalBeli,
+            'foto_nota' => $fotoNotaPath ? json_encode([$fotoNotaPath]) : null,
         ]);
 
         $baseTotal = (float) ($newMedicine->base_total_unit ?: 1.0);
@@ -1365,6 +1385,7 @@ class MedicineController extends Controller
             'kemasan_satuan' => $kemasanSatuan,
             'tanggal_beli' => $tanggalBeli,
             'catatan' => $catatan,
+            'foto_nota' => $fotoNotaPath,
         ]);
 
         $this->recordPurchaseExpense($newMedicine, [
@@ -1373,6 +1394,7 @@ class MedicineController extends Controller
             'jumlah' => $jumlahBeli,
             'tanggal_beli' => $tanggalBeli,
             'catatan' => $catatan,
+            'foto_nota' => $fotoNotaPath,
         ]);
 
         return redirect()->back()->with('success', "Obat baru '{$newMedicine->nama}' berhasil disimpan ke Data Obat & stok awal tersimpan ({$newMedicine->stok_label}, Rp ".number_format($cleanHarga, 0, ',', '.').').');

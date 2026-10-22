@@ -68,6 +68,10 @@ class MedicinePurchase extends Model
         $trimmed = trim($this->foto_nota);
         if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
             return $trimmed;
+        } elseif (str_starts_with($trimmed, '/storage/')) {
+            return $trimmed;
+        } elseif (str_starts_with($trimmed, 'storage/')) {
+            return '/'.$trimmed;
         }
 
         return Storage::disk('public')->url($trimmed);

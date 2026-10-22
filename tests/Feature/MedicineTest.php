@@ -1311,4 +1311,105 @@ class MedicineTest extends TestCase
         $this->assertEquals('5 botol', $liquidMedicine->stok_label);
         $this->assertEquals('5 liter (5.000 ml)', $liquidMedicine->stok_volume_label);
     }
+
+    public function test_record_purchase_with_foto_nota_uploads_and_stores_correctly(): void
+    {
+        Storage::fake('public');
+
+        $medicine = Medicine::create([
+            'nama' => 'Score 250 EC Nota Test',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Padi, Bawang',
+            'harga' => 95000,
+            'stok' => 2,
+        ]);
+
+        $file = UploadedFile::fake()->image('nota_pembelian.jpg', 600, 600);
+
+        $response = $this->post("/data-obat/{$medicine->id}/pembelian", [
+            'toko_obat' => 'Toko Tani Berkah',
+            'harga' => 95000,
+            'jumlah' => 2,
+            'tanggal_beli' => '2026-10-22',
+            'foto_nota' => $file,
+        ]);
+
+        $response->assertRedirect();
+
+        $purchase = $medicine->purchases()->first();
+        $this->assertNotNull($purchase);
+        $this->assertNotNull($purchase->foto_nota);
+        $this->assertNotNull($purchase->foto_url);
+        Storage::disk('public')->assertExists($purchase->foto_nota);
+
+        $medicine->refresh();
+        $this->assertContains($purchase->foto_nota, $medicine->foto_paths);
+        $this->assertContains($purchase->foto_url, $medicine->foto_urls);
+
+        // Keuangan transaction also gets foto_nota
+        $this->assertDatabaseHas('financial_transactions', [
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'foto_nota' => $purchase->foto_nota,
+        ]);
+    }
+
+    public function test_general_purchase_with_foto_nota_uploads_and_merges_photos(): void
+    {
+        Storage::fake('public');
+
+        // 1. Existing medicine
+        $medicine = Medicine::create([
+            'nama' => 'Dithane M-45 Nota Test',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Cabai',
+            'harga' => 80000,
+            'stok' => 1,
+        ]);
+
+        $file = UploadedFile::fake()->image('nota_dithane.jpg', 600, 600);
+
+        $response = $this->post('/stok-obat/pembelian', [
+            'medicine_id' => $medicine->id,
+            'toko_obat' => 'Toko Subur',
+            'harga' => 85000,
+            'jumlah' => 3,
+            'tanggal_beli' => '2026-10-22',
+            'foto_nota' => $file,
+        ]);
+
+        $response->assertRedirect();
+
+        $purchase = $medicine->purchases()->first();
+        $this->assertNotNull($purchase);
+        $this->assertNotNull($purchase->foto_nota);
+        Storage::disk('public')->assertExists($purchase->foto_nota);
+
+        $medicine->refresh();
+        $this->assertContains($purchase->foto_url, $medicine->foto_urls);
+
+        // 2. New medicine
+        $fileNew = UploadedFile::fake()->image('nota_antracol_baru.jpg', 600, 600);
+
+        $responseNew = $this->post('/stok-obat/pembelian', [
+            'nama' => 'Antracol 70 WP Baru Nota Test',
+            'jenis' => 'Fungisida',
+            'tanaman_sasaran' => 'Tomat',
+            'toko_obat' => 'Toko Tani Jaya',
+            'harga' => 70000,
+            'jumlah' => 2,
+            'tanggal_beli' => '2026-10-22',
+            'foto_nota' => $fileNew,
+        ]);
+
+        $responseNew->assertRedirect();
+
+        $newMed = Medicine::where('nama', 'Antracol 70 WP Baru Nota Test')->first();
+        $this->assertNotNull($newMed);
+        $this->assertNotEmpty($newMed->foto_paths);
+        $this->assertNotEmpty($newMed->foto_urls);
+        $newPurchase = $newMed->purchases()->first();
+        $this->assertNotNull($newPurchase);
+        $this->assertNotNull($newPurchase->foto_nota);
+        Storage::disk('public')->assertExists($newPurchase->foto_nota);
+    }
 }

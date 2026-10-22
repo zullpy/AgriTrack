@@ -166,6 +166,12 @@
     {{-- ── KONTEN SUB MENU 1: RIWAYAT ── --}}
     <div id="submenu-content-riwayat" class="space-y-3.5 sm:space-y-6 {{ !$isRiwayatActive ? 'hidden' : '' }}">
 
+        <style>
+            .sub-accordion-hidden {
+                display: none !important;
+            }
+        </style>
+
         {{-- ── Metric Overview Cards (Ringkas & 1 Baris di Mobile) ── --}}
         <div class="grid grid-cols-3 gap-2 sm:gap-4">
 
@@ -371,17 +377,28 @@
                                 @php
                                     $subPengeluaran = $subItems->where('tipe', 'pengeluaran')->sum('nominal');
                                     $subPemasukan = $subItems->where('tipe', 'pemasukan')->sum('nominal');
+                                    $subKey = $catName . ':::' . $subName;
                                 @endphp
-                                <tr class="subcategory-header-row bg-slate-100/90 border-y border-slate-200/90" data-category="{{ $catName }}" data-subcategory="{{ $subName }}">
-                                    <td colspan="7" class="pl-8 pr-5 py-2">
+                                <tr class="subcategory-header-row bg-slate-100/90 hover:bg-slate-200/90 active:bg-slate-300/80 border-y border-slate-200/90 cursor-pointer select-none transition-colors" 
+                                    data-category="{{ $catName }}" 
+                                    data-subcategory="{{ $subName }}"
+                                    data-sub-key="{{ $subKey }}"
+                                    onclick="toggleSubcategoryAccordion('{{ addslashes($subKey) }}')">
+                                    <td colspan="7" class="pl-6 sm:pl-8 pr-5 py-2.5">
                                         <div class="flex items-center justify-between">
                                             <div class="flex items-center gap-2">
-                                                <span class="text-slate-400 font-bold text-xs select-none">↳</span>
+                                                <span class="w-5 h-5 rounded-md bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs">
+                                                    <svg class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200 subcategory-chevron -rotate-90" 
+                                                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                                    </svg>
+                                                </span>
                                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-sky-100/90 text-sky-900 border border-sky-200">
                                                     <svg class="w-3.5 h-3.5 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                                                     {{ $subName }}
                                                 </span>
                                                 <span class="text-[11px] text-slate-500 font-medium">({{ $subItems->count() }} transaksi)</span>
+                                                <span class="text-[10px] text-slate-400 font-normal italic ml-1">(Klik untuk buka/tutup)</span>
                                             </div>
                                             <div class="flex items-center gap-2.5 text-xs font-semibold">
                                                 @if($subPengeluaran > 0)
@@ -398,7 +415,11 @@
                                     </td>
                                 </tr>
                                 @foreach($subItems as $t)
-                                <tr class="hover:bg-gray-50 transition-colors transaction-row" data-type="{{ $t['tipe'] }}" data-category="{{ $catName }}" data-subcategory="{{ $subName }}">
+                                <tr class="hover:bg-gray-50 transition-colors transaction-row sub-accordion-hidden" 
+                                    data-type="{{ $t['tipe'] }}" 
+                                    data-category="{{ $catName }}" 
+                                    data-subcategory="{{ $subName }}"
+                                    data-sub-group="{{ $subKey }}">
                                     <td class="px-5 py-3.5 whitespace-nowrap text-gray-600 font-medium">
                                         {{ $t['tanggal'] ? $t['tanggal']->format('d M Y') : '—' }}
                                     </td>
@@ -517,11 +538,19 @@
                             @php
                                 $subPengeluaran = $subItems->where('tipe', 'pengeluaran')->sum('nominal');
                                 $subPemasukan = $subItems->where('tipe', 'pemasukan')->sum('nominal');
+                                $subKey = $catName . ':::' . $subName;
                             @endphp
                             <div class="subcategory-mobile-group border-b border-gray-200/80 last:border-b-0" data-category="{{ $catName }}" data-subcategory="{{ $subName }}">
-                                <div class="px-3 py-1.5 bg-slate-100 border-b border-slate-200/80 flex items-center justify-between">
+                                <div class="px-3 py-2 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 border-b border-slate-200/80 flex items-center justify-between cursor-pointer select-none transition-colors"
+                                     data-sub-key="{{ $subKey }}"
+                                     onclick="toggleSubcategoryAccordion('{{ addslashes($subKey) }}')">
                                     <div class="flex items-center gap-1.5">
-                                        <span class="text-slate-400 text-xs">↳</span>
+                                        <span class="w-4 h-4 rounded bg-white border border-slate-200 flex items-center justify-center shrink-0">
+                                            <svg class="w-3 h-3 text-slate-500 transition-transform duration-200 subcategory-chevron -rotate-90" 
+                                                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </span>
                                         <span class="font-bold text-sky-900 bg-sky-100 px-2 py-0.5 rounded text-[11px] border border-sky-200 flex items-center gap-1">
                                             <svg class="w-3 h-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                                             {{ $subName }}
@@ -530,14 +559,14 @@
                                     </div>
                                     <div class="text-[10.5px] font-semibold text-right">
                                         @if($subPengeluaran > 0)
-                                            <span class="text-rose-600">-Rp {{ number_format($subPengeluaran, 0, ',', '.') }}</span>
+                                            <span class="text-rose-600 block">-Rp {{ number_format($subPengeluaran, 0, ',', '.') }}</span>
                                         @endif
                                         @if($subPemasukan > 0)
-                                            <span class="text-emerald-700">+Rp {{ number_format($subPemasukan, 0, ',', '.') }}</span>
+                                            <span class="text-emerald-700 block">+Rp {{ number_format($subPemasukan, 0, ',', '.') }}</span>
                                         @endif
                                     </div>
                                 </div>
-                                <div class="divide-y divide-gray-100">
+                                <div class="divide-y divide-gray-100 sub-accordion-hidden" data-mobile-sub-group="{{ $subKey }}">
                                     @foreach($subItems as $t)
                                         @php
                                             $subParts = !empty($t['sub_kategori']) ? explode(' › ', $t['sub_kategori']) : [];
@@ -1517,27 +1546,63 @@
 
             {{-- 7. Foto Nota / Kuitansi (Opsional) --}}
             <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                <label class="block text-xs font-semibold text-gray-700 mb-1.5">
                     Foto Bukti / Nota <span class="text-gray-400 font-normal">(Opsional)</span>
                 </label>
-                <label for="create-foto-nota" class="flex items-center gap-3 p-3 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl cursor-pointer bg-gray-50/50 transition-colors">
-                    <span class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                
+                {{-- Action Buttons: Kamera Langsung & Galeri --}}
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <button type="button" 
+                            onclick="document.getElementById('create-foto-camera').click()"
+                            class="py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/>
                         </svg>
-                    </span>
-                    <div class="min-w-0 flex-1">
-                        <p id="create-foto-label" class="text-xs font-semibold text-gray-700">Pilih foto nota / kuitansi...</p>
-                        <p class="text-[10px] text-gray-400">JPG, PNG, atau WebP (Maks. 10MB)</p>
+                        <span>Buka Kamera</span>
+                    </button>
+                    <button type="button" 
+                            onclick="document.getElementById('create-foto-nota').click()"
+                            class="py-2.5 px-3 rounded-xl bg-white hover:bg-gray-50 active:scale-95 text-gray-700 border border-gray-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                        </svg>
+                        <span>Pilih Galeri</span>
+                    </button>
+                </div>
+
+                {{-- Hidden Inputs --}}
+                <input type="file"
+                       id="create-foto-camera"
+                       accept="image/*"
+                       capture="environment"
+                       onchange="handleKeuanganPhotoSelected(this, 'create')"
+                       class="hidden">
+                <input type="file"
+                       id="create-foto-nota"
+                       name="foto_nota"
+                       accept="image/*"
+                       onchange="handleKeuanganPhotoSelected(this, 'create')"
+                       class="hidden">
+
+                {{-- Preview Card --}}
+                <div id="create-foto-preview-card" class="hidden items-center justify-between p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <img id="create-foto-preview-img" src="" class="w-10 h-10 object-cover rounded-lg border border-emerald-300 shrink-0">
+                        <div class="min-w-0">
+                            <p id="create-foto-preview-name" class="text-xs font-semibold text-gray-800 truncate"></p>
+                            <p id="create-foto-preview-size" class="text-[10px] text-gray-500"></p>
+                        </div>
                     </div>
-                    <input type="file"
-                           id="create-foto-nota"
-                           name="foto_nota"
-                           accept="image/*"
-                           onchange="handleFileInputChange(this, 'create-foto-label')"
-                           class="hidden">
-                </label>
+                    <button type="button"
+                            onclick="clearKeuanganPhoto('create')"
+                            class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Hapus foto">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             </div>
@@ -1721,27 +1786,72 @@
 
             {{-- 7. Ganti Foto Nota (Opsional) --}}
             <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                <label class="block text-xs font-semibold text-gray-700 mb-1.5">
                     Ganti Foto Nota <span class="text-gray-400 font-normal">(Biarkan kosong jika tidak diubah)</span>
                 </label>
-                <label for="edit-foto-nota" class="flex items-center gap-3 p-3 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl cursor-pointer bg-gray-50/50 transition-colors">
-                    <span class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+
+                {{-- Foto Saat Ini (Jika Ada) --}}
+                <div id="edit-current-foto-container" class="hidden mb-2 p-2.5 bg-gray-50 border border-gray-200 rounded-xl items-center gap-2.5">
+                    <img id="edit-current-foto-img" src="" class="w-10 h-10 object-cover rounded-lg border border-gray-300 shrink-0">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold text-gray-700">Foto Nota Saat Ini Tersimpan</p>
+                        <p class="text-[10px] text-gray-400">Pilih foto baru di bawah jika ingin mengganti</p>
+                    </div>
+                </div>
+
+                {{-- Action Buttons: Kamera Langsung & Galeri --}}
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <button type="button" 
+                            onclick="document.getElementById('edit-foto-camera').click()"
+                            class="py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/>
                         </svg>
-                    </span>
-                    <div class="min-w-0 flex-1">
-                        <p id="edit-foto-label" class="text-xs font-semibold text-gray-700">Pilih file foto baru...</p>
-                        <p class="text-[10px] text-gray-400">JPG, PNG, atau WebP (Maks. 10MB)</p>
+                        <span>Buka Kamera</span>
+                    </button>
+                    <button type="button" 
+                            onclick="document.getElementById('edit-foto-nota').click()"
+                            class="py-2.5 px-3 rounded-xl bg-white hover:bg-gray-50 active:scale-95 text-gray-700 border border-gray-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                        </svg>
+                        <span>Pilih Galeri</span>
+                    </button>
+                </div>
+
+                {{-- Hidden Inputs --}}
+                <input type="file"
+                       id="edit-foto-camera"
+                       accept="image/*"
+                       capture="environment"
+                       onchange="handleKeuanganPhotoSelected(this, 'edit')"
+                       class="hidden">
+                <input type="file"
+                       id="edit-foto-nota"
+                       name="foto_nota"
+                       accept="image/*"
+                       onchange="handleKeuanganPhotoSelected(this, 'edit')"
+                       class="hidden">
+
+                {{-- Preview Card untuk Foto Baru --}}
+                <div id="edit-foto-preview-card" class="hidden items-center justify-between p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <img id="edit-foto-preview-img" src="" class="w-10 h-10 object-cover rounded-lg border border-emerald-300 shrink-0">
+                        <div class="min-w-0">
+                            <p id="edit-foto-preview-name" class="text-xs font-semibold text-gray-800 truncate"></p>
+                            <p id="edit-foto-preview-size" class="text-[10px] text-gray-500"></p>
+                        </div>
                     </div>
-                    <input type="file"
-                           id="edit-foto-nota"
-                           name="foto_nota"
-                           accept="image/*"
-                           onchange="handleFileInputChange(this, 'edit-foto-label')"
-                           class="hidden">
-                </label>
+                    <button type="button"
+                            onclick="clearKeuanganPhoto('edit')"
+                            class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Batalkan ganti foto">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             </div>
@@ -2025,8 +2135,12 @@
             el.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
         }
+        if (id === 'modal-create-transaksi') {
+            clearKeuanganPhoto('create');
+        }
         if (id === 'modal-edit-transaksi') {
             currentEditTransaction = null;
+            clearKeuanganPhoto('edit');
         }
     }
 
@@ -2091,6 +2205,127 @@
             group.style.display = matchingRows.length > 0 ? '' : 'none';
         });
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ── Manajemen Accordion Sub-Kategori di Riwayat Transaksi ──
+    // ══════════════════════════════════════════════════════════════════════
+    const ACCORDION_STORAGE_KEY = 'keuangan_riwayat_open_subcategories';
+
+    function getOpenSubcategories() {
+        try {
+            const raw = sessionStorage.getItem(ACCORDION_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveOpenSubcategories(keys) {
+        try {
+            sessionStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(keys));
+        } catch (e) {}
+    }
+
+    function setSubcategoryAccordionState(subKey, isOpen) {
+        // 1. Desktop table rows
+        const desktopRows = Array.from(document.querySelectorAll('.transaction-row')).filter(r => r.dataset.subGroup === subKey);
+        desktopRows.forEach(row => {
+            if (isOpen) {
+                row.classList.remove('sub-accordion-hidden');
+            } else {
+                row.classList.add('sub-accordion-hidden');
+            }
+        });
+
+        // 2. Mobile card containers
+        const mobileContainers = Array.from(document.querySelectorAll('[data-mobile-sub-group]')).filter(el => el.dataset.mobileSubGroup === subKey);
+        mobileContainers.forEach(container => {
+            if (isOpen) {
+                container.classList.remove('sub-accordion-hidden');
+            } else {
+                container.classList.add('sub-accordion-hidden');
+            }
+        });
+
+        // 3. Chevrons in both desktop and mobile header elements
+        const headers = Array.from(document.querySelectorAll('[data-sub-key]')).filter(el => el.dataset.subKey === subKey);
+        headers.forEach(header => {
+            const chevron = header.querySelector('.subcategory-chevron');
+            if (chevron) {
+                if (isOpen) {
+                    chevron.classList.remove('-rotate-90', 'text-slate-500');
+                    chevron.classList.add('rotate-0', 'text-sky-600');
+                } else {
+                    chevron.classList.remove('rotate-0', 'text-sky-600');
+                    chevron.classList.add('-rotate-90', 'text-slate-500');
+                }
+            }
+        });
+    }
+
+    function toggleSubcategoryAccordion(subKey) {
+        let openList = getOpenSubcategories();
+        const currentlyOpen = openList.includes(subKey);
+
+        if (currentlyOpen) {
+            openList = openList.filter(k => k !== subKey);
+            setSubcategoryAccordionState(subKey, false);
+        } else {
+            openList.push(subKey);
+            setSubcategoryAccordionState(subKey, true);
+        }
+
+        saveOpenSubcategories(openList);
+    }
+
+    function closeAllSubcategoryAccordions() {
+        const openList = getOpenSubcategories();
+        openList.forEach(subKey => {
+            setSubcategoryAccordionState(subKey, false);
+        });
+        sessionStorage.removeItem(ACCORDION_STORAGE_KEY);
+    }
+
+    function restoreSubcategoryAccordionState() {
+        const openList = getOpenSubcategories();
+        openList.forEach(subKey => {
+            setSubcategoryAccordionState(subKey, true);
+        });
+    }
+
+    function initSubcategoryAccordionLifecycle() {
+        // Deteksi apakah pemuatan halaman saat ini adalah Reload (F5/Refresh)
+        let isReload = false;
+        try {
+            const navEntries = window.performance?.getEntriesByType?.('navigation');
+            if (navEntries && navEntries.length > 0) {
+                isReload = (navEntries[0].type === 'reload');
+            } else if (window.performance?.navigation) {
+                isReload = (window.performance.navigation.type === 1);
+            }
+        } catch (e) {
+            isReload = false;
+        }
+
+        // Jika bukan reload (pengguna pindah menu / navigasi baru), tutup semua accordion
+        if (!isReload) {
+            sessionStorage.removeItem(ACCORDION_STORAGE_KEY);
+        }
+
+        // Terapkan state yang ada (pada reload: hanya buka yang sebelumnya dibuka user)
+        restoreSubcategoryAccordionState();
+
+        // Saat pengguna mengklik link navigasi / menu mana pun di sidebar atau header, bersihkan penyimpanan accordion
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link && link.href && !link.href.startsWith('javascript:') && !link.href.includes('#')) {
+                sessionStorage.removeItem(ACCORDION_STORAGE_KEY);
+            }
+        });
+    }
+
+    window.toggleSubcategoryAccordion = toggleSubcategoryAccordion;
+    window.closeAllSubcategoryAccordions = closeAllSubcategoryAccordions;
 
     // Mengisi dropdown kategori berdasarkan tipe transaksi (pengeluaran / pemasukan)
     function populateCategoryDropdown(prefix, selectedType, selectedCatName = null, selectedSubCatName = null) {
@@ -2261,8 +2496,7 @@
         document.getElementById('create-nominal').value = '';
         document.getElementById('create-crop-id').value = '';
         document.getElementById('create-keterangan').value = '';
-        document.getElementById('create-foto-nota').value = '';
-        document.getElementById('create-foto-label').innerText = 'Pilih foto nota / kuitansi...';
+        clearKeuanganPhoto('create');
         openModal('modal-create-transaksi');
     }
 
@@ -2307,8 +2541,16 @@
         document.getElementById('edit-tanggal').value = tgl;
         document.getElementById('edit-crop-id').value = item.crop_id || '';
         document.getElementById('edit-keterangan').value = item.keterangan || '';
-        document.getElementById('edit-foto-nota').value = '';
-        document.getElementById('edit-foto-label').innerText = item.nota_url ? 'Ganti foto nota saat ini...' : 'Pilih file foto baru...';
+        
+        clearKeuanganPhoto('edit');
+        const currentContainer = document.getElementById('edit-current-foto-container');
+        const currentImg = document.getElementById('edit-current-foto-img');
+        if (item.nota_url) {
+            if (currentImg) currentImg.src = item.nota_url;
+            if (currentContainer) currentContainer.classList.remove('hidden');
+        } else {
+            if (currentContainer) currentContainer.classList.add('hidden');
+        }
 
         openModal('modal-edit-transaksi');
     }
@@ -2373,8 +2615,60 @@
 
     function handleFileInputChange(input, labelId) {
         if (input.files && input.files[0]) {
-            document.getElementById(labelId).innerText = input.files[0].name;
+            const labelEl = document.getElementById(labelId);
+            if (labelEl) labelEl.innerText = input.files[0].name;
         }
+    }
+
+    function handleKeuanganPhotoSelected(input, mode) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const targetInput = document.getElementById(mode + '-foto-nota');
+
+        // Jika foto diambil dari kamera, sinkronkan filenya ke input form utama
+        if (input.id !== (mode + '-foto-nota') && targetInput) {
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                targetInput.files = dt.files;
+            } catch (e) {
+                console.warn('DataTransfer sync fallback:', e);
+            }
+        }
+
+        const previewCard = document.getElementById(mode + '-foto-preview-card');
+        const previewImg = document.getElementById(mode + '-foto-preview-img');
+        const previewName = document.getElementById(mode + '-foto-preview-name');
+        const previewSize = document.getElementById(mode + '-foto-preview-size');
+
+        if (previewCard && previewImg && previewName && previewSize) {
+            previewName.innerText = file.name || 'Foto Nota';
+            const sizeKb = (file.size / 1024).toFixed(1);
+            previewSize.innerText = `${sizeKb} KB`;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                previewCard.classList.remove('hidden');
+                previewCard.classList.add('flex');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function clearKeuanganPhoto(mode) {
+        const mainInput = document.getElementById(mode + '-foto-nota');
+        const cameraInput = document.getElementById(mode + '-foto-camera');
+        if (mainInput) mainInput.value = '';
+        if (cameraInput) cameraInput.value = '';
+
+        const previewCard = document.getElementById(mode + '-foto-preview-card');
+        const previewImg = document.getElementById(mode + '-foto-preview-img');
+        if (previewCard) {
+            previewCard.classList.add('hidden');
+            previewCard.classList.remove('flex');
+        }
+        if (previewImg) previewImg.src = '';
     }
 
     function previewNota(url, title) {
@@ -2672,6 +2966,9 @@
     let currentSubmenu = '{{ request()->query("tab", "riwayat") }}';
 
     function setKeuanganSubmenu(tab) {
+        if (currentSubmenu !== tab) {
+            closeAllSubcategoryAccordions();
+        }
         currentSubmenu = tab;
         const contentRiwayat = document.getElementById('submenu-content-riwayat');
         const contentStatistik = document.getElementById('submenu-content-statistik');
@@ -3751,18 +4048,29 @@
                         subtotalPartsSub.push(`<span class="text-emerald-700">Subtotal: +${formatRupiah(sub.totalPemasukan)}</span>`);
                     }
                     const subtotalSubHtml = subtotalPartsSub.join('<span class="text-slate-300">|</span>');
+                    const subKey = group.name + ':::' + sub.name;
 
                     const subHeaderRow = `
-                        <tr class="subcategory-header-row bg-slate-100/90 border-y border-slate-200/90" data-category="${escapeHtml(group.name)}" data-subcategory="${escapeHtml(sub.name)}">
-                            <td colspan="7" class="pl-8 pr-5 py-2">
+                        <tr class="subcategory-header-row bg-slate-100/90 hover:bg-slate-200/90 active:bg-slate-300/80 border-y border-slate-200/90 cursor-pointer select-none transition-colors" 
+                            data-category="${escapeHtml(group.name)}" 
+                            data-subcategory="${escapeHtml(sub.name)}"
+                            data-sub-key="${escapeHtml(subKey)}"
+                            onclick="toggleSubcategoryAccordion('${escapeHtml(subKey)}')">
+                            <td colspan="7" class="pl-6 sm:pl-8 pr-5 py-2.5">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-slate-400 font-bold text-xs select-none">↳</span>
+                                        <span class="w-5 h-5 rounded-md bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs">
+                                            <svg class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200 subcategory-chevron -rotate-90" 
+                                                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </span>
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-sky-100/90 text-sky-900 border border-sky-200">
                                             <svg class="w-3.5 h-3.5 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                                             ${escapeHtml(sub.name)}
                                         </span>
                                         <span class="text-[11px] text-slate-500 font-medium">(${sub.transactions.length} transaksi)</span>
+                                        <span class="text-[10px] text-slate-400 font-normal italic ml-1">(Klik untuk buka/tutup)</span>
                                     </div>
                                     <div class="flex items-center gap-2.5 text-xs font-semibold">
                                         ${subtotalSubHtml}
@@ -3804,7 +4112,11 @@
                     const effectiveId = t.raw_id || t.id;
 
                     return `
-                        <tr class="hover:bg-gray-50 transition-colors transaction-row" data-type="${t.tipe}" data-category="${escapeHtml(group.name)}" data-subcategory="${escapeHtml(sub.name)}">
+                        <tr class="hover:bg-gray-50 transition-colors transaction-row sub-accordion-hidden" 
+                            data-type="${t.tipe}" 
+                            data-category="${escapeHtml(group.name)}" 
+                            data-subcategory="${escapeHtml(sub.name)}"
+                            data-sub-group="${escapeHtml(subKey)}">
                             <td class="px-5 py-3.5 whitespace-nowrap text-gray-600 font-medium">
                                 ${escapeHtml(t.formatted_tanggal || '—')}
                             </td>
@@ -3877,6 +4189,7 @@
                     if (sub.totalPemasukan > 0) {
                         subSubtotal.push(`<span class="text-emerald-700 block">+Rp ${Math.round(sub.totalPemasukan).toLocaleString('id-ID')}</span>`);
                     }
+                    const subKey = group.name + ':::' + sub.name;
 
                     const cards = sub.transactions.map(t => {
                         const isPemasukan = t.tipe === 'pemasukan';
@@ -3950,9 +4263,16 @@
 
                     return `
                         <div class="subcategory-mobile-group border-b border-gray-200/80 last:border-b-0" data-category="${escapeHtml(group.name)}" data-subcategory="${escapeHtml(sub.name)}">
-                            <div class="px-3 py-1.5 bg-slate-100 border-b border-slate-200/80 flex items-center justify-between">
+                            <div class="px-3 py-2 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 border-b border-slate-200/80 flex items-center justify-between cursor-pointer select-none transition-colors"
+                                 data-sub-key="${escapeHtml(subKey)}"
+                                 onclick="toggleSubcategoryAccordion('${escapeHtml(subKey)}')">
                                 <div class="flex items-center gap-1.5">
-                                    <span class="text-slate-400 text-xs">↳</span>
+                                    <span class="w-4 h-4 rounded bg-white border border-slate-200 flex items-center justify-center shrink-0">
+                                        <svg class="w-3 h-3 text-slate-500 transition-transform duration-200 subcategory-chevron -rotate-90" 
+                                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </span>
                                     <span class="font-bold text-sky-900 bg-sky-100 px-2 py-0.5 rounded text-[11px] border border-sky-200 flex items-center gap-1">
                                         <svg class="w-3 h-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                                         ${escapeHtml(sub.name)}
@@ -3963,7 +4283,7 @@
                                     ${subSubtotal.join('')}
                                 </div>
                             </div>
-                            <div class="divide-y divide-gray-100">
+                            <div class="divide-y divide-gray-100 sub-accordion-hidden" data-mobile-sub-group="${escapeHtml(subKey)}">
                                 ${cards}
                             </div>
                         </div>
@@ -3989,6 +4309,7 @@
         }
 
         filterTransactions(currentFilterType);
+        restoreSubcategoryAccordionState();
     }
 
     // ── Render Tree Kategori Secara Dinamis ──
@@ -4358,6 +4679,9 @@
             setKeuanganSubmenu('riwayat');
         }
 
+        // Inisialisasi Lifecycle Accordion Sub-Kategori Riwayat
+        initSubcategoryAccordionLifecycle();
+
         // Inisialisasi Infografis Statistik Kategori
         if (typeof renderCategoryStatsChart === 'function') {
             const hasPengeluaran = (currentTransaksiList || []).some(t => t.tipe === 'pengeluaran');
@@ -4395,6 +4719,11 @@
                 }
 
                 const formData = new FormData(this);
+                const camInput = document.getElementById('create-foto-camera');
+                const fileInput = document.getElementById('create-foto-nota');
+                if ((!fileInput || !fileInput.files || !fileInput.files.length) && camInput && camInput.files && camInput.files[0]) {
+                    formData.set('foto_nota', camInput.files[0]);
+                }
 
                 const nominalVal = parseInt((formData.get('nominal') || '').toString().replace(/[^0-9]/g, '') || '0', 10);
                 if (nominalVal <= 0) {
@@ -4409,10 +4738,12 @@
                 // Mode Offline
                 if (!navigator.onLine) {
                     try {
-                        const fileInput = this.querySelector('input[name="foto_nota"]');
                         let base64Photo = null;
-                        if (fileInput && fileInput.files && fileInput.files[0]) {
-                            base64Photo = await fileToBase64(fileInput.files[0]);
+                        const photoToConvert = (fileInput && fileInput.files && fileInput.files[0]) 
+                            ? fileInput.files[0] 
+                            : (camInput && camInput.files && camInput.files[0] ? camInput.files[0] : null);
+                        if (photoToConvert) {
+                            base64Photo = await fileToBase64(photoToConvert);
                         }
 
                         const offlineData = {
@@ -4431,6 +4762,7 @@
                             await window.AgriOfflineStore.addKeuanganTransactionOffline(offlineData);
                             closeModal('modal-create-transaksi');
                             formCreate.reset();
+                            clearKeuanganPhoto('create');
                             notifySuccess('Transaksi disimpan di HP (Mode Offline). Akan otomatis disinkronkan saat online.');
                             loadKeuanganData();
                             const p = await window.AgriOfflineStore.getPendingCount();
@@ -4464,6 +4796,7 @@
                     if (res.ok && data.success) {
                         closeModal('modal-create-transaksi');
                         formCreate.reset();
+                        clearKeuanganPhoto('create');
                         notifySuccess(data.message || 'Transaksi keuangan berhasil dicatat!');
                         if (data.categories) {
                             appCategories = data.categories;
@@ -4545,8 +4878,11 @@
                     }
 
                     // Hapus input file jika tidak ada file yang dipilih agar tidak mengirim payload multipart yang tidak perlu
+                    const camInput = document.getElementById('edit-foto-camera');
                     const fileInput = this.querySelector('input[name="foto_nota"]');
-                    if (fileInput && (!fileInput.files || fileInput.files.length === 0)) {
+                    if ((!fileInput || !fileInput.files || !fileInput.files.length) && camInput && camInput.files && camInput.files[0]) {
+                        formData.set('foto_nota', camInput.files[0]);
+                    } else if (fileInput && (!fileInput.files || fileInput.files.length === 0)) {
                         formData.delete('foto_nota');
                     }
 
@@ -4554,8 +4890,11 @@
                     if (!navigator.onLine) {
                         try {
                             let base64Photo = null;
-                            if (fileInput && fileInput.files && fileInput.files[0]) {
-                                base64Photo = await fileToBase64(fileInput.files[0]);
+                            const photoToConvert = (fileInput && fileInput.files && fileInput.files[0]) 
+                                ? fileInput.files[0] 
+                                : (camInput && camInput.files && camInput.files[0] ? camInput.files[0] : null);
+                            if (photoToConvert) {
+                                base64Photo = await fileToBase64(photoToConvert);
                             }
 
                             const offlineData = {
@@ -4573,6 +4912,7 @@
                             if (window.AgriOfflineStore && rawId) {
                                 await window.AgriOfflineStore.updateKeuanganTransactionOffline(rawId, offlineData);
                                 closeModal('modal-edit-transaksi');
+                                clearKeuanganPhoto('edit');
                                 notifySuccess('Perubahan disimpan di HP (Mode Offline). Akan disinkronkan saat online.');
                                 loadKeuanganData();
                                 const p = await window.AgriOfflineStore.getPendingCount();
@@ -4612,6 +4952,7 @@
                     const data = await res.json();
                     if (res.ok && data.success) {
                         closeModal('modal-edit-transaksi');
+                        clearKeuanganPhoto('edit');
                         notifySuccess(data.message || 'Transaksi keuangan berhasil diperbarui!');
                         if (data.categories) {
                             appCategories = data.categories;
@@ -4631,10 +4972,14 @@
                     const rawId = currentEditTransaction ? (currentEditTransaction.raw_id || currentEditTransaction.id) : null;
                     if (window.AgriOfflineStore && rawId) {
                         try {
+                            const camInput = document.getElementById('edit-foto-camera');
                             const fileInput = this.querySelector('input[name="foto_nota"]');
                             let base64Photo = null;
-                            if (fileInput && fileInput.files && fileInput.files[0]) {
-                                base64Photo = await fileToBase64(fileInput.files[0]);
+                            const photoToConvert = (fileInput && fileInput.files && fileInput.files[0]) 
+                                ? fileInput.files[0] 
+                                : (camInput && camInput.files && camInput.files[0] ? camInput.files[0] : null);
+                            if (photoToConvert) {
+                                base64Photo = await fileToBase64(photoToConvert);
                             }
 
                             const formData = new FormData(this);
@@ -4652,6 +4997,7 @@
 
                             await window.AgriOfflineStore.updateKeuanganTransactionOffline(rawId, offlineData);
                             closeModal('modal-edit-transaksi');
+                            clearKeuanganPhoto('edit');
                             notifySuccess('Koneksi terputus. Perubahan disimpan di HP (Mode Offline).');
                             loadKeuanganData();
                             const p = await window.AgriOfflineStore.getPendingCount();
