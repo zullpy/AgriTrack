@@ -12,6 +12,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class KeuanganController extends Controller
@@ -273,6 +276,7 @@ class KeuanganController extends Controller
             'crop_id' => 'nullable|exists:crops,id',
             'keterangan' => 'nullable|string|max:1000',
             'foto_nota' => 'nullable|image|max:10240',
+            'foto_nota_base64' => 'nullable|string',
         ]);
 
         $nominal = (int) preg_replace('/[^0-9]/', '', (string) $validated['nominal']);
@@ -288,7 +292,9 @@ class KeuanganController extends Controller
         }
 
         $fotoPath = null;
-        if ($request->hasFile('foto_nota')) {
+        if ($request->filled('foto_nota_base64')) {
+            $fotoPath = $this->uploadSingleBase64Photo($request->input('foto_nota_base64'), $cloudinaryService);
+        } elseif ($request->hasFile('foto_nota')) {
             $uploadResult = $cloudinaryService->upload($request->file('foto_nota'), 'pertanian/keuangan');
             $fotoPath = $uploadResult['url'] ?? null;
         }
@@ -336,6 +342,7 @@ class KeuanganController extends Controller
             'crop_id' => 'nullable|exists:crops,id',
             'keterangan' => 'nullable|string|max:1000',
             'foto_nota' => 'nullable|image|max:10240',
+            'foto_nota_base64' => 'nullable|string',
         ]);
 
         $nominal = (int) preg_replace('/[^0-9]/', '', (string) $validated['nominal']);
@@ -351,7 +358,12 @@ class KeuanganController extends Controller
         }
 
         $fotoPath = $transaction->foto_nota;
-        if ($request->hasFile('foto_nota')) {
+        if ($request->filled('foto_nota_base64')) {
+            $newPhoto = $this->uploadSingleBase64Photo($request->input('foto_nota_base64'), $cloudinaryService);
+            if ($newPhoto) {
+                $fotoPath = $newPhoto;
+            }
+        } elseif ($request->hasFile('foto_nota')) {
             $uploadResult = $cloudinaryService->upload($request->file('foto_nota'), 'pertanian/keuangan');
             $fotoPath = $uploadResult['url'] ?? null;
         }
@@ -468,5 +480,45 @@ class KeuanganController extends Controller
         }
 
         return redirect()->route('keuangan.index')->with('success', "{$label} berhasil dihapus!");
+    }
+
+    /**
+     * Decode base64 image data and upload it via CloudinaryService or store locally.
+     */
+    private function uploadSingleBase64Photo(string $base64, CloudinaryService $cloudinaryService): ?string
+    {
+        $extension = 'jpg';
+        $data = $base64;
+
+        if (preg_match('/^data:image\/(\w+);base64,/', $base64, $type)) {
+            $data = substr($base64, strpos($base64, ',') + 1);
+            $ext = strtolower($type[1]);
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $extension = $ext === 'jpeg' ? 'jpg' : $ext;
+            }
+        }
+
+        $binary = base64_decode($data);
+        if ($binary === false || strlen($binary) === 0) {
+            return null;
+        }
+
+        $tempPath = sys_get_temp_dir().'/nota_'.Str::random(32).'.'.$extension;
+        file_put_contents($tempPath, $binary);
+
+        try {
+            $uploadResult = $cloudinaryService->upload($tempPath, 'pertanian/keuangan');
+            @unlink($tempPath);
+
+            return $uploadResult['url'] ?? null;
+        } catch (\Throwable $e) {
+            @unlink($tempPath);
+            Log::warning('Cloudinary upload base64 failed, saving locally: '.$e->getMessage());
+
+            $filename = 'keuangan/nota_'.Str::random(40).'.'.$extension;
+            Storage::disk('public')->put($filename, $binary);
+
+            return Storage::disk('public')->url($filename);
+        }
     }
 }

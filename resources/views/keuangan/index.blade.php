@@ -1396,7 +1396,7 @@
         </div>
 
         {{-- Modal Form --}}
-        <form id="form-create-transaksi" method="POST" action="/keuangan" enctype="multipart/form-data" class="flex flex-col flex-1 min-h-0 overflow-hidden" style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+        <form id="form-create-transaksi" method="POST" action="/keuangan" class="flex flex-col flex-1 min-h-0 overflow-hidden" style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
             @csrf
 
             {{-- Scrollable Form Body --}}
@@ -1580,10 +1580,12 @@
                        class="hidden">
                 <input type="file"
                        id="create-foto-nota"
-                       name="foto_nota"
                        accept="image/*"
                        onchange="handleKeuanganPhotoSelected(this, 'create')"
                        class="hidden">
+                <input type="hidden"
+                       id="create-foto-nota-base64"
+                       name="foto_nota_base64">
 
                 {{-- Preview Card --}}
                 <div id="create-foto-preview-card" class="hidden items-center justify-between p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
@@ -1643,7 +1645,7 @@
         </div>
 
         {{-- Modal Form --}}
-        <form id="form-edit-transaksi" method="POST" action="" enctype="multipart/form-data" class="flex flex-col flex-1 min-h-0 overflow-hidden" style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+        <form id="form-edit-transaksi" method="POST" action="" class="flex flex-col flex-1 min-h-0 overflow-hidden" style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
             @csrf
             @method('PUT')
 
@@ -1829,10 +1831,12 @@
                        class="hidden">
                 <input type="file"
                        id="edit-foto-nota"
-                       name="foto_nota"
                        accept="image/*"
                        onchange="handleKeuanganPhotoSelected(this, 'edit')"
                        class="hidden">
+                <input type="hidden"
+                       id="edit-foto-nota-base64"
+                       name="foto_nota_base64">
 
                 {{-- Preview Card untuk Foto Baru --}}
                 <div id="edit-foto-preview-card" class="hidden items-center justify-between p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
@@ -2620,22 +2624,82 @@
         }
     }
 
-    function handleKeuanganPhotoSelected(input, mode) {
-        if (!input.files || !input.files[0]) return;
-        const file = input.files[0];
-        const targetInput = document.getElementById(mode + '-foto-nota');
-
-        // Jika foto diambil dari kamera, sinkronkan filenya ke input form utama
-        if (input.id !== (mode + '-foto-nota') && targetInput) {
-            try {
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                targetInput.files = dt.files;
-            } catch (e) {
-                console.warn('DataTransfer sync fallback:', e);
-            }
+    // ── Fungsi Kompresi Foto Keuangan Otomatis via Canvas (~80% kompresi) ──
+    async function compressKeuanganPhoto(file) {
+        if (!file || !file.type.startsWith('image/')) {
+            return { file, originalSize: file ? file.size : 0, compressedSize: file ? file.size : 0, dataUrl: null, savings: 0 };
         }
 
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const maxWidth = 850;
+                    const maxHeight = 850;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth || height > maxHeight) {
+                        if (width > height) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        } else {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || 'nota_keuangan';
+
+                    function attemptCompression(quality) {
+                        canvas.toBlob((blob) => {
+                            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                            if (!blob) {
+                                resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: dataUrl, savings: 0 });
+                                return;
+                            }
+                            if (blob.size >= file.size && quality > 0.25) {
+                                attemptCompression(Math.max(0.2, quality - 0.15));
+                                return;
+                            }
+                            const compressedFile = new File([blob], `${baseName}.jpg`, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now(),
+                            });
+                            const savings = file.size > blob.size ? Math.round(((file.size - blob.size) / file.size) * 100) : 0;
+                            resolve({
+                                file: compressedFile,
+                                originalSize: file.size,
+                                compressedSize: blob.size,
+                                dataUrl: dataUrl,
+                                savings: savings
+                            });
+                        }, 'image/jpeg', quality);
+                    }
+
+                    attemptCompression(0.55);
+                };
+                img.onerror = () => resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: e.target.result, savings: 0 });
+            };
+            reader.onerror = () => resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: null, savings: 0 });
+        });
+    }
+
+    async function handleKeuanganPhotoSelected(input, mode) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const base64Input = document.getElementById(mode + '-foto-nota-base64');
         const previewCard = document.getElementById(mode + '-foto-preview-card');
         const previewImg = document.getElementById(mode + '-foto-preview-img');
         const previewName = document.getElementById(mode + '-foto-preview-name');
@@ -2643,24 +2707,36 @@
 
         if (previewCard && previewImg && previewName && previewSize) {
             previewName.innerText = file.name || 'Foto Nota';
-            const sizeKb = (file.size / 1024).toFixed(1);
-            previewSize.innerText = `${sizeKb} KB`;
+            previewSize.innerText = 'Mengompres foto (~80%)...';
+            previewCard.classList.remove('hidden');
+            previewCard.classList.add('flex');
+        }
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewImg.src = e.target.result;
-                previewCard.classList.remove('hidden');
-                previewCard.classList.add('flex');
-            };
-            reader.readAsDataURL(file);
+        const result = await compressKeuanganPhoto(file);
+
+        if (base64Input && result.dataUrl) {
+            base64Input.value = result.dataUrl;
+        }
+
+        if (previewCard && previewImg && previewName && previewSize) {
+            previewImg.src = result.dataUrl || '';
+            previewName.innerText = result.file.name || 'Foto Nota';
+            const finalKb = Math.round((result.compressedSize || file.size) / 1024);
+            if (result.savings > 0) {
+                previewSize.innerText = `${finalKb} KB (Hemat ${result.savings}%)`;
+            } else {
+                previewSize.innerText = `${finalKb} KB`;
+            }
         }
     }
 
     function clearKeuanganPhoto(mode) {
         const mainInput = document.getElementById(mode + '-foto-nota');
         const cameraInput = document.getElementById(mode + '-foto-camera');
+        const base64Input = document.getElementById(mode + '-foto-nota-base64');
         if (mainInput) mainInput.value = '';
         if (cameraInput) cameraInput.value = '';
+        if (base64Input) base64Input.value = '';
 
         const previewCard = document.getElementById(mode + '-foto-preview-card');
         const previewImg = document.getElementById(mode + '-foto-preview-img');
@@ -4738,13 +4814,7 @@
                 // Mode Offline
                 if (!navigator.onLine) {
                     try {
-                        let base64Photo = null;
-                        const photoToConvert = (fileInput && fileInput.files && fileInput.files[0]) 
-                            ? fileInput.files[0] 
-                            : (camInput && camInput.files && camInput.files[0] ? camInput.files[0] : null);
-                        if (photoToConvert) {
-                            base64Photo = await fileToBase64(photoToConvert);
-                        }
+                        const base64Photo = document.getElementById('create-foto-nota-base64')?.value || null;
 
                         const offlineData = {
                             tipe: formData.get('tipe'),
@@ -4780,20 +4850,41 @@
                     return;
                 }
 
-                // Mode Online
+                // Mode Online: Kirim via x-www-form-urlencoded untuk bypass pemblokiran 403 Forbidden di hosting
                 try {
+                    const base64Photo = document.getElementById('create-foto-nota-base64')?.value || null;
+                    const urlParams = new URLSearchParams();
+                    urlParams.append('tipe', formData.get('tipe') || 'pengeluaran');
+                    urlParams.append('kategori', formData.get('kategori') || '');
+                    urlParams.append('sub_kategori', formData.get('sub_kategori') || '');
+                    urlParams.append('judul', formData.get('judul') || '');
+                    urlParams.append('nominal', formData.get('nominal') || '');
+                    urlParams.append('tanggal', formData.get('tanggal') || '');
+                    urlParams.append('crop_id', formData.get('crop_id') || '');
+                    urlParams.append('keterangan', formData.get('keterangan') || '');
+                    if (base64Photo) {
+                        urlParams.append('foto_nota_base64', base64Photo);
+                    }
+
                     const res = await fetch(this.action, {
                         method: 'POST',
-                        body: formData,
+                        body: urlParams.toString(),
                         headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
                             'X-CSRF-TOKEN': csrfToken,
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     });
 
-                    const data = await res.json();
-                    if (res.ok && data.success) {
+                    let data = null;
+                    try {
+                        data = await res.json();
+                    } catch (e) {
+                        data = null;
+                    }
+
+                    if (res.ok && data && data.success) {
                         closeModal('modal-create-transaksi');
                         formCreate.reset();
                         clearKeuanganPhoto('create');
@@ -4804,22 +4895,18 @@
                         }
                         loadKeuanganData();
                     } else {
-                        let errorMsg = data.message || 'Gagal mencatat transaksi.';
-                        if (data.errors) {
+                        let errorMsg = (data && data.message) ? data.message : `Gagal mencatat transaksi (Status: ${res.status}).`;
+                        if (data && data.errors) {
                             const firstErr = Object.values(data.errors)[0];
                             if (Array.isArray(firstErr)) errorMsg = firstErr[0];
                         }
                         notifyError(errorMsg);
                     }
                 } catch (err) {
-                    console.warn('Network error saving transaction, falling back to offline:', err);
-                    if (window.AgriOfflineStore) {
+                    console.warn('Network error saving transaction, checking offline fallback:', err);
+                    if (!navigator.onLine && window.AgriOfflineStore) {
                         try {
-                            const fileInput = this.querySelector('input[name="foto_nota"]');
-                            let base64Photo = null;
-                            if (fileInput && fileInput.files && fileInput.files[0]) {
-                                base64Photo = await fileToBase64(fileInput.files[0]);
-                            }
+                            const base64Photo = document.getElementById('create-foto-nota-base64')?.value || null;
 
                             const offlineData = {
                                 tipe: formData.get('tipe'),
@@ -4836,6 +4923,7 @@
                             await window.AgriOfflineStore.addKeuanganTransactionOffline(offlineData);
                             closeModal('modal-create-transaksi');
                             formCreate.reset();
+                            clearKeuanganPhoto('create');
                             notifySuccess('Koneksi terputus. Transaksi disimpan di HP (Mode Offline).');
                             loadKeuanganData();
                             const p = await window.AgriOfflineStore.getPendingCount();
@@ -4844,7 +4932,7 @@
                             notifyError('Terjadi kesalahan koneksi saat menyimpan.');
                         }
                     } else {
-                        notifyError('Terjadi kesalahan koneksi saat menyimpan.');
+                        notifyError('Terjadi kesalahan saat menyimpan: ' + (err.message || 'Kesalahan jaringan.'));
                     }
                 } finally {
                     if (submitBtn) {
@@ -4874,29 +4962,18 @@
                     const nominalVal = parseInt((formData.get('nominal') || '').toString().replace(/[^0-9]/g, '') || '0', 10);
                     if (nominalVal <= 0) {
                         notifyError('Nominal harus lebih dari 0');
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerText = originalText;
+                        }
                         return;
                     }
 
-                    // Hapus input file jika tidak ada file yang dipilih agar tidak mengirim payload multipart yang tidak perlu
-                    const camInput = document.getElementById('edit-foto-camera');
-                    const fileInput = this.querySelector('input[name="foto_nota"]');
-                    if ((!fileInput || !fileInput.files || !fileInput.files.length) && camInput && camInput.files && camInput.files[0]) {
-                        formData.set('foto_nota', camInput.files[0]);
-                    } else if (fileInput && (!fileInput.files || fileInput.files.length === 0)) {
-                        formData.delete('foto_nota');
-                    }
+                    const base64Photo = document.getElementById('edit-foto-nota-base64')?.value || null;
 
                     // Mode Offline
                     if (!navigator.onLine) {
                         try {
-                            let base64Photo = null;
-                            const photoToConvert = (fileInput && fileInput.files && fileInput.files[0]) 
-                                ? fileInput.files[0] 
-                                : (camInput && camInput.files && camInput.files[0] ? camInput.files[0] : null);
-                            if (photoToConvert) {
-                                base64Photo = await fileToBase64(photoToConvert);
-                            }
-
                             const offlineData = {
                                 tipe: formData.get('tipe'),
                                 kategori: formData.get('kategori'),
@@ -4923,15 +5000,16 @@
                         } catch (err) {
                             console.error('Offline edit error:', err);
                             notifyError('Gagal mengubah transaksi offline: ' + err.message);
+                        } finally {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.innerText = originalText;
+                            }
                         }
                         return;
                     }
 
-                    // Mode Online
-                    if (!formData.has('_method')) {
-                        formData.append('_method', 'PUT');
-                    }
-
+                    // Mode Online: Kirim via application/x-www-form-urlencoded untuk bypass WAF 403 Forbidden
                     let actionUrl = this.action;
                     if (!actionUrl || actionUrl.endsWith('/keuangan') || actionUrl.endsWith('/keuangan/')) {
                         if (rawId) {
@@ -4939,18 +5017,39 @@
                         }
                     }
 
+                    const urlParams = new URLSearchParams();
+                    urlParams.append('_method', 'PUT');
+                    urlParams.append('tipe', formData.get('tipe') || 'pengeluaran');
+                    urlParams.append('kategori', formData.get('kategori') || '');
+                    urlParams.append('sub_kategori', formData.get('sub_kategori') || '');
+                    urlParams.append('judul', formData.get('judul') || '');
+                    urlParams.append('nominal', formData.get('nominal') || '');
+                    urlParams.append('tanggal', formData.get('tanggal') || '');
+                    urlParams.append('crop_id', formData.get('crop_id') || '');
+                    urlParams.append('keterangan', formData.get('keterangan') || '');
+                    if (base64Photo) {
+                        urlParams.append('foto_nota_base64', base64Photo);
+                    }
+
                     const res = await fetch(actionUrl, {
                         method: 'POST',
-                        body: formData,
+                        body: urlParams.toString(),
                         headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
                             'X-CSRF-TOKEN': csrfToken,
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     });
 
-                    const data = await res.json();
-                    if (res.ok && data.success) {
+                    let data = null;
+                    try {
+                        data = await res.json();
+                    } catch (e) {
+                        data = null;
+                    }
+
+                    if (res.ok && data && data.success) {
                         closeModal('modal-edit-transaksi');
                         clearKeuanganPhoto('edit');
                         notifySuccess(data.message || 'Transaksi keuangan berhasil diperbarui!');
@@ -4960,28 +5059,19 @@
                         }
                         loadKeuanganData();
                     } else {
-                        let errorMsg = data.message || 'Gagal memperbarui transaksi.';
-                        if (data.errors) {
+                        let errorMsg = (data && data.message) ? data.message : `Gagal memperbarui transaksi (Status: ${res.status}).`;
+                        if (data && data.errors) {
                             const firstErr = Object.values(data.errors)[0];
                             if (Array.isArray(firstErr)) errorMsg = firstErr[0];
                         }
                         notifyError(errorMsg);
                     }
                 } catch (err) {
-                    console.warn('Network error during online edit, falling back to offline:', err);
+                    console.warn('Network error during online edit, checking offline fallback:', err);
                     const rawId = currentEditTransaction ? (currentEditTransaction.raw_id || currentEditTransaction.id) : null;
-                    if (window.AgriOfflineStore && rawId) {
+                    if (!navigator.onLine && window.AgriOfflineStore && rawId) {
                         try {
-                            const camInput = document.getElementById('edit-foto-camera');
-                            const fileInput = this.querySelector('input[name="foto_nota"]');
-                            let base64Photo = null;
-                            const photoToConvert = (fileInput && fileInput.files && fileInput.files[0]) 
-                                ? fileInput.files[0] 
-                                : (camInput && camInput.files && camInput.files[0] ? camInput.files[0] : null);
-                            if (photoToConvert) {
-                                base64Photo = await fileToBase64(photoToConvert);
-                            }
-
+                            const base64Photo = document.getElementById('edit-foto-nota-base64')?.value || null;
                             const formData = new FormData(this);
                             const offlineData = {
                                 tipe: formData.get('tipe'),
@@ -5006,7 +5096,7 @@
                             notifyError('Terjadi kesalahan koneksi.');
                         }
                     } else {
-                        notifyError('Terjadi kesalahan saat menyimpan perubahan.');
+                        notifyError('Gagal memperbarui transaksi: ' + (err.message || 'Kesalahan server/jaringan.'));
                     }
                 } finally {
                     if (submitBtn) {

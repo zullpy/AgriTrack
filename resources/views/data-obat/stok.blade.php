@@ -599,6 +599,8 @@
                                 <option value="gram">gram</option>
                                 <option value="liter">liter</option>
                                 <option value="ml">ml</option>
+                                <option value="pcs">pcs</option>
+                                <option value="pohon">pohon</option>
                             </select>
                         </div>
                         <p class="text-[10px] text-gray-400 mt-1">Ukuran isi per kemasan (misal 500 ml atau 1 kg).</p>
@@ -792,6 +794,8 @@
                                 <option value="gram">gram</option>
                                 <option value="liter">liter</option>
                                 <option value="ml">ml</option>
+                                <option value="pcs">pcs</option>
+                                <option value="pohon">pohon</option>
                             </select>
                         </div>
                         <p class="text-[10px] text-gray-400 mt-1">Ukuran isi per kemasan (misal 500 ml atau 1 kg).</p>
@@ -1055,7 +1059,18 @@ function selectMedicine(id) {
         kemasanJumlahInput.value = med.kemasan_jumlah !== null && med.kemasan_jumlah !== undefined ? med.kemasan_jumlah : '';
     }
     if (kemasanSatuanSelect) {
-        kemasanSatuanSelect.value = med.kemasan_satuan || 'kg';
+        if (med.kemasan_satuan) {
+            kemasanSatuanSelect.value = med.kemasan_satuan;
+        } else {
+            const j = (med.jenis || '').toLowerCase();
+            if (j.includes('bibit') || j.includes('benih')) {
+                kemasanSatuanSelect.value = 'pohon';
+            } else if (j.includes('peralatan') || j.includes('perlengkapan') || j.includes('alat')) {
+                kemasanSatuanSelect.value = 'pcs';
+            } else {
+                kemasanSatuanSelect.value = 'kg';
+            }
+        }
     }
 
     if (newMedFields) newMedFields.classList.add('hidden');
@@ -1079,13 +1094,23 @@ function selectNewMedicine(typedName) {
     const statusBox = document.getElementById('gp-selected-status');
     const newMedFields = document.getElementById('gp-new-med-fields');
     const hargaHint = document.getElementById('gp-harga-hint');
+    const jenisSelect = document.getElementById('gp-jenis-select');
 
     namaInput.value = typedName.trim();
     medIdInput.value = '';
     if (clearBtn) clearBtn.classList.remove('hidden');
 
     if (kemasanJumlahInput) kemasanJumlahInput.value = '';
-    if (kemasanSatuanSelect) kemasanSatuanSelect.value = 'kg';
+    if (kemasanSatuanSelect) {
+        const j = (jenisSelect?.value || '').toLowerCase();
+        if (j.includes('bibit') || j.includes('benih')) {
+            kemasanSatuanSelect.value = 'pohon';
+        } else if (j.includes('peralatan') || j.includes('perlengkapan') || j.includes('alat')) {
+            kemasanSatuanSelect.value = 'pcs';
+        } else {
+            kemasanSatuanSelect.value = 'kg';
+        }
+    }
 
     if (newMedFields) newMedFields.classList.remove('hidden');
 
@@ -1107,13 +1132,23 @@ function clearMedicineLookup() {
     const statusBox = document.getElementById('gp-selected-status');
     const newMedFields = document.getElementById('gp-new-med-fields');
     const hargaHint = document.getElementById('gp-harga-hint');
+    const jenisSelect = document.getElementById('gp-jenis-select');
 
     if (namaInput) {
         namaInput.value = '';
     }
     if (medIdInput) medIdInput.value = '';
     if (kemasanJumlahInput) kemasanJumlahInput.value = '';
-    if (kemasanSatuanSelect) kemasanSatuanSelect.value = 'kg';
+    if (kemasanSatuanSelect) {
+        const j = (jenisSelect?.value || '').toLowerCase();
+        if (j.includes('bibit') || j.includes('benih')) {
+            kemasanSatuanSelect.value = 'pohon';
+        } else if (j.includes('peralatan') || j.includes('perlengkapan') || j.includes('alat')) {
+            kemasanSatuanSelect.value = 'pcs';
+        } else {
+            kemasanSatuanSelect.value = 'kg';
+        }
+    }
     if (clearBtn) clearBtn.classList.add('hidden');
     if (statusBox) statusBox.classList.add('hidden');
     if (newMedFields) newMedFields.classList.add('hidden');
@@ -1456,7 +1491,18 @@ window.openQuickPurchaseModal = function(param) {
         kemasanJumlahInput.value = medicine.kemasan_jumlah !== null && medicine.kemasan_jumlah !== undefined ? medicine.kemasan_jumlah : '';
     }
     if (kemasanSatuanSelect) {
-        kemasanSatuanSelect.value = medicine.kemasan_satuan || 'kg';
+        if (medicine.kemasan_satuan) {
+            kemasanSatuanSelect.value = medicine.kemasan_satuan;
+        } else {
+            const j = (medicine.jenis || '').toLowerCase();
+            if (j.includes('bibit') || j.includes('benih')) {
+                kemasanSatuanSelect.value = 'pohon';
+            } else if (j.includes('peralatan') || j.includes('perlengkapan') || j.includes('alat')) {
+                kemasanSatuanSelect.value = 'pcs';
+            } else {
+                kemasanSatuanSelect.value = 'kg';
+            }
+        }
     }
     if (catatanInput) catatanInput.value = '';
 
@@ -1480,6 +1526,22 @@ window.closeQuickPurchaseModal = function() {
 document.addEventListener('DOMContentLoaded', () => {
     // Autocomplete & live typing for medicine lookup
     const gpNamaInput = document.getElementById('gp-nama-input');
+    const gpJenisSelect = document.getElementById('gp-jenis-select');
+    if (gpJenisSelect) {
+        gpJenisSelect.addEventListener('change', function() {
+            const selectedJenis = (this.value || '').toLowerCase();
+            const kjInput = document.getElementById('gp-kemasan-jumlah-input');
+            const ksSelect = document.getElementById('gp-kemasan-satuan-select');
+            if (ksSelect && (!kjInput || !kjInput.value || parseFloat(kjInput.value) <= 0)) {
+                if (selectedJenis.includes('bibit') || selectedJenis.includes('benih')) {
+                    ksSelect.value = 'pohon';
+                } else if (selectedJenis.includes('peralatan') || selectedJenis.includes('perlengkapan') || selectedJenis.includes('alat')) {
+                    ksSelect.value = 'pcs';
+                }
+            }
+        });
+    }
+
     if (gpNamaInput) {
         gpNamaInput.addEventListener('input', function() {
             const val = this.value;
@@ -1495,7 +1557,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newMedFields = document.getElementById('gp-new-med-fields');
                 if (newMedFields) newMedFields.classList.remove('hidden');
 
-                
+                const kjInput = document.getElementById('gp-kemasan-jumlah-input');
+                const ksSelect = document.getElementById('gp-kemasan-satuan-select');
+                const selectedJenis = (gpJenisSelect?.value || '').toLowerCase();
+                if (ksSelect && (!kjInput || !kjInput.value || parseFloat(kjInput.value) <= 0)) {
+                    if (selectedJenis.includes('bibit') || selectedJenis.includes('benih')) {
+                        ksSelect.value = 'pohon';
+                    } else if (selectedJenis.includes('peralatan') || selectedJenis.includes('perlengkapan') || selectedJenis.includes('alat')) {
+                        ksSelect.value = 'pcs';
+                    }
+                }
 
                 const hargaHint = document.getElementById('gp-harga-hint');
                 if (hargaHint) {

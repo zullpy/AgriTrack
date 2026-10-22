@@ -1450,4 +1450,129 @@ class MedicineTest extends TestCase
             'foto_nota' => $purchase->foto_nota,
         ]);
     }
+
+    public function test_create_and_purchase_medicine_with_pohon_and_pcs_unit(): void
+    {
+        // 1. Create medicine with pohon unit
+        $responsePohon = $this->post('/data-obat', [
+            'nama' => 'Bibit Jeruk Santang Madu',
+            'jenis' => 'Bibit Tanaman',
+            'tanaman_sasaran' => 'Jeruk',
+            'harga' => 35000,
+            'stok' => 50,
+            'kemasan_jumlah' => 1,
+            'kemasan_satuan' => 'pohon',
+        ]);
+
+        $responsePohon->assertRedirect('/data-obat');
+
+        $pohonMed = Medicine::where('nama', 'Bibit Jeruk Santang Madu')->first();
+        $this->assertNotNull($pohonMed);
+        $this->assertEquals('pohon', $pohonMed->kemasan_satuan);
+        $this->assertEquals('1 pohon', $pohonMed->kemasan_label);
+        $this->assertEquals('50 pohon', $pohonMed->stok_label);
+        $this->assertEquals('pohon', $pohonMed->base_unit_label);
+
+        // 2. Record purchase with pohon unit
+        $purchaseResp = $this->post("/data-obat/{$pohonMed->id}/pembelian", [
+            'toko_obat' => 'Nursery Tani Makmur',
+            'harga' => 35000,
+            'jumlah' => 25,
+            'kemasan_jumlah' => 1,
+            'kemasan_satuan' => 'pohon',
+            'tanggal_beli' => '2026-10-22',
+        ]);
+
+        $purchaseResp->assertRedirect();
+        $pohonMed->refresh();
+        $this->assertEquals(75, $pohonMed->stok);
+        $this->assertEquals('75 pohon', $pohonMed->stok_label);
+
+        // 3. Create general purchase with pcs unit
+        $responsePcs = $this->post('/stok-obat/pembelian', [
+            'nama' => 'Ajir Bambu 120cm',
+            'jenis' => 'Perlengkapan',
+            'tanaman_sasaran' => 'Cabai',
+            'toko_obat' => 'Toko Tani Mandiri',
+            'harga' => 1500,
+            'jumlah' => 100,
+            'kemasan_jumlah' => 1,
+            'kemasan_satuan' => 'pcs',
+            'tanggal_beli' => '2026-10-22',
+        ]);
+
+        $responsePcs->assertRedirect();
+
+        $pcsMed = Medicine::where('nama', 'Ajir Bambu 120cm')->first();
+        $this->assertNotNull($pcsMed);
+        $this->assertEquals('pcs', $pcsMed->kemasan_satuan);
+        $this->assertEquals('1 pcs', $pcsMed->kemasan_label);
+        $this->assertEquals('100 pcs', $pcsMed->stok_label);
+        $this->assertEquals('pcs', $pcsMed->base_unit_label);
+    }
+
+    public function test_auto_unit_resolution_for_bibit_and_peralatan(): void
+    {
+        // 1. Kategori bibit, hanya isi qty (kemasan_jumlah kosong) -> satuan otomatis jadi pohon
+        $responseBibitQtyOnly = $this->post('/stok-obat/pembelian', [
+            'nama' => 'Bibit Cabai Rawit Merah',
+            'jenis' => 'Bibit Tanaman',
+            'tanaman_sasaran' => 'Cabai',
+            'toko_obat' => 'Nursery Agro',
+            'harga' => 2000,
+            'jumlah' => 20,
+            'kemasan_jumlah' => '',
+            'kemasan_satuan' => 'kg', // Walaupun dropdown default kirim 'kg'
+            'tanggal_beli' => '2026-10-22',
+        ]);
+        $responseBibitQtyOnly->assertRedirect();
+
+        $bibit1 = Medicine::where('nama', 'Bibit Cabai Rawit Merah')->first();
+        $this->assertNotNull($bibit1);
+        $this->assertEquals('pohon', $bibit1->kemasan_satuan);
+        $this->assertEquals('20 pohon', $bibit1->stok_label);
+        $this->assertEquals(20, $bibit1->stok);
+
+        // 2. Kategori peralatan / perlengkapan, hanya isi qty -> satuan otomatis jadi pcs
+        $responseAlatQtyOnly = $this->post('/stok-obat/pembelian', [
+            'nama' => 'Gembor Air 5 Liter',
+            'jenis' => 'Peralatan',
+            'tanaman_sasaran' => 'Umum',
+            'toko_obat' => 'Toko Alat Tani',
+            'harga' => 35000,
+            'jumlah' => 3,
+            'kemasan_jumlah' => '',
+            'kemasan_satuan' => 'kg', // Nilai default dropdown
+            'tanggal_beli' => '2026-10-22',
+        ]);
+        $responseAlatQtyOnly->assertRedirect();
+
+        $alat1 = Medicine::where('nama', 'Gembor Air 5 Liter')->first();
+        $this->assertNotNull($alat1);
+        $this->assertEquals('pcs', $alat1->kemasan_satuan);
+        $this->assertEquals('3 pcs', $alat1->stok_label);
+        $this->assertEquals(3, $alat1->stok);
+
+        // 3. Kategori bibit, ukuran & satuan kemasan serta qty diisi -> satuan ngikutin inputan tersebut
+        $responseBibitWithKemasan = $this->post('/stok-obat/pembelian', [
+            'nama' => 'Benih Jagung Hibrida',
+            'jenis' => 'Bibit / Benih',
+            'tanaman_sasaran' => 'Jagung',
+            'toko_obat' => 'Toko Tani Subur',
+            'harga' => 95000,
+            'jumlah' => 1,
+            'kemasan_jumlah' => 2,
+            'kemasan_satuan' => 'kg',
+            'tanggal_beli' => '2026-10-22',
+        ]);
+        $responseBibitWithKemasan->assertRedirect();
+
+        $bibit2 = Medicine::where('nama', 'Benih Jagung Hibrida')->first();
+        $this->assertNotNull($bibit2);
+        $this->assertEquals('kg', $bibit2->kemasan_satuan);
+        $this->assertEquals(2, $bibit2->kemasan_jumlah);
+        $this->assertEquals('2 kg', $bibit2->kemasan_label);
+        $this->assertEquals(1, $bibit2->stok);
+        $this->assertEquals('2 kg (2.000 gram)', $bibit2->stok_volume_label);
+    }
 }

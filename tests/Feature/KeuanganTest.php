@@ -923,4 +923,37 @@ class KeuanganTest extends TestCase
             'sub_kategori' => 'Fungisida & Bakterisida',
         ]);
     }
+
+    public function test_can_update_financial_transaction_with_foto_nota_base64_via_json(): void
+    {
+        $trx = FinancialTransaction::create([
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'sub_kategori' => 'Insektisida',
+            'judul' => 'Beli Decis 25 EC',
+            'nominal' => 45000,
+            'tanggal' => Carbon::now()->toDateString(),
+        ]);
+
+        // 1x1 transparent png in base64
+        $fakeBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+        $response = $this->putJson('/keuangan/'.$trx->id, [
+            'tipe' => 'pengeluaran',
+            'kategori' => 'Pembelian Obat/Pupuk',
+            'sub_kategori' => 'Insektisida',
+            'judul' => 'Beli Decis 25 EC - Revisi',
+            'nominal' => '50000',
+            'tanggal' => Carbon::now()->toDateString(),
+            'foto_nota_base64' => $fakeBase64,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $trx->refresh();
+        $this->assertEquals('Beli Decis 25 EC - Revisi', $trx->judul);
+        $this->assertEquals(50000, $trx->nominal);
+        $this->assertNotNull($trx->foto_nota);
+    }
 }

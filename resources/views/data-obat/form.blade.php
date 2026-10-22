@@ -399,6 +399,8 @@
                                 <option value="gram" {{ $currentSatuan === 'gram' ? 'selected' : '' }}>gram</option>
                                 <option value="liter" {{ in_array($currentSatuan, ['liter', 'l']) ? 'selected' : '' }}>liter</option>
                                 <option value="ml" {{ $currentSatuan === 'ml' ? 'selected' : '' }}>ml</option>
+                                <option value="pcs" {{ $currentSatuan === 'pcs' ? 'selected' : '' }}>pcs</option>
+                                <option value="pohon" {{ $currentSatuan === 'pohon' ? 'selected' : '' }}>pohon</option>
                             </select>
                         </div>
                         <p class="text-[11px] text-gray-500 mt-1">Konversi dosis otomatis.</p>
@@ -843,6 +845,22 @@ function setupPillGroup(selector, isKategori = false, isOptional = false) {
         }
 
         input.addEventListener('change', () => {
+            if (isKategori && input.checked) {
+                const selectedVal = (input.value || '').toLowerCase();
+                const kjInput = document.getElementById('kemasan_jumlah');
+                const ksSelect = document.getElementById('kemasan_satuan');
+                if (ksSelect && (!kjInput || !kjInput.value || parseFloat(kjInput.value) <= 0)) {
+                    if (selectedVal.includes('bibit') || selectedVal.includes('benih')) {
+                        ksSelect.value = 'pohon';
+                    } else if (selectedVal.includes('peralatan') || selectedVal.includes('perlengkapan') || selectedVal.includes('alat')) {
+                        ksSelect.value = 'pcs';
+                    }
+                    if (typeof updateKemasanConversionPreview === 'function') {
+                        updateKemasanConversionPreview();
+                    }
+                }
+            }
+
             labels.forEach(l => {
                 const inp = l.querySelector('input');
                 const checkedCardClasses = (l.dataset.checkedCard || '').split(' ').filter(Boolean);

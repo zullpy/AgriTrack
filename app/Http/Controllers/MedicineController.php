@@ -261,6 +261,14 @@ class MedicineController extends Controller
                 $this->recordPurchaseExpense($existing, $p);
             }
 
+            $rawKemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null && $validated['kemasan_jumlah'] !== ''
+                ? (float) $validated['kemasan_jumlah']
+                : null;
+            $rawKemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+            $resolved = $this->resolvePackagingAndUnit($rawKemasanJumlah, $rawKemasanSatuan, $validated['jenis'] ?? $existing->jenis, $existing);
+            $validated['kemasan_jumlah'] = $resolved['kemasan_jumlah'];
+            $validated['kemasan_satuan'] = $resolved['kemasan_satuan'];
+
             // Perbarui data utama obat dengan data terbaru jika ada
             $masterUpdates = [];
             foreach (['jenis', 'cara_kerja', 'formulasi', 'sasaran_obat', 'tanaman_sasaran', 'dosis_anjuran', 'kemasan_jumlah', 'kemasan_satuan', 'unsur_bahan', 'fase', 'keterangan'] as $field) {
@@ -374,6 +382,14 @@ class MedicineController extends Controller
             }
             $validated['stok'] = max(0, $initStok);
         }
+
+        $rawKemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null && $validated['kemasan_jumlah'] !== ''
+            ? (float) $validated['kemasan_jumlah']
+            : null;
+        $rawKemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+        $resolved = $this->resolvePackagingAndUnit($rawKemasanJumlah, $rawKemasanSatuan, $validated['jenis'] ?? null);
+        $validated['kemasan_jumlah'] = $resolved['kemasan_jumlah'];
+        $validated['kemasan_satuan'] = $resolved['kemasan_satuan'];
 
         // Jika obat belum ada, buat baru
         $medicine = Medicine::create($validated);
@@ -515,6 +531,14 @@ class MedicineController extends Controller
                 'urutan' => (MedicineCategory::max('urutan') ?? 0) + 1,
             ]
         );
+
+        $rawKemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null && $validated['kemasan_jumlah'] !== ''
+            ? (float) $validated['kemasan_jumlah']
+            : null;
+        $rawKemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+        $resolved = $this->resolvePackagingAndUnit($rawKemasanJumlah, $rawKemasanSatuan, $validated['jenis'] ?? $medicine->jenis, $medicine);
+        $validated['kemasan_jumlah'] = $resolved['kemasan_jumlah'];
+        $validated['kemasan_satuan'] = $resolved['kemasan_satuan'];
 
         $medicine->update($validated);
 
@@ -679,10 +703,14 @@ class MedicineController extends Controller
         );
 
         $jumlahBeli = $validated['jumlah'] ?? 1;
-        $kemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null
+        $rawKemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null && $validated['kemasan_jumlah'] !== ''
             ? (float) $validated['kemasan_jumlah']
             : null;
-        $kemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+        $rawKemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+
+        $resolved = $this->resolvePackagingAndUnit($rawKemasanJumlah, $rawKemasanSatuan, $medicine->jenis, $medicine);
+        $kemasanJumlah = $resolved['kemasan_jumlah'];
+        $kemasanSatuan = $resolved['kemasan_satuan'];
 
         // Cek jika toko yang sama sudah tercatat sebelumnya di riwayat
         $storeName = trim($validated['toko_obat'] ?? '');
@@ -886,6 +914,56 @@ class MedicineController extends Controller
             'keterangan' => $keterangan,
             'foto_nota' => $purchaseData['foto_nota'] ?? null,
         ]);
+    }
+
+    /**
+     * Tentukan ukuran dan satuan kemasan berdasarkan input, kategori, dan kondisi apakah kemasan_jumlah diisi.
+     *
+     * @return array{kemasan_jumlah: ?float, kemasan_satuan: ?string}
+     */
+    private function resolvePackagingAndUnit(?float $kemasanJumlah, ?string $kemasanSatuan, ?string $categoryName = null, ?Medicine $existingMed = null): array
+    {
+        $cat = strtolower(trim((string) ($categoryName ?: ($existingMed?->jenis ?? ''))));
+        $isBibit = str_contains($cat, 'bibit') || str_contains($cat, 'benih');
+        $isEquipment = str_contains($cat, 'peralatan') || str_contains($cat, 'perlengkapan') || str_contains($cat, 'alat');
+
+        // Jika hanya Qty yang diisi (kemasan_jumlah kosong / null / <= 0)
+        if ($kemasanJumlah === null || $kemasanJumlah <= 0) {
+            if ($isBibit) {
+                return [
+                    'kemasan_jumlah' => 1.0,
+                    'kemasan_satuan' => 'pohon',
+                ];
+            }
+            if ($isEquipment) {
+                return [
+                    'kemasan_jumlah' => 1.0,
+                    'kemasan_satuan' => 'pcs',
+                ];
+            }
+
+            // Jika bukan bibit / alat, tapi obat sudah ada dan punya satuan sebelumnya, pertahankan
+            if ($existingMed) {
+                return [
+                    'kemasan_jumlah' => $existingMed->kemasan_jumlah,
+                    'kemasan_satuan' => $existingMed->kemasan_satuan,
+                ];
+            }
+
+            return [
+                'kemasan_jumlah' => null,
+                'kemasan_satuan' => ! empty($kemasanSatuan) ? $kemasanSatuan : 'kg',
+            ];
+        }
+
+        // Jika ukuran_kemasan diisi (> 0):
+        // Satuan mengikuti dari inputan tersebut (atau default kategori jika tidak diisi)
+        $finalSatuan = ! empty($kemasanSatuan) ? $kemasanSatuan : ($isBibit ? 'pohon' : ($isEquipment ? 'pcs' : 'kg'));
+
+        return [
+            'kemasan_jumlah' => $kemasanJumlah,
+            'kemasan_satuan' => $finalSatuan,
+        ];
     }
 
     /**
@@ -1349,16 +1427,25 @@ class MedicineController extends Controller
         $toko = trim($validated['toko_obat']);
         $catatan = $validated['catatan'] ?? null;
 
+        $rawKemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null && $validated['kemasan_jumlah'] !== ''
+            ? (float) $validated['kemasan_jumlah']
+            : null;
+        $rawKemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+
         if ($medicine) {
             $oldHarga = $medicine->harga;
             $isPriceDifferent = ($oldHarga === null || (int) $cleanHarga !== (int) $oldHarga);
 
-            // Update kemasan & satuan jika diisi
-            if (! empty($validated['kemasan_satuan'])) {
-                $medicine->kemasan_satuan = $validated['kemasan_satuan'];
+            $resolved = $this->resolvePackagingAndUnit($rawKemasanJumlah, $rawKemasanSatuan, $validated['jenis'] ?? $medicine->jenis, $medicine);
+            $kemasanJumlah = $resolved['kemasan_jumlah'];
+            $kemasanSatuan = $resolved['kemasan_satuan'];
+
+            // Update kemasan & satuan jika diisi atau hasil resolusi
+            if ($kemasanSatuan !== null) {
+                $medicine->kemasan_satuan = $kemasanSatuan;
             }
-            if (array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null) {
-                $medicine->kemasan_jumlah = $validated['kemasan_jumlah'];
+            if ($kemasanJumlah !== null) {
+                $medicine->kemasan_jumlah = $kemasanJumlah;
             }
 
             // Selalu tambah stok & update tanggal
@@ -1390,11 +1477,6 @@ class MedicineController extends Controller
             $existingPurchase = $medicine->purchases()
                 ->whereRaw('LOWER(TRIM(toko_obat)) = ?', [strtolower($toko)])
                 ->first();
-
-            $kemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null
-                ? (float) $validated['kemasan_jumlah']
-                : null;
-            $kemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
 
             if ($existingPurchase) {
                 $purchaseUpdate = [
@@ -1459,10 +1541,9 @@ class MedicineController extends Controller
             );
         }
 
-        $kemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null
-            ? (float) $validated['kemasan_jumlah']
-            : null;
-        $kemasanSatuan = ! empty($validated['kemasan_satuan']) ? $validated['kemasan_satuan'] : null;
+        $resolved = $this->resolvePackagingAndUnit($rawKemasanJumlah, $rawKemasanSatuan, $validated['jenis'] ?? null);
+        $kemasanJumlah = $resolved['kemasan_jumlah'];
+        $kemasanSatuan = $resolved['kemasan_satuan'];
 
         $newMedicine = Medicine::create([
             'nama' => trim($validated['nama']),

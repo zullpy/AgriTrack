@@ -12,7 +12,7 @@ class MedicineStockService
      * Satuan-satuan yang dikategorikan sebagai perlengkapan/peralatan (tidak dikali jumlah tank).
      */
     public const EQUIPMENT_UNITS = [
-        'pcs', 'buah', 'lembar', 'rol', 'roll', 'gulung', 'ikat', 'batang', 'set', 'karung', 'unit', 'biji', 'pack', 'pak', 'meter', 'm', 'tali', 'kresek', 'sak', 'kantong',
+        'pcs', 'buah', 'lembar', 'rol', 'roll', 'gulung', 'ikat', 'batang', 'set', 'karung', 'unit', 'biji', 'pack', 'pak', 'meter', 'm', 'tali', 'kresek', 'sak', 'kantong', 'pohon',
     ];
 
     /**
@@ -62,7 +62,7 @@ class MedicineStockService
                     $medName = trim($parts[1]);
                     $doseText = trim(end($parts));
                 }
-            } elseif (preg_match('/^(.*?)\s*(\d+(?:[.,]\d+)?\s*(?:ml|liter|ltr|lt|l|gram|gr|g|kg|sachet|bungkus|sendok|sdm|sdt|pcs|buah|lembar|rol|roll|gulung|ikat|batang|set|karung|unit|biji|pack|pak|meter|m|sak|kantong|tali|kresek)\b.*)$/i', $rawItem, $mDose)) {
+            } elseif (preg_match('/^(.*?)\s*(\d+(?:[.,]\d+)?\s*(?:ml|liter|ltr|lt|l|gram|gr|g|kg|sachet|bungkus|sendok|sdm|sdt|pcs|buah|lembar|rol|roll|gulung|ikat|batang|set|karung|unit|biji|pack|pak|meter|m|sak|kantong|tali|kresek|pohon)\b.*)$/i', $rawItem, $mDose)) {
                 $medName = trim($mDose[1]);
                 $doseText = trim($mDose[2]);
             } else {
@@ -147,12 +147,12 @@ class MedicineStockService
         }
 
         $jenis = strtolower(trim((string) $medicine->jenis));
-        if (str_contains($jenis, 'perlengkapan') || str_contains($jenis, 'peralatan') || str_contains($jenis, 'alat')) {
+        if (str_contains($jenis, 'perlengkapan') || str_contains($jenis, 'peralatan') || str_contains($jenis, 'alat') || str_contains($jenis, 'bibit') || str_contains($jenis, 'benih')) {
             return true;
         }
 
         $nama = strtolower(trim((string) $medicine->nama));
-        if (preg_match('/\b(karung|kresek|tali|rapia|mulsa|ajir|bambu|polybag|polibag|tray|selang|terpal|plastik|paranet|gembor|sprayer|kardus|kantong)\b/i', $nama)) {
+        if (preg_match('/\b(karung|kresek|tali|rapia|mulsa|ajir|bambu|polybag|polibag|tray|selang|terpal|plastik|paranet|gembor|sprayer|kardus|kantong|bibit|benih)\b/i', $nama)) {
             return true;
         }
 

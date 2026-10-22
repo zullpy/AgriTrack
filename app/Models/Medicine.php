@@ -75,6 +75,14 @@ class Medicine extends Model
     public function getKemasanLabelAttribute(): ?string
     {
         if ($this->kemasan_jumlah === null || ! $this->kemasan_satuan) {
+            $jenis = strtolower(trim((string) $this->jenis));
+            if (str_contains($jenis, 'bibit') || str_contains($jenis, 'benih')) {
+                return '1 pohon';
+            }
+            if (str_contains($jenis, 'peralatan') || str_contains($jenis, 'perlengkapan') || str_contains($jenis, 'alat')) {
+                return '1 pcs';
+            }
+
             return null;
         }
 
@@ -106,7 +114,10 @@ class Medicine extends Model
         }
 
         $jenis = strtolower(trim((string) $this->jenis));
-        if (in_array($jenis, ['perlengkapan', 'peralatan', 'alat'], true)) {
+        if (str_contains($jenis, 'bibit') || str_contains($jenis, 'benih')) {
+            return 'pohon';
+        }
+        if (in_array($jenis, ['perlengkapan', 'peralatan', 'alat'], true) || str_contains($jenis, 'peralatan') || str_contains($jenis, 'perlengkapan')) {
             return 'pcs';
         }
 
@@ -128,7 +139,7 @@ class Medicine extends Model
 
         // Jika data kemasan belum tersimpan di kolom, coba deteksi dari nama obat
         if ($jumlah <= 0) {
-            if (preg_match('/(\d+(?:[.,]\d+)?)\s*(kg|kilogram|gram|gr|g|liter|ltr|lt|l|ml|sachet|pcs|buah|lembar|rol|roll|karung)\b/i', $this->nama, $m)) {
+            if (preg_match('/(\d+(?:[.,]\d+)?)\s*(kg|kilogram|gram|gr|g|liter|ltr|lt|l|ml|sachet|pcs|buah|lembar|rol|roll|karung|pohon|batang)\b/i', $this->nama, $m)) {
                 $jumlah = (float) str_replace(',', '.', $m[1]);
                 $satuan = strtolower($m[2]);
             } else {
@@ -224,7 +235,7 @@ class Medicine extends Model
         $stok = (int) ($this->stok ?? 0);
         $ks = strtolower(trim((string) $this->kemasan_satuan));
 
-        if (in_array($ks, ['botol', 'sachet', 'pcs', 'unit', 'bungkus', 'pack', 'sak', 'kotak', 'jerigen', 'rol', 'roll', 'lembar', 'karung'], true)) {
+        if (in_array($ks, ['botol', 'sachet', 'pcs', 'pohon', 'unit', 'bungkus', 'pack', 'sak', 'kotak', 'jerigen', 'rol', 'roll', 'lembar', 'karung', 'batang'], true)) {
             return "{$stok} {$ks}";
         }
 
@@ -234,6 +245,16 @@ class Medicine extends Model
 
         if (in_array($ks, ['kg', 'kilogram', 'gram', 'gr', 'g'], true)) {
             return "{$stok} kemasan";
+        }
+
+        if ($ks === '') {
+            $jenis = strtolower(trim((string) $this->jenis));
+            if (str_contains($jenis, 'bibit') || str_contains($jenis, 'benih')) {
+                return "{$stok} pohon";
+            }
+            if (str_contains($jenis, 'peralatan') || str_contains($jenis, 'perlengkapan') || str_contains($jenis, 'alat')) {
+                return "{$stok} pcs";
+            }
         }
 
         $satuan = $this->kemasan_satuan ? " {$this->kemasan_satuan}" : ' unit';
