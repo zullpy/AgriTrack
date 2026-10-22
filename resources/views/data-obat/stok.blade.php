@@ -314,8 +314,8 @@
                     {{-- Action Buttons --}}
                     <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
                         <button type="button"
-                                onclick="openQuickPurchaseModal({{ json_encode($med) }})"
-                                class="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5">
+                                onclick="openQuickPurchaseModal({{ $med->id }})"
+                                class="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                             </svg>
@@ -437,8 +437,8 @@
                                 <td class="px-5 py-4 pr-6 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-1.5">
                                         <button type="button"
-                                                onclick="openQuickPurchaseModal({{ json_encode($med) }})"
-                                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs">
+                                                onclick="openQuickPurchaseModal({{ $med->id }})"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                                             </svg>
@@ -668,6 +668,7 @@
                     </div>
 
                     {{-- Hidden Inputs --}}
+                    <input type="hidden" name="foto_nota_base64" id="gp-foto-nota-base64">
                     <input type="file"
                            id="gp-foto-camera"
                            accept="image/*"
@@ -746,22 +747,7 @@
 
             <form id="quick-purchase-form" method="POST" action="" enctype="multipart/form-data" class="p-6 space-y-4">
                 @csrf
-                <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs">
-                    <div>
-                        <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Stok Saat Ini</span>
-                        <span id="qp-stok-current" class="text-base font-extrabold text-gray-900 tabular-nums">0</span>
-                    </div>
-                    <div class="text-amber-500 font-bold text-sm">+</div>
-                    <div>
-                        <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Jumlah Beli</span>
-                        <span id="qp-qty-preview" class="text-base font-extrabold text-amber-700 tabular-nums">1</span>
-                    </div>
-                    <div class="text-amber-500 font-bold text-sm">=</div>
-                    <div class="text-right">
-                        <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Stok Setelah Beli</span>
-                        <span id="qp-stok-result" class="text-base font-extrabold text-emerald-700 tabular-nums">1</span>
-                    </div>
-                </div>
+                <input type="hidden" name="foto_nota_base64" id="qp-foto-nota-base64">
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
@@ -1076,17 +1062,6 @@ function selectMedicine(id) {
 
     if (newMedFields) newMedFields.classList.add('hidden');
 
-    // if (statusBox) {
-    //     statusBox.className = 'mt-2 p-2.5 rounded-xl border border-amber-200 bg-amber-50/80 text-xs text-amber-950 flex items-start gap-2.5';
-    //     statusBox.innerHTML = `
-    //         <span class="w-2 h-2 rounded-full bg-amber-500 mt-1 shrink-0"></span>
-    //         <div>
-    //             <div class="font-bold text-gray-900">${escapeHtml(med.nama)} (${escapeHtml(med.jenis)}) — <span class="text-amber-800 font-extrabold">Stok saat ini: ${med.stok}</span></div>
-    //             <div class="text-[11px] text-gray-600 mt-0.5">Obat terdaftar. Jika harga beli sama hanya tanggal beli yang diperbarui; jika berbeda, harga data obat akan di-update.</div>
-    //         </div>`;
-    //     statusBox.classList.remove('hidden');
-    // }
-
     if (hargaHint) {
         const hFmt = med.harga > 0 ? 'Rp ' + Number(med.harga).toLocaleString('id-ID') : 'Rp 0';
         hargaHint.innerHTML = `<span class="text-amber-800 font-bold">Harga saat ini: ${hFmt}.</span> Ubah jika beli dengan harga berbeda, atau biarkan sama untuk hanya memperbarui tanggal pembelian.`;
@@ -1215,8 +1190,8 @@ async function compressPurchasePhoto(file) {
             const img = new Image();
             img.src = e.target.result;
             img.onload = () => {
-                const maxWidth = 1280;
-                const maxHeight = 1280;
+                const maxWidth = 1024;
+                const maxHeight = 1024;
                 let width = img.width;
                 let height = img.height;
 
@@ -1242,40 +1217,31 @@ async function compressPurchasePhoto(file) {
 
                 function attemptCompression(quality) {
                     canvas.toBlob((blob) => {
+                        const dataUrl = canvas.toDataURL('image/jpeg', quality);
                         if (!blob) {
-                            resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: e.target.result, savings: 0 });
+                            resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: dataUrl, savings: 0 });
                             return;
                         }
                         if (blob.size >= file.size && quality > 0.25) {
                             attemptCompression(Math.max(0.2, quality - 0.15));
                             return;
                         }
-                        if (blob.size < file.size) {
-                            const compressedFile = new File([blob], `${baseName}.jpg`, {
-                                type: 'image/jpeg',
-                                lastModified: Date.now(),
-                            });
-                            const savings = Math.round(((file.size - blob.size) / file.size) * 100);
-                            resolve({
-                                file: compressedFile,
-                                originalSize: file.size,
-                                compressedSize: blob.size,
-                                dataUrl: canvas.toDataURL('image/jpeg', quality),
-                                savings: savings
-                            });
-                        } else {
-                            resolve({
-                                file: file,
-                                originalSize: file.size,
-                                compressedSize: file.size,
-                                dataUrl: e.target.result,
-                                savings: 0
-                            });
-                        }
+                        const compressedFile = new File([blob], `${baseName}.jpg`, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                        });
+                        const savings = file.size > blob.size ? Math.round(((file.size - blob.size) / file.size) * 100) : 0;
+                        resolve({
+                            file: compressedFile,
+                            originalSize: file.size,
+                            compressedSize: blob.size,
+                            dataUrl: dataUrl,
+                            savings: savings
+                        });
                     }, 'image/jpeg', quality);
                 }
 
-                attemptCompression(0.5);
+                attemptCompression(0.6);
             };
             img.onerror = () => resolve({ file, originalSize: file.size, compressedSize: file.size, dataUrl: e.target.result, savings: 0 });
         };
@@ -1288,6 +1254,9 @@ window.handlePurchasePhotoSelected = async function(input, prefix) {
     if (!input.files || !input.files[0]) return;
     const rawFile = input.files[0];
     const targetInput = document.getElementById(prefix + '-foto-nota');
+    const base64Input = document.getElementById(prefix + '-foto-nota-base64');
+    const form = input.closest('form');
+    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
     const previewCard = document.getElementById(prefix + '-foto-preview-card');
     const previewImg = document.getElementById(prefix + '-foto-preview-img');
@@ -1299,7 +1268,11 @@ window.handlePurchasePhotoSelected = async function(input, prefix) {
         previewCard.classList.add('flex');
     }
     if (previewName) previewName.innerText = rawFile.name || 'Foto Nota';
-    if (previewSize) previewSize.innerText = 'Mengompres foto (~80%)...';
+    if (previewSize) previewSize.innerText = 'Mengompres foto nota (~80%)...';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
 
     let result = { file: rawFile, dataUrl: null, savings: 0 };
     try {
@@ -1309,22 +1282,33 @@ window.handlePurchasePhotoSelected = async function(input, prefix) {
         result = { file: rawFile, dataUrl: null, savings: 0 };
     }
 
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
     const finalFile = result.file;
 
-    // Sinkronkan file terkompresi ke input file utama form (name="foto_nota")
+    // Simpan Base64 ke hidden input untuk bypass 403 Forbidden di hosting
+    if (base64Input && result.dataUrl) {
+        base64Input.value = result.dataUrl;
+    }
+
+    // Sinkronkan file terkompresi ke input file utama form (name="foto_nota") jika didukung
     if (targetInput) {
         try {
             const dt = new DataTransfer();
             dt.items.add(finalFile);
             targetInput.files = dt.files;
         } catch (e) {
-            console.warn('DataTransfer sync fallback:', e);
+            // Jika browser HP tidak mendukung DataTransfer, kosongkan targetInput agar file 10MB mentah tidak terkirim
+            targetInput.value = '';
         }
     }
 
     if (previewCard && previewImg && previewName && previewSize) {
         previewName.innerText = finalFile.name || 'Foto Nota';
-        const finalKb = Math.round(finalFile.size / 1024);
+        const finalKb = Math.round((result.compressedSize || finalFile.size) / 1024);
         if (result.savings > 0) {
             previewSize.innerText = `${finalKb} KB (Hemat ${result.savings}%)`;
         } else {
@@ -1346,8 +1330,10 @@ window.handlePurchasePhotoSelected = async function(input, prefix) {
 window.clearPurchasePhoto = function(prefix) {
     const mainInput = document.getElementById(prefix + '-foto-nota');
     const cameraInput = document.getElementById(prefix + '-foto-camera');
+    const base64Input = document.getElementById(prefix + '-foto-nota-base64');
     if (mainInput) mainInput.value = '';
     if (cameraInput) cameraInput.value = '';
+    if (base64Input) base64Input.value = '';
 
     const previewCard = document.getElementById(prefix + '-foto-preview-card');
     const previewImg = document.getElementById(prefix + '-foto-preview-img');
@@ -1435,7 +1421,13 @@ window.closePhotoViewerModal = function() {
 };
 
 // ── Quick Purchase Modal Functions ──
-window.openQuickPurchaseModal = function(medicine) {
+window.openQuickPurchaseModal = function(param) {
+    if (!param) return;
+    let medicine = param;
+    if (typeof param === 'number' || typeof param === 'string') {
+        const id = parseInt(param, 10);
+        medicine = allMedicinesCatalog.find(m => m.id === id);
+    }
     if (!medicine) return;
     currentQuickMed = medicine;
 
@@ -1444,9 +1436,6 @@ window.openQuickPurchaseModal = function(medicine) {
     const modal = document.getElementById('quick-purchase-modal');
     const form = document.getElementById('quick-purchase-form');
     const nameEl = document.getElementById('qp-med-name');
-    const currentStokEl = document.getElementById('qp-stok-current');
-    const qtyPreviewEl = document.getElementById('qp-qty-preview');
-    const resultStokEl = document.getElementById('qp-stok-result');
     const tokoInput = document.getElementById('qp-toko-input');
     const hargaInput = document.getElementById('qp-harga-input');
     const kemasanJumlahInput = document.getElementById('qp-kemasan-jumlah-input');
@@ -1458,14 +1447,9 @@ window.openQuickPurchaseModal = function(medicine) {
 
     form.action = `/data-obat/${medicine.id}/pembelian`;
     const kemasanLabel = medicine.kemasan_label ? ` • ${medicine.kemasan_label}` : '';
-    nameEl.textContent = `${medicine.nama} (${medicine.jenis || 'Obat Pertanian'})${kemasanLabel}`;
+    if (nameEl) nameEl.textContent = `${medicine.nama} (${medicine.jenis || 'Obat Pertanian'})${kemasanLabel}`;
 
-    const currentStok = parseInt(medicine.stok) || 0;
-    currentStokEl.textContent = currentStok;
-
-    jumlahInput.value = 1;
-    qtyPreviewEl.textContent = '1';
-    resultStokEl.textContent = currentStok + 1;
+    if (jumlahInput) jumlahInput.value = 1;
 
     let defaultToko = medicine.toko_obat || '';
     let defaultHarga = medicine.harga ? 'Rp ' + Number(medicine.harga).toLocaleString('id-ID') : '';
@@ -1475,15 +1459,15 @@ window.openQuickPurchaseModal = function(medicine) {
         defaultHarga = latest.harga ? 'Rp ' + Number(latest.harga).toLocaleString('id-ID') : defaultHarga;
     }
 
-    tokoInput.value = defaultToko;
-    hargaInput.value = defaultHarga;
+    if (tokoInput) tokoInput.value = defaultToko;
+    if (hargaInput) hargaInput.value = defaultHarga;
     if (kemasanJumlahInput) {
         kemasanJumlahInput.value = medicine.kemasan_jumlah !== null && medicine.kemasan_jumlah !== undefined ? medicine.kemasan_jumlah : '';
     }
     if (kemasanSatuanSelect) {
         kemasanSatuanSelect.value = medicine.kemasan_satuan || 'kg';
     }
-    catatanInput.value = '';
+    if (catatanInput) catatanInput.value = '';
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -1564,18 +1548,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Live qty & rupiah for quick modal
-    const qpJumlah = document.getElementById('qp-jumlah-input');
+    // Live rupiah format for quick modal
     const qpHarga = document.getElementById('qp-harga-input');
-    if (qpJumlah) {
-        qpJumlah.addEventListener('input', () => {
-            const currentStok = parseInt(currentQuickMed?.stok) || 0;
-            const qty = Math.max(1, parseInt(qpJumlah.value) || 1);
-            document.getElementById('qp-stok-current').textContent = currentStok;
-            document.getElementById('qp-qty-preview').textContent = qty;
-            document.getElementById('qp-stok-result').textContent = currentStok + qty;
-        });
-    }
     if (qpHarga) {
         qpHarga.addEventListener('input', function() {
             let val = this.value.replace(/[^0-9]/g, '');
@@ -1583,20 +1557,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Pastikan foto tersinkron saat form pembelian disubmit
+    // Pastikan foto tersinkron saat form pembelian disubmit & cegah kirim file mentah raksasa
     ['general-purchase-form', 'quick-purchase-form'].forEach(formId => {
         const form = document.getElementById(formId);
         if (!form) return;
         const prefix = formId === 'general-purchase-form' ? 'gp' : 'qp';
         form.addEventListener('submit', function() {
-            const camInput = document.getElementById(prefix + '-foto-camera');
+            const base64Input = document.getElementById(prefix + '-foto-nota-base64');
             const targetInput = document.getElementById(prefix + '-foto-nota');
-            if ((!targetInput || !targetInput.files || !targetInput.files.length) && camInput && camInput.files && camInput.files.length) {
-                try {
-                    const dt = new DataTransfer();
-                    dt.items.add(camInput.files[0]);
-                    targetInput.files = dt.files;
-                } catch(e) {}
+            const camInput = document.getElementById(prefix + '-foto-camera');
+            if (base64Input && base64Input.value) {
+                if (camInput) camInput.value = '';
+                if (targetInput && targetInput.files && targetInput.files[0] && targetInput.files[0].size > 300 * 1024) {
+                    targetInput.value = '';
+                }
             }
         });
     });

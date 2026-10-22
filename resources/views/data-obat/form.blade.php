@@ -557,6 +557,9 @@
                                accept="image/*"
                                class="hidden">
 
+                        {{-- Hidden Base64 Inputs for Zero-Failure Production Upload (Bypass 403 Forbidden) --}}
+                        <div id="base64-inputs-container"></div>
+
 
                         {{-- Compression Status Notice --}}
                         <div id="foto-compress-progress" class="hidden text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/60 rounded-xl px-3 py-2 flex items-center gap-2 animate-pulse">
@@ -1050,12 +1053,30 @@ function updatePhotoCountBadge() {
 
 function syncFileInputAndRender() {
     const fileInput = document.getElementById('foto_nota');
-    if (fileInput) {
-        const dt = new DataTransfer();
+    const base64Container = document.getElementById('base64-inputs-container');
+    if (base64Container) {
+        base64Container.innerHTML = '';
         selectedCompressedFiles.forEach(item => {
-            dt.items.add(item.file);
+            if (item.dataUrl) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'foto_nota_base64[]';
+                hiddenInput.value = item.dataUrl;
+                base64Container.appendChild(hiddenInput);
+            }
         });
-        fileInput.files = dt.files;
+    }
+
+    if (fileInput) {
+        try {
+            const dt = new DataTransfer();
+            selectedCompressedFiles.forEach(item => {
+                dt.items.add(item.file);
+            });
+            fileInput.files = dt.files;
+        } catch (e) {
+            fileInput.value = '';
+        }
     }
     renderNewPhotoPreviews();
 }
@@ -1742,6 +1763,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const files = Array.from(rawFiles || []);
         if (files.length === 0) return;
 
+        const submitButtons = [
+            document.querySelector('button[form="form-medicine"]'),
+            document.querySelector('#form-medicine button[type="submit"]')
+        ].filter(Boolean);
+
+        submitButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        });
+
         if (compressProgress && progressText) {
             progressText.textContent = `Sedang mengompres ${files.length} foto (~80%)...`;
             compressProgress.classList.remove('hidden');
@@ -1774,6 +1805,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (compressProgress) {
             compressProgress.classList.add('hidden');
         }
+
+        submitButtons.forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
 
         syncFileInputAndRender();
     }
@@ -1811,6 +1847,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (fileInput) {
         fileInput.addEventListener('change', async (e) => {
             await processAndAppendPhotos(e.target.files);
+        });
+    }
+
+    // Submit listener: cegah WAF 403 Forbidden di hosting dengan memastikan file biner raksasa tidak dikirim ganda
+    const formMedicine = document.getElementById('form-medicine');
+    if (formMedicine) {
+        formMedicine.addEventListener('submit', () => {
+            const base64Container = document.getElementById('base64-inputs-container');
+            if (cameraInput) cameraInput.value = '';
+
+            if (base64Container && base64Container.children.length > 0 && fileInput) {
+                let hasHeavyFile = false;
+                if (fileInput.files) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        if (fileInput.files[i].size > 300 * 1024) {
+                            hasHeavyFile = true;
+                            break;
+                        }
+                    }
+                }
+                if (hasHeavyFile) {
+                    fileInput.value = '';
+                }
+            }
         });
     }
 });

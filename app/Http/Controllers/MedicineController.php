@@ -153,9 +153,12 @@ class MedicineController extends Controller
             'purchases.*.tanggal_beli' => 'nullable|date',
             'purchases.*.catatan' => 'nullable|string|max:1000',
             'purchases.*.foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'foto_nota_base64' => 'nullable|array',
+            'foto_nota_base64.*' => 'nullable|string',
+            'purchases.*.foto_nota_base64' => 'nullable|string',
         ]);
 
-        $uploadedPhotoPaths = $this->uploadPhotos($request->file('foto_nota'));
+        $uploadedPhotoPaths = $this->uploadPhotos($request->file('foto_nota'), $request->input('foto_nota_base64'));
         $primaryFotoPath = $uploadedPhotoPaths[0] ?? null;
         $validated['foto_nota'] = ! empty($uploadedPhotoPaths) ? json_encode($uploadedPhotoPaths) : null;
 
@@ -168,10 +171,10 @@ class MedicineController extends Controller
 
             if ($request->has('purchases') && is_array($request->input('purchases'))) {
                 foreach ($request->input('purchases') as $idx => $pData) {
-                    $pFoto = null;
-                    if ($request->hasFile("purchases.{$idx}.foto_nota")) {
-                        $pFoto = $this->uploadSinglePhoto($request->file("purchases.{$idx}.foto_nota"));
-                    }
+                    $pFoto = $this->uploadSinglePhotoOrBase64(
+                        $request->file("purchases.{$idx}.foto_nota"),
+                        $request->input("purchases.{$idx}.foto_nota_base64")
+                    );
                     if (! empty($pData['toko_obat']) || ! empty($pData['harga']) || ! empty($pData['tanggal_beli']) || ! empty($pData['jumlah'])) {
                         $purchasesInput[] = [
                             'toko_obat' => $pData['toko_obat'] ?? null,
@@ -482,6 +485,9 @@ class MedicineController extends Controller
             'purchases.*.tanggal_beli' => 'nullable|date',
             'purchases.*.catatan' => 'nullable|string|max:1000',
             'purchases.*.foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'foto_nota_base64' => 'nullable|array',
+            'foto_nota_base64.*' => 'nullable|string',
+            'purchases.*.foto_nota_base64' => 'nullable|string',
         ]);
 
         // Tangani foto yang dihapus oleh user pada form edit
@@ -495,7 +501,7 @@ class MedicineController extends Controller
         }
 
         // Tangani foto-foto baru yang diupload
-        $newPhotoPaths = $this->uploadPhotos($request->file('foto_nota'));
+        $newPhotoPaths = $this->uploadPhotos($request->file('foto_nota'), $request->input('foto_nota_base64'));
 
         $allPhotoPaths = array_values(array_unique(array_merge($currentPaths, $newPhotoPaths)));
         $validated['foto_nota'] = ! empty($allPhotoPaths) ? json_encode($allPhotoPaths) : null;
@@ -532,10 +538,10 @@ class MedicineController extends Controller
                     continue;
                 }
 
-                $pFoto = null;
-                if ($request->hasFile("purchases.{$idx}.foto_nota")) {
-                    $pFoto = $this->uploadSinglePhoto($request->file("purchases.{$idx}.foto_nota"));
-                }
+                $pFoto = $this->uploadSinglePhotoOrBase64(
+                    $request->file("purchases.{$idx}.foto_nota"),
+                    $request->input("purchases.{$idx}.foto_nota_base64")
+                );
 
                 $purchaseId = $pData['id'] ?? null;
                 $purchase = null;
@@ -664,12 +670,13 @@ class MedicineController extends Controller
             'tanggal_beli' => 'nullable|date',
             'catatan' => 'nullable|string|max:1000',
             'foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'foto_nota_base64' => 'nullable|string',
         ]);
 
-        $fotoNotaPath = null;
-        if ($request->hasFile('foto_nota')) {
-            $fotoNotaPath = $this->uploadSinglePhoto($request->file('foto_nota'));
-        }
+        $fotoNotaPath = $this->uploadSinglePhotoOrBase64(
+            $request->file('foto_nota'),
+            $request->input('foto_nota_base64')
+        );
 
         $jumlahBeli = $validated['jumlah'] ?? 1;
         $kemasanJumlah = array_key_exists('kemasan_jumlah', $validated) && $validated['kemasan_jumlah'] !== null
@@ -885,22 +892,33 @@ class MedicineController extends Controller
      * Upload an array of files using CloudinaryService.
      *
      * @param  array<UploadedFile>|UploadedFile|null  $files
+     * @param  array<string>|string|null  $base64Photos
      * @return array<string>
      */
-    private function uploadPhotos(mixed $files): array
+    private function uploadPhotos(mixed $files, mixed $base64Photos = null): array
     {
-        if (empty($files)) {
-            return [];
-        }
-
-        $fileList = is_array($files) ? $files : [$files];
         $urls = [];
 
-        foreach ($fileList as $f) {
-            if ($f && $f->isValid()) {
-                $res = $this->cloudinaryService->upload($f, 'pertanian/medicines');
-                if (! empty($res['url'])) {
-                    $urls[] = ($res['storage_type'] ?? '') === 'cloudinary' ? $res['url'] : ($res['public_id'] ?? $res['url']);
+        if (! empty($files)) {
+            $fileList = is_array($files) ? $files : [$files];
+            foreach ($fileList as $f) {
+                if ($f && $f instanceof UploadedFile && $f->isValid()) {
+                    $res = $this->cloudinaryService->upload($f, 'pertanian/medicines');
+                    if (! empty($res['url'])) {
+                        $urls[] = ($res['storage_type'] ?? '') === 'cloudinary' ? $res['url'] : ($res['public_id'] ?? $res['url']);
+                    }
+                }
+            }
+        }
+
+        if (! empty($base64Photos)) {
+            $base64List = is_array($base64Photos) ? $base64Photos : [$base64Photos];
+            foreach ($base64List as $b64) {
+                if (is_string($b64) && str_starts_with($b64, 'data:image/')) {
+                    $url = $this->uploadBase64Photo($b64);
+                    if ($url) {
+                        $urls[] = $url;
+                    }
                 }
             }
         }
@@ -909,11 +927,71 @@ class MedicineController extends Controller
     }
 
     /**
+     * Upload single photo from either UploadedFile or Base64 string.
+     */
+    private function uploadSinglePhotoOrBase64(mixed $file, ?string $base64 = null): ?string
+    {
+        if ($file && $file instanceof UploadedFile && $file->isValid()) {
+            return $this->uploadSinglePhoto($file);
+        }
+
+        if (! empty($base64) && is_string($base64) && str_starts_with($base64, 'data:image/')) {
+            return $this->uploadBase64Photo($base64);
+        }
+
+        return null;
+    }
+
+    /**
+     * Decode base64 image data and upload it via CloudinaryService.
+     */
+    private function uploadBase64Photo(string $base64): ?string
+    {
+        try {
+            if (! preg_match('/^data:image\/(\w+);base64,/', $base64, $matches)) {
+                return null;
+            }
+
+            $extension = strtolower($matches[1]);
+            if ($extension === 'jpeg') {
+                $extension = 'jpg';
+            }
+            if (! in_array($extension, ['jpg', 'png', 'webp'])) {
+                $extension = 'jpg';
+            }
+
+            $base64Data = substr($base64, strpos($base64, ',') + 1);
+            $decoded = base64_decode($base64Data);
+            if ($decoded === false) {
+                return null;
+            }
+
+            $tempPath = tempnam(sys_get_temp_dir(), 'nota_');
+            $tempFile = $tempPath.'.'.$extension;
+            file_put_contents($tempFile, $decoded);
+
+            $res = $this->cloudinaryService->upload($tempFile, 'pertanian/medicines');
+            @unlink($tempFile);
+            @unlink($tempPath);
+
+            if (empty($res)) {
+                return null;
+            }
+
+            return ($res['storage_type'] ?? '') === 'cloudinary' ? ($res['url'] ?? null) : ($res['public_id'] ?? $res['url'] ?? null);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mengunggah foto nota Base64: '.$e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
      * Upload a single file using CloudinaryService.
      */
     private function uploadSinglePhoto(mixed $file): ?string
     {
-        if (! $file || ! $file->isValid()) {
+        if (! $file || ! ($file instanceof UploadedFile) || ! $file->isValid()) {
             return null;
         }
 
@@ -1220,12 +1298,13 @@ class MedicineController extends Controller
             'tanaman_sasaran' => 'nullable|string|max:255',
             'dosis_anjuran' => 'nullable|string|max:255',
             'foto_nota' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'foto_nota_base64' => 'nullable|string',
         ]);
 
-        $fotoNotaPath = null;
-        if ($request->hasFile('foto_nota')) {
-            $fotoNotaPath = $this->uploadSinglePhoto($request->file('foto_nota'));
-        }
+        $fotoNotaPath = $this->uploadSinglePhotoOrBase64(
+            $request->file('foto_nota'),
+            $request->input('foto_nota_base64')
+        );
 
         $medicine = null;
         if (! empty($validated['medicine_id'])) {
