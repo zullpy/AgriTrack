@@ -217,4 +217,24 @@ class DashboardTest extends TestCase
         $response->assertSee('Mulai Tanam di Kalender HST');
         $response->assertDontSee('Bawang Merah Selesai');
     }
+
+    public function test_dashboard_displays_semai_crop_and_provides_semai_guide_data(): void
+    {
+        Crop::create([
+            'nama_tanaman' => 'Cabai Rawit',
+            'varietas' => 'Bara',
+            'tanggal_tanam' => Carbon::now()->subDays(10)->toDateString(),
+            'status' => 'Sedang Disemai',
+            'tipe' => 'hss',
+        ]);
+
+        $response = $this->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertSee('Cabai Rawit');
+        $response->assertSee('10 HSS');
+        $response->assertSee('Tanaman Semai');
+        $response->assertSee('kalenderOptionTitle', false);
+        $response->assertSee('2. Panduan Semai');
+    }
 }

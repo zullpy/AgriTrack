@@ -1,15 +1,18 @@
 <?php
 
+use App\Http\Controllers\Api\FonnteWebhookController;
 use App\Http\Controllers\Api\KalenderHstSyncController;
 use App\Http\Controllers\Api\KeuanganSyncController;
 use App\Http\Controllers\Api\MedicineSyncController;
 use App\Http\Controllers\Api\StepSyncController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FonnteSettingController;
 use App\Http\Controllers\KalenderHstController;
 use App\Http\Controllers\KeuanganController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\PlantCatalogController;
 use App\Http\Controllers\StepController;
+use App\Services\FonnteService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -76,19 +79,79 @@ Route::post('/keuangan/kategori', [KeuanganController::class, 'storeCategory'])-
 Route::put('/keuangan/kategori/{category}', [KeuanganController::class, 'updateCategory'])->name('keuangan.category.update');
 Route::delete('/keuangan/kategori/{category}', [KeuanganController::class, 'destroyCategory'])->name('keuangan.category.destroy');
 
-// Kalender HST
+// Kalender (HST & HSS)
+Route::get('/kalender', fn () => redirect()->route('kalender-hst.index'))->name('kalender.index');
 Route::get('/kalender-hst', [KalenderHstController::class, 'index'])->name('kalender-hst.index');
 Route::get('/kalender-hst/tanaman/{crop}', [KalenderHstController::class, 'showCrop'])->name('kalender-hst.crop.show');
-Route::post('/kalender-hst/tanaman', [KalenderHstController::class, 'storeCrop']);
-Route::put('/kalender-hst/tanaman/{crop}', [KalenderHstController::class, 'updateCrop']);
-Route::delete('/kalender-hst/tanaman/{crop}', [KalenderHstController::class, 'destroyCrop']);
-Route::post('/kalender-hst/tanaman/{crop}/panen', [KalenderHstController::class, 'markAsHarvested']);
-Route::post('/kalender-hst/tanaman/{crop}/akhiri', [KalenderHstController::class, 'endCrop']);
-Route::post('/kalender-hst/tanaman/{crop}/kegiatan', [KalenderHstController::class, 'storeActivity']);
-Route::put('/kalender-hst/kegiatan/{activity}', [KalenderHstController::class, 'updateActivity']);
-Route::match(['post', 'patch'], '/kalender-hst/kegiatan/{activity}/toggle', [KalenderHstController::class, 'toggleActivityStatus']);
-Route::delete('/kalender-hst/kegiatan/{activity}/foto', [KalenderHstController::class, 'destroyPhoto']);
-Route::delete('/kalender-hst/kegiatan/{activity}', [KalenderHstController::class, 'destroyActivity']);
+
+Route::get('/kalender-hss', [KalenderHstController::class, 'index'])->name('kalender-hss.index');
+Route::get('/kalender-hss/tanaman/{crop}', [KalenderHstController::class, 'showCrop'])->name('kalender-hss.crop.show');
+Route::post('/kalender-hss/tanaman/{crop}/pindah-tanam', [KalenderHstController::class, 'pindahTanam'])->name('kalender-hss.crop.pindah-tanam');
+
+Route::post('/kalender-hst/tanaman', [KalenderHstController::class, 'storeCrop'])->name('kalender-hst.crop.store');
+Route::put('/kalender-hst/tanaman/{crop}', [KalenderHstController::class, 'updateCrop'])->name('kalender-hst.crop.update');
+Route::delete('/kalender-hst/tanaman/{crop}', [KalenderHstController::class, 'destroyCrop'])->name('kalender-hst.crop.destroy');
+Route::post('/kalender-hst/tanaman/{crop}/panen', [KalenderHstController::class, 'markAsHarvested'])->name('kalender-hst.crop.harvest');
+Route::post('/kalender-hst/tanaman/{crop}/akhiri', [KalenderHstController::class, 'endCrop'])->name('kalender-hst.crop.end');
+Route::post('/kalender-hst/tanaman/{crop}/kegiatan', [KalenderHstController::class, 'storeActivity'])->name('kalender-hst.crop.activity.store');
+
+Route::post('/kalender-hss/tanaman', [KalenderHstController::class, 'storeCrop'])->name('kalender-hss.crop.store');
+Route::put('/kalender-hss/tanaman/{crop}', [KalenderHstController::class, 'updateCrop'])->name('kalender-hss.crop.update');
+Route::delete('/kalender-hss/tanaman/{crop}', [KalenderHstController::class, 'destroyCrop'])->name('kalender-hss.crop.destroy');
+Route::post('/kalender-hss/tanaman/{crop}/panen', [KalenderHstController::class, 'markAsHarvested'])->name('kalender-hss.crop.harvest');
+Route::post('/kalender-hss/tanaman/{crop}/akhiri', [KalenderHstController::class, 'endCrop'])->name('kalender-hss.crop.end');
+Route::post('/kalender-hss/tanaman/{crop}/kegiatan', [KalenderHstController::class, 'storeActivity'])->name('kalender-hss.crop.activity.store');
+Route::put('/kalender-hst/kegiatan/{activity}', [KalenderHstController::class, 'updateActivity'])->name('kalender-hst.activity.update');
+Route::match(['post', 'patch'], '/kalender-hst/kegiatan/{activity}/toggle', [KalenderHstController::class, 'toggleActivityStatus'])->name('kalender-hst.activity.toggle');
+Route::delete('/kalender-hst/kegiatan/{activity}/foto', [KalenderHstController::class, 'destroyPhoto'])->name('kalender-hst.activity.destroy-photo');
+Route::delete('/kalender-hst/kegiatan/{activity}', [KalenderHstController::class, 'destroyActivity'])->name('kalender-hst.activity.destroy');
+
+// WhatsApp Notifikasi via Fonnte
+Route::match(['get', 'post'], '/api/webhook/fonnte', [FonnteWebhookController::class, 'handle'])->name('api.fonnte.webhook');
+Route::match(['get', 'post'], '/webhook/fonnte', [FonnteWebhookController::class, 'handle']);
+
+// Route Cepat Tes Notifikasi WhatsApp via Browser (/test-fonnte)
+Route::get('/test-fonnte', function (FonnteService $fonnteService) {
+    $config = $fonnteService->getConfig();
+    $target = request('target') ?: $config['target_phone'];
+
+    if (empty($config['token'])) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'FONNTE_TOKEN belum diisi di file .env',
+        ], 422);
+    }
+
+    if (empty($target)) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'FONNTE_TARGET_PHONE belum diisi di file .env',
+        ], 422);
+    }
+
+    $msg = "🌱 *TES NOTIFIKASI AGRI-TRACK*\n\nHalo! Integrasi WhatsApp via Fonnte telah aktif dan berhasil terhubung.\n\n⏰ *Jadwal Otomatis:*\n• 07:00 WIB: Agenda Hari Ini (H-H) & Besok (H-1)\n• 14:00 WIB: Pengingat Siang\n\n💡 Coba balas pesan ini dengan *SUDAH* atau *AGENDA*.";
+    $result = $fonnteService->sendMessage($target, $msg);
+
+    return response()->json([
+        'status' => $result['success'] ? 'success' : 'error',
+        'target' => $target,
+        'message' => $result['success'] ? "Pesan tes berhasil dikirim ke nomor {$target}!" : ($result['error'] ?? 'Gagal mengirim pesan.'),
+        'details' => $result,
+    ], $result['success'] ? 200 : 400);
+})->name('fonnte.quick-test');
+
+// Halaman & Konfigurasi Fonnte WhatsApp (/config-fonnte)
+Route::get('/config-fonnte', [FonnteSettingController::class, 'index'])->name('fonnte.config');
+Route::post('/config-fonnte', [FonnteSettingController::class, 'updateSettings'])->name('fonnte.config.update');
+Route::post('/config-fonnte/test', [FonnteSettingController::class, 'testSend'])->name('fonnte.config.test');
+Route::post('/config-fonnte/trigger', [FonnteSettingController::class, 'triggerReminder'])->name('fonnte.config.trigger');
+
+Route::prefix('pengaturan/fonnte')->group(function () {
+    Route::get('/', [FonnteSettingController::class, 'getSettings'])->name('fonnte.settings.get');
+    Route::post('/', [FonnteSettingController::class, 'updateSettings'])->name('fonnte.settings.update');
+    Route::post('/test', [FonnteSettingController::class, 'testSend'])->name('fonnte.settings.test');
+    Route::post('/trigger', [FonnteSettingController::class, 'triggerReminder'])->name('fonnte.settings.trigger');
+});
 
 // Offline PWA Sync Endpoints
 Route::prefix('api')->group(function () {

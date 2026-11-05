@@ -32,9 +32,21 @@ class MedicineStockService
             return [];
         }
 
-        $tanks = (float) ($activity->jumlah_tank ?? 1.0);
-        if ($tanks <= 0) {
-            $tanks = 1.0;
+        $metode = $activity->metode_aplikasi ?: 'Semprot';
+        $isPerPlant = in_array($metode, ['Kocor', 'Tabur'], true);
+        $hasPerPlantSuffix = (bool) preg_match('/\/\s*(?:tanaman|pohon|polybag|polibag|bedeng|titik)\b/i', $rawObat);
+
+        // Multiplier: jika Semprot pakai jumlah_tank; jika Kocor/Tabur dengan format per-tanaman pakai populasi tanaman; jika total obat langsung multiplier = 1.0
+        if ($isPerPlant) {
+            if ($hasPerPlantSuffix) {
+                $populasi = (float) ($activity->populasi_target ?: ($activity->crop?->numeric_populasi ?: 1.0));
+                $multiplierUnits = max(1.0, $populasi);
+            } else {
+                $multiplierUnits = 1.0;
+            }
+        } else {
+            $tanks = (float) ($activity->jumlah_tank ?? 1.0);
+            $multiplierUnits = $tanks > 0 ? $tanks : 1.0;
         }
 
         $rawItems = array_filter(array_map('trim', explode(',', $rawObat)));
@@ -62,7 +74,7 @@ class MedicineStockService
                     $medName = trim($parts[1]);
                     $doseText = trim(end($parts));
                 }
-            } elseif (preg_match('/^(.*?)\s*(\d+(?:[.,]\d+)?\s*(?:ml|liter|ltr|lt|l|gram|gr|g|kg|sachet|bungkus|sendok|sdm|sdt|pcs|buah|lembar|rol|roll|gulung|ikat|batang|set|karung|unit|biji|pack|pak|meter|m|sak|kantong|tali|kresek|pohon)\b.*)$/i', $rawItem, $mDose)) {
+            } elseif (preg_match('/^(.*?)\s*(\d+(?:[.,]\d+)?\s*(?:mg|miligram|ml|liter|ltr|lt|l|gram|gr|g|kg|sachet|bungkus|sendok|sdm|sdt|pcs|buah|lembar|rol|roll|gulung|ikat|batang|set|karung|unit|biji|pack|pak|meter|m|sak|kantong|tali|kresek|pohon)\b.*)$/i', $rawItem, $mDose)) {
                 $medName = trim($mDose[1]);
                 $doseText = trim($mDose[2]);
             } else {
@@ -115,11 +127,13 @@ class MedicineStockService
 
                 if (in_array($unitLower, ['kg', 'kilogram', 'liter', 'ltr', 'lt', 'l'], true)) {
                     $multiplier = 1000.0;
+                } elseif (in_array($unitLower, ['mg', 'miligram'], true)) {
+                    $multiplier = 0.001;
                 } elseif (in_array($unitLower, ['sendok', 'sdm'], true)) {
                     $multiplier = $matched->base_unit_label === 'ml' ? 15.0 : 10.0;
                 }
 
-                $totalUsed = ($baseQty * $multiplier) * $tanks;
+                $totalUsed = ($baseQty * $multiplier) * $multiplierUnits;
                 $finalUnit = $matched->base_unit_label;
             }
 
@@ -175,8 +189,8 @@ class MedicineStockService
             return [];
         }
 
-        DB::transaction(function () use ($activity, $items) {
-            foreach ($items as $item) {
+        DB::transaction(function () use ($activity, &$items) {
+            foreach ($items as &$item) {
                 /** @var Medicine|null $medicine */
                 $medicine = Medicine::where('id', $item['medicine_id'])->lockForUpdate()->first();
                 if (! $medicine) {
@@ -189,6 +203,9 @@ class MedicineStockService
                     : ((float) ($medicine->stok ?? 0) * $baseTotal);
 
                 $deductAmount = (float) $item['amount'];
+                if ($currentVolume < $deductAmount) {
+                    $item['shortage'] = round($deductAmount - $currentVolume, 2);
+                }
                 $newVolume = max(0.0, $currentVolume - $deductAmount);
                 $newStok = $baseTotal > 0 ? (int) ceil($newVolume / $baseTotal) : (int) $newVolume;
 

@@ -1,8 +1,29 @@
+@php
+    $isHss = $isHss ?? (request()->is('kalender-hss*') || request('tipe') === 'hss');
+    $labelCode = $isHss ? 'HSS' : 'HST';
+    $labelFullName = $isHss ? 'Hari Setelah Semai (HSS)' : 'Hari Setelah Tanam (HST)';
+    $labelHari = $isHss ? 'Hari Setelah Semai' : 'Hari Setelah Tanam';
+    $labelTanggal = $isHss ? 'Tanggal Semai' : 'Tanggal Tanam';
+    $baseUrl = $isHss ? '/kalender-hss' : '/kalender-hst';
+@endphp
+
 @extends('layouts.app')
 
-@section('title', 'Kalender HST Tanaman')
+@section('title', $isHss ? 'Kalender HSS (Hari Setelah Semai)' : 'Kalender HST Tanaman')
 
 @section('content')
+
+{{-- ── Switcher HST / HSS ── --}}
+<div class="flex items-center gap-2 mb-4 p-1.5 bg-gray-100 rounded-2xl w-fit max-w-full overflow-x-auto no-scrollbar">
+    <a href="/kalender-hst"
+       class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all {{ !$isHss ? 'bg-white text-emerald-800 shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+        Kalender HST (Hari Setelah Tanam)
+    </a>
+    <a href="/kalender-hss"
+       class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all {{ $isHss ? 'bg-white text-emerald-800 shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+        Kalender HSS (Hari Setelah Semai)
+    </a>
+</div>
 
 {{-- ── Hero Header ── --}}
 <div class="relative mb-6 overflow-hidden rounded-2xl bg-primary-dark p-5 lg:p-7 shadow-sm border border-emerald-900">
@@ -11,19 +32,23 @@
         <div>
             <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white/90 text-[11px] font-medium mb-3">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
-                Manajemen Umur & Jadwal
+                {{ $isHss ? 'Persemaian & Bibit' : 'Manajemen Umur & Jadwal' }}
             </div>
-            <h1 class="text-2xl lg:text-3xl font-bold text-white leading-tight">Kalender HST Tanaman</h1>
-            <p class="text-sm text-green-100/80 mt-1.5">Penghitungan Hari Setelah Tanam (HST) otomatis harian dan timeline perawatan.</p>
+            <h1 class="text-2xl lg:text-3xl font-bold text-white leading-tight">
+                {{ $isHss ? 'Kalender HSS (Hari Setelah Semai)' : 'Kalender HST Tanaman' }}
+            </h1>
+            <p class="text-sm text-green-100/80 mt-1.5">
+                {{ $isHss ? 'Penghitungan Hari Setelah Semai (HSS) otomatis harian dan timeline perawatan bibit/persemaian.' : 'Penghitungan Hari Setelah Tanam (HST) otomatis harian dan timeline perawatan.' }}
+            </p>
         </div>
 
         <button type="button"
                 onclick="openModal('modal-tambah-tanaman')"
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-primary-dark text-sm font-semibold hover:bg-green-50 active:scale-95 transition-all duration-150 shadow-lg shadow-black/20 self-start shrink-0">
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-primary-dark text-sm font-semibold hover:bg-green-50 active:scale-95 transition-all duration-150 shadow-lg shadow-black/20 self-start shrink-0 cursor-pointer">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
-            Tambah Tanaman
+            {{ $isHss ? 'Tambah Semai Baru' : 'Tambah Tanaman' }}
         </button>
     </div>
 
@@ -101,20 +126,22 @@
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
         </svg>
-        <span>Tanaman Aktif</span>
+        <span>{{ $isHss ? 'Semai Aktif' : 'Tanaman Aktif' }}</span>
         <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary-light text-primary-dark">{{ $activeCrops->count() }}</span>
     </button>
 
-    <button type="button"
-            onclick="switchTab('panen')"
-            id="tab-btn-panen"
-            class="tab-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ $currentTab === 'panen' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
-        <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <span>Riwayat Panen</span>
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">{{ $totalHarvestCount }} Petikan</span>
-    </button>
+    @if (!$isHss)
+        <button type="button"
+                onclick="switchTab('panen')"
+                id="tab-btn-panen"
+                class="tab-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ $currentTab === 'panen' ? 'bg-white text-primary-dark shadow-sm border border-gray-200' : 'text-text-secondary hover:text-text hover:bg-gray-100/60' }}">
+            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Riwayat Panen</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">{{ $totalHarvestCount }} Petikan</span>
+        </button>
+    @endif
 
     <button type="button"
             onclick="switchTab('riwayat')"
@@ -123,7 +150,7 @@
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
         </svg>
-        <span>Riwayat Tanaman</span>
+        <span>{{ $isHss ? 'Riwayat Semai' : 'Riwayat Tanaman' }}</span>
         <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-text-secondary">{{ $harvestedCrops->total() }}</span>
     </button>
 
@@ -136,7 +163,7 @@
             <path d="M8 2h8v4H8z"/>
             <path d="M12 10v7m-3.5-3.5h7"/>
         </svg>
-        <span>Rangkuman Obat</span>
+        <span>{{ $isHss ? 'Rangkuman Obat Semai' : 'Rangkuman Obat' }}</span>
         <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
             {{ $overallMedicineSummary['total_jenis_obat'] }} Obat
         </span>
@@ -151,7 +178,7 @@
         {{-- Calendar Header Bar --}}
         <div class="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gray-50/50">
             <div class="flex items-center gap-3">
-                <a href="/kalender-hst?month={{ $prevMonth->month }}&year={{ $prevMonth->year }}&tab=kalender"
+                <a href="{{ $baseUrl }}?month={{ $prevMonth->month }}&year={{ $prevMonth->year }}&tab=kalender"
                    title="Bulan Sebelumnya"
                    class="p-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-text-secondary hover:text-text transition-all">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -163,7 +190,7 @@
                     {{ $currentMonth->translatedFormat('F Y') }}
                 </h2>
 
-                <a href="/kalender-hst?month={{ $nextMonth->month }}&year={{ $nextMonth->year }}&tab=kalender"
+                <a href="{{ $baseUrl }}?month={{ $nextMonth->month }}&year={{ $nextMonth->year }}&tab=kalender"
                    title="Bulan Berikutnya"
                    class="p-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-text-secondary hover:text-text transition-all">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -173,7 +200,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <a href="/kalender-hst?month={{ now()->month }}&year={{ now()->year }}&tab=kalender"
+                <a href="{{ $baseUrl }}?month={{ now()->month }}&year={{ now()->year }}&tab=kalender"
                    class="px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-semibold text-text-secondary transition-all">
                     Hari Ini
                 </a>
@@ -237,12 +264,12 @@
                                     </div>
                                 @endforeach
 
-                                {{-- Running Crops & HST --}}
+                                {{-- Running Crops & HST / HSS --}}
                                 @foreach ($crops as $item)
                                     <div class="px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight truncate bg-emerald-50 text-emerald-800 border border-emerald-100"
-                                         title="{{ $item['crop']->nama_tanaman }} — HST {{ $item['hst'] }}">
+                                         title="{{ $item['crop']->nama_tanaman }} — {{ $labelCode }} {{ $item['hst'] }}">
                                         <span class="font-bold">{{ $item['crop']->nama_tanaman }}</span>
-                                        <span class="text-emerald-600 font-mono">HST {{ $item['hst'] }}</span>
+                                        <span class="text-emerald-600 font-mono">{{ $labelCode }} {{ $item['hst'] }}</span>
                                     </div>
                                 @endforeach
                             </div>
@@ -265,15 +292,15 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-text">Belum Ada Tanaman Aktif</h3>
-            <p class="text-sm text-text-secondary mt-1 max-w-md mx-auto">Tambahkan tanaman baru untuk mulai menghitung umur HST harian dan menjadwalkan kegiatan perawatan.</p>
+            <h3 class="text-lg font-bold text-text">Belum Ada {{ $isHss ? 'Tanaman Semai' : 'Tanaman' }} Aktif</h3>
+            <p class="text-sm text-text-secondary mt-1 max-w-md mx-auto">Tambahkan tanaman {{ $isHss ? 'semai ' : '' }}baru untuk mulai menghitung umur {{ $labelCode }} harian dan menjadwalkan kegiatan perawatan{{ $isHss ? ' persemaian' : '' }}.</p>
             <button type="button"
                     onclick="openModal('modal-tambah-tanaman')"
                     class="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-all shadow-md shadow-primary/25">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                 </svg>
-                Tambah Tanaman Pertama
+                Tambah {{ $isHss ? 'Semai' : 'Tanaman' }} Pertama
             </button>
         </div>
     @else
@@ -300,16 +327,16 @@
                                         <svg class="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
                                         </svg>
-                                        Tanam: <span class="font-medium text-text">{{ \Carbon\Carbon::parse($crop->tanggal_tanam)->translatedFormat('d M Y') }}</span>
+                                        {{ $isHss ? 'Semai' : 'Tanam' }}: <span class="font-medium text-text">{{ \Carbon\Carbon::parse($crop->tanggal_tanam)->translatedFormat('d M Y') }}</span>
                                     </p>
                                 </div>
                             </div>
 
-                            {{-- HST Running Counter Pill --}}
+                            {{-- HST / HSS Running Counter Pill --}}
                             <div class="text-right shrink-0">
                                 <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200">
                                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    <span class="text-base font-extrabold font-mono leading-none">HST {{ $crop->current_hst }}</span>
+                                    <span class="text-base font-extrabold font-mono leading-none">{{ $labelCode }} {{ $crop->current_hst }}</span>
                                 </div>
                                 <p class="text-[10px] text-text-muted mt-1 text-right">Otomatis Ter-update</p>
                             </div>
@@ -317,23 +344,37 @@
                     </div>
 
                     <div>
-                        {{-- Buka Menu HST Tanaman --}}
+                        {{-- Buka Menu HST / HSS Tanaman --}}
                         <div class="mt-4 pt-3 border-t border-gray-100">
-                            <a href="/kalender-hst/tanaman/{{ $crop->id }}"
+                            <a href="{{ $crop->is_hss ? '/kalender-hss/tanaman/' . $crop->id : '/kalender-hst/tanaman/' . $crop->id }}"
                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all shadow-xs group">
                                 <svg class="w-4 h-4 text-emerald-700 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
                                 </svg>
-                                <span>Buka Menu HST Tanaman (Log Harian)</span>
+                                <span>Buka Menu {{ $labelCode }} Tanaman (Log Harian)</span>
                                 <svg class="w-3.5 h-3.5 text-emerald-600 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                                 </svg>
                             </a>
                         </div>
 
+                        @if ($isHss)
+                            {{-- Tombol Mulai Tanam (Pindah ke Lahan HST) --}}
+                            <div class="mt-2.5">
+                                <button type="button"
+                                        onclick="openPindahTanamModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}', '{{ addslashes($crop->populasi ?? '') }}')"
+                                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold active:scale-95 transition-all shadow-sm shadow-primary/25 cursor-pointer">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                                    </svg>
+                                    <span>Mulai Tanam (Pindah ke HST)</span>
+                                </button>
+                            </div>
+                        @endif
+
                         {{-- Card Footer: Action Buttons --}}
                         <div class="pt-3 mt-3 border-t border-gray-100 space-y-2">
-                            @if ($crop->harvest_count > 0)
+                            @if (!$isHss && $crop->harvest_count > 0)
                                 <div class="flex items-center justify-between text-[11px] font-semibold text-emerald-800 bg-emerald-50/80 border border-emerald-200/80 px-2.5 py-1 rounded-lg">
                                     <span class="inline-flex items-center gap-1">
                                         <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -350,30 +391,32 @@
                             @endif
 
                             <div class="flex items-center gap-2">
-                                {{-- Tombol Panen ke-X --}}
-                                <button type="button"
-                                        onclick="openHarvestModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}', {{ $crop->next_harvest_number }})"
-                                        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold active:scale-95 transition-all shadow-xs min-w-0">
-                                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span class="truncate">Panen ke-{{ $crop->next_harvest_number }}</span>
-                                </button>
+                                @if (!$isHss)
+                                    {{-- Tombol Panen ke-X (Khusus HST) --}}
+                                    <button type="button"
+                                            onclick="openHarvestModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}', {{ $crop->next_harvest_number }})"
+                                            class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold active:scale-95 transition-all shadow-xs min-w-0">
+                                        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span class="truncate">Panen ke-{{ $crop->next_harvest_number }}</span>
+                                    </button>
+                                @endif
 
-                                {{-- Tombol Akhiri Tanaman Ini (di pinggir tombol panen) --}}
+                                {{-- Tombol Akhiri Tanaman Ini --}}
                                 <button type="button"
                                         onclick="openEndCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}')"
-                                        title="Akhiri Tanaman Ini"
-                                        class="inline-flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 rounded-xl border border-gray-200 hover:border-amber-300 bg-white hover:bg-amber-50 text-text-secondary hover:text-amber-800 text-xs font-semibold transition-all shadow-xs shrink-0">
+                                        title="Akhiri {{ $isHss ? 'Semai' : 'Tanaman' }} Ini"
+                                        class="{{ $isHss ? 'flex-1' : '' }} inline-flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 rounded-xl border border-gray-200 hover:border-amber-300 bg-white hover:bg-amber-50 text-text-secondary hover:text-amber-800 text-xs font-semibold transition-all shadow-xs shrink-0 cursor-pointer">
                                     <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
                                     </svg>
-                                    <span>Akhiri Tanaman</span>
+                                    <span>Akhiri {{ $isHss ? 'Semai' : 'Tanaman' }}</span>
                                 </button>
 
                                 <div class="flex items-center gap-1 shrink-0">
                                     <button type="button"
-                                            onclick="openEditCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ addslashes($crop->varietas ?? '') }}', '{{ addslashes($crop->populasi ?? '') }}', '{{ $crop->tanggal_tanam->toDateString() }}', `{{ addslashes($crop->catatan ?? '') }}`)"
+                                            onclick="openEditCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ addslashes($crop->varietas ?? '') }}', '{{ addslashes($crop->populasi ?? '') }}', '{{ $crop->tanggal_tanam->toDateString() }}', `{{ addslashes($crop->catatan ?? '') }}`, '{{ $crop->tipe ?? ($isHss ? "hss" : "hst") }}')"
                                             title="Edit data tanaman"
                                             class="p-2 rounded-xl border border-gray-200 text-text-secondary hover:text-text hover:bg-gray-50 transition-all shadow-xs">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -403,6 +446,7 @@
     @endif
 </div>
 
+@if (!$isHss)
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 {{-- TAB 3: RIWAYAT PANEN (DIPISAH PER TANAMAN)                                --}}
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
@@ -508,7 +552,7 @@
                                             {{ \Carbon\Carbon::parse($hrv->tanggal_panen)->locale('id')->isoFormat('dddd, DD MMMM YYYY') }}
                                         </td>
                                         <td class="py-3.5 px-4 font-mono font-bold text-emerald-700 whitespace-nowrap">
-                                            HST {{ $hrv->hst_saat_panen ?? '-' }}
+                                            {{ $labelCode }} {{ $hrv->hst_saat_panen ?? '-' }}
                                         </td>
                                         <td class="py-3.5 px-4 font-bold text-gray-900 whitespace-nowrap">
                                             {{ $hrv->total_panen ?: '—' }}
@@ -551,6 +595,7 @@
         </div>
     @endif
 </div>
+@endif
 
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 {{-- TAB 4: RIWAYAT TANAMAN (AKHIRI TANAMAN INI)                                --}}
@@ -564,8 +609,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-text">Belum Ada Riwayat Tanaman</h3>
-            <p class="text-sm text-text-secondary mt-1 max-w-md mx-auto">Tanaman aktif yang telah Anda selesaikan melalui tombol "Akhiri Tanaman Ini" akan diarsipkan di sini. Seluruh riwayat HST akhir dan kegiatan perawatannya tetap tersimpan aman.</p>
+            <h3 class="text-lg font-bold text-text">Belum Ada {{ $isHss ? 'Riwayat Semai' : 'Riwayat Tanaman' }}</h3>
+            <p class="text-sm text-text-secondary mt-1 max-w-md mx-auto">Tanaman {{ $isHss ? 'semai ' : '' }}aktif yang telah Anda selesaikan melalui tombol "Akhiri {{ $isHss ? 'Semai' : 'Tanaman' }} Ini" akan diarsipkan di sini. Seluruh riwayat {{ $labelCode }} akhir dan kegiatan perawatannya tetap tersimpan aman.</p>
         </div>
     @else
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -596,9 +641,16 @@
                                             <svg class="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
                                             </svg>
-                                            Tanam: <span class="font-medium text-text">{{ \Carbon\Carbon::parse($crop->tanggal_tanam)->translatedFormat('d M Y') }}</span>
+                                            {{ $isHss ? 'Semai' : 'Tanam' }}: <span class="font-medium text-text">{{ \Carbon\Carbon::parse($crop->tanggal_tanam)->translatedFormat('d M Y') }}</span>
                                         </p>
-                                        @if ($crop->status === 'Diakhiri')
+                                        @if ($crop->status === 'Sudah Pindah Tanam')
+                                            <p class="flex items-center gap-1.5 text-purple-700">
+                                                <svg class="w-3.5 h-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                                                </svg>
+                                                Mulai Tanam (Lahan): <span class="font-medium">{{ $crop->tanggal_panen ? \Carbon\Carbon::parse($crop->tanggal_panen)->translatedFormat('d M Y') : '—' }}</span>
+                                            </p>
+                                        @elseif ($crop->status === 'Diakhiri')
                                             <p class="flex items-center gap-1.5 text-amber-700">
                                                 <svg class="w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
@@ -617,24 +669,32 @@
                                 </div>
                             </div>
 
-                            {{-- Final Total HST Pill --}}
+                            {{-- Final Total HST / HSS Pill --}}
                             <div class="text-right shrink-0">
-                                @if ($crop->status === 'Diakhiri')
+                                @if ($crop->status === 'Sudah Pindah Tanam')
+                                    <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 text-purple-800 border border-purple-200">
+                                        <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                                        </svg>
+                                        <span class="text-base font-extrabold font-mono leading-none">{{ $labelCode }} {{ $crop->total_hst_panen ?? '—' }}</span>
+                                    </div>
+                                    <p class="text-[10px] text-purple-700 font-semibold mt-1 text-right">Sudah Pindah Tanam</p>
+                                @elseif ($crop->status === 'Diakhiri')
                                     <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200">
                                         <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
                                         </svg>
-                                        <span class="text-base font-extrabold font-mono leading-none">HST {{ $crop->total_hst_panen ?? '—' }}</span>
+                                        <span class="text-base font-extrabold font-mono leading-none">{{ $labelCode }} {{ $crop->total_hst_panen ?? '—' }}</span>
                                     </div>
-                                    <p class="text-[10px] text-amber-700 font-semibold mt-1 text-right">Tanaman Diakhiri</p>
+                                    <p class="text-[10px] text-amber-700 font-semibold mt-1 text-right">{{ $isHss ? 'Semai Diakhiri' : 'Tanaman Diakhiri' }}</p>
                                 @else
                                     <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200">
                                         <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
                                         </svg>
-                                        <span class="text-base font-extrabold font-mono leading-none">HST {{ $crop->total_hst_panen ?? '—' }}</span>
+                                        <span class="text-base font-extrabold font-mono leading-none">{{ $labelCode }} {{ $crop->total_hst_panen ?? '—' }}</span>
                                     </div>
-                                    <p class="text-[10px] text-text-muted mt-1 text-right">Total Umur Panen</p>
+                                    <p class="text-[10px] text-text-muted mt-1 text-right">Total Umur {{ $isHss ? 'Semai' : 'Panen' }}</p>
                                 @endif
                             </div>
                         </div>
@@ -677,7 +737,7 @@
                         <div class="mt-4">
                             <div class="flex items-center justify-between mb-2.5">
                                 <h4 class="text-xs font-semibold text-text-muted uppercase tracking-wider">Riwayat Perawatan ({{ $doneActivities }} / {{ $totalActivities }} Selesai)</h4>
-                                <span class="text-[11px] font-medium text-text-muted">Arsip HST</span>
+                                <span class="text-[11px] font-medium text-text-muted">Arsip {{ $labelCode }}</span>
                             </div>
 
                             @if ($crop->activities->isEmpty())
@@ -702,7 +762,7 @@
                                                 </p>
                                             </div>
                                             <span class="px-2 py-0.5 rounded-md font-mono text-[10px] font-semibold bg-gray-100 text-text-secondary shrink-0">
-                                                HST {{ $act->target_hst }}
+                                                {{ $labelCode }} {{ $act->target_hst }}
                                             </span>
                                         </div>
                                     @endforeach
@@ -714,12 +774,12 @@
                     <div>
                         {{-- Buka Menu HST Tanaman (Log Harian Masih Ada) --}}
                         <div class="mt-4 pt-3 border-t border-gray-100">
-                            <a href="/kalender-hst/tanaman/{{ $crop->id }}"
+                            <a href="{{ $crop->is_hss ? '/kalender-hss/tanaman/' . $crop->id : '/kalender-hst/tanaman/' . $crop->id }}"
                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs group">
                                 <svg class="w-4 h-4 text-emerald-100 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
                                 </svg>
-                                <span>Buka Menu HST Tanaman (Log Harian)</span>
+                                <span>Buka Menu {{ $labelCode }} Tanaman (Log Harian)</span>
                                 <svg class="w-3.5 h-3.5 text-emerald-200 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                                 </svg>
@@ -875,12 +935,12 @@
                                         @if ($cropItem->varietas)
                                             <span class="text-xs text-gray-500">({{ $cropItem->varietas }})</span>
                                         @endif
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $cropItem->status === 'Sedang Ditanam' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700' }}">
-                                            {{ $cropItem->status === 'Sedang Ditanam' ? 'Aktif (HST ' . $cropItem->current_hst . ')' : 'Selesai Panen' }}
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ in_array($cropItem->status, ['Sedang Ditanam', 'Sedang Disemai']) ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700' }}">
+                                            {{ in_array($cropItem->status, ['Sedang Ditanam', 'Sedang Disemai']) ? 'Aktif (' . $labelCode . ' ' . $cropItem->current_hst . ')' : 'Selesai' }}
                                         </span>
                                     </div>
                                     <p class="text-xs text-gray-500 mt-0.5">
-                                        Tanam: {{ $cropItem->tanggal_tanam->translatedFormat('d M Y') }} • {{ $cSum['total_aplikasi_count'] }}x aplikasi tercatat
+                                        {{ $isHss ? 'Semai' : 'Tanam' }}: {{ $cropItem->tanggal_tanam->translatedFormat('d M Y') }} • {{ $cSum['total_aplikasi_count'] }}x aplikasi tercatat
                                     </p>
                                 </div>
                             </div>
@@ -894,7 +954,7 @@
                                     <span class="text-[10px] text-gray-500 block uppercase font-bold tracking-wider">Volume Tangki</span>
                                     <span class="text-sm font-black text-blue-900">{{ $cSum['formatted_total_tank'] }}</span>
                                 </div>
-                                <a href="/kalender-hst/tanaman/{{ $cropItem->id }}?tab=obat"
+                                <a href="{{ $cropItem->is_hss ? '/kalender-hss/tanaman/' . $cropItem->id : '/kalender-hst/tanaman/' . $cropItem->id }}?tab=obat"
                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:bg-emerald-50 hover:text-emerald-800 text-xs font-semibold text-gray-700 transition-all shadow-xs">
                                     <span>Buka Rangkuman Lengkap</span>
                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -960,7 +1020,7 @@
 <div id="modal-tambah-tanaman" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-slide-up">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-            <h3 class="text-lg font-bold text-text">Tambah Tanaman Baru</h3>
+            <h3 class="text-lg font-bold text-text">{{ $isHss ? 'Tambah Tanaman Semai Baru' : 'Tambah Tanaman Baru' }}</h3>
             <button type="button" onclick="closeModal('modal-tambah-tanaman')" class="p-1.5 rounded-lg text-text-muted hover:bg-gray-100">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -968,9 +1028,10 @@
 
         <form method="POST" action="/kalender-hst/tanaman" class="space-y-4">
             @csrf
+            <input type="hidden" name="tipe" value="{{ $isHss ? 'hss' : 'hst' }}">
             <div>
-                <label for="crop-nama" class="block text-xs font-semibold text-text mb-1">Nama Tanaman <span class="text-red-500">*</span></label>
-                <input type="text" id="crop-nama" name="nama_tanaman" required placeholder="Contoh: Jagung Manis, Padi Ciherang, Cabai Rawit"
+                <label for="crop-nama" class="block text-xs font-semibold text-text mb-1">Nama {{ $isHss ? 'Tanaman / Bibit' : 'Tanaman' }} <span class="text-red-500">*</span></label>
+                <input type="text" id="crop-nama" name="nama_tanaman" required placeholder="{{ $isHss ? 'Contoh: Cabai Rawit, Tomat Servo, Terong Ungu' : 'Contoh: Jagung Manis, Padi Ciherang, Cabai Rawit' }}"
                        class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
             </div>
 
@@ -981,21 +1042,15 @@
                            class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
                 </div>
                 <div>
-                    <label for="crop-populasi" class="block text-xs font-semibold text-text mb-1">Populasi (Opsional)</label>
-                    <input type="text" id="crop-populasi" name="populasi" placeholder="Contoh: 2.000 Pohon"
+                    <label for="crop-populasi" class="block text-xs font-semibold text-text mb-1">{{ $isHss ? 'Jumlah Semai / Tray' : 'Populasi' }} (Opsional)</label>
+                    <input type="text" id="crop-populasi" name="populasi" placeholder="{{ $isHss ? 'Contoh: 5 Tray / 500 Lubang' : 'Contoh: 2.000 Pohon' }}"
                            class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
                 </div>
                 <div>
-                    <label for="crop-tanggal-tanam" class="block text-xs font-semibold text-text mb-1">Tanggal Tanam <span class="text-red-500">*</span></label>
+                    <label for="crop-tanggal-tanam" class="block text-xs font-semibold text-text mb-1">{{ $labelTanggal }} <span class="text-red-500">*</span></label>
                     <input type="date" id="crop-tanggal-tanam" name="tanggal_tanam" required value="{{ now()->toDateString() }}"
                            class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
                 </div>
-            </div>
-
-            <div>
-                <label for="crop-catatan" class="block text-xs font-semibold text-text mb-1">Catatan Lahan / Lokasi (Opsional)</label>
-                <textarea id="crop-catatan" name="catatan" rows="2" placeholder="Contoh: Lahan Petak 2, jarak tanam 70x20 cm..."
-                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm resize-none"></textarea>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2">
@@ -1005,7 +1060,7 @@
                 </button>
                 <button type="submit"
                         class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-sm transition-all">
-                    Simpan Tanaman
+                    Simpan {{ $isHss ? 'Tanaman Semai' : 'Tanaman' }}
                 </button>
             </div>
         </form>
@@ -1025,6 +1080,7 @@
         <form id="form-edit-tanaman" method="POST" action="" class="space-y-4">
             @csrf
             @method('PUT')
+            <input type="hidden" id="edit-crop-tipe" name="tipe" value="">
             <div>
                 <label for="edit-crop-nama" class="block text-xs font-semibold text-text mb-1">Nama Tanaman <span class="text-red-500">*</span></label>
                 <input type="text" id="edit-crop-nama" name="nama_tanaman" required
@@ -1038,21 +1094,15 @@
                            class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
                 </div>
                 <div>
-                    <label for="edit-crop-populasi" class="block text-xs font-semibold text-text mb-1">Populasi (Opsional)</label>
+                    <label for="edit-crop-populasi" class="block text-xs font-semibold text-text mb-1">{{ $isHss ? 'Jumlah Semai / Tray' : 'Populasi' }} (Opsional)</label>
                     <input type="text" id="edit-crop-populasi" name="populasi"
                            class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
                 </div>
                 <div>
-                    <label for="edit-crop-tanggal-tanam" class="block text-xs font-semibold text-text mb-1">Tanggal Tanam <span class="text-red-500">*</span></label>
+                    <label for="edit-crop-tanggal-tanam" class="block text-xs font-semibold text-text mb-1">{{ $labelTanggal }} <span class="text-red-500">*</span></label>
                     <input type="date" id="edit-crop-tanggal-tanam" name="tanggal_tanam" required
                            class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
                 </div>
-            </div>
-
-            <div>
-                <label for="edit-crop-catatan" class="block text-xs font-semibold text-text mb-1">Catatan Lahan / Lokasi (Opsional)</label>
-                <textarea id="edit-crop-catatan" name="catatan" rows="2"
-                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm resize-none"></textarea>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2">
@@ -1069,7 +1119,7 @@
     </div>
 </div>
 
-{{-- 3. Modal Tambah Kegiatan HST --}}
+{{-- 3. Modal Tambah Kegiatan HST / HSS --}}
 <div id="modal-tambah-kegiatan" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-slide-up">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
@@ -1091,51 +1141,15 @@
             </div>
 
             <div>
-                <label for="act-hst" class="block text-xs font-semibold text-text mb-1">Target HST (Hari Keberapa) <span class="text-red-500">*</span></label>
+                <label for="act-hst" class="block text-xs font-semibold text-text mb-1">Target {{ $labelCode }} (Hari Keberapa) <span class="text-red-500">*</span></label>
                 <div class="flex items-center gap-2">
                     <input type="number" id="act-hst" name="target_hst" min="0" required placeholder="Contoh: 15"
                            class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-mono">
-                    <span class="text-xs text-text-muted whitespace-nowrap font-medium">HST</span>
+                    <span class="text-xs text-text-muted whitespace-nowrap font-medium">{{ $labelCode }}</span>
                 </div>
                 <p class="text-[11px] text-text-muted mt-1">Tentukan pada umur tanaman ke berapa kegiatan ini harus dilaksanakan.</p>
             </div>
-
-            <div>
-                <label for="act-catatan" class="block text-xs font-semibold text-text mb-1">Catatan / Dosis Bahan (Opsional)</label>
-                <textarea id="act-catatan" name="catatan" rows="2" placeholder="Contoh: Pupuk NPK 15-15-15 dosis 2 sendok per tanaman..."
-                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm resize-none"></textarea>
-            </div>
-
-            {{-- Upload Dokumentasi Foto (Maksimal 5 Foto) --}}
-            <div class="p-3 rounded-xl border border-gray-200 bg-gray-50/70 space-y-2">
-                <div class="flex items-center justify-between">
-                    <label class="block text-xs font-semibold text-text">
-                        Dokumentasi Foto <span class="text-text-muted font-normal">(Maks. 5 foto)</span>
-                    </label>
-                    <span id="act-photo-counter" class="text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200">
-                        0/5 Foto
-                    </span>
-                </div>
-                <div>
-                    <label for="act-foto-kegiatan"
-                           class="flex flex-col items-center justify-center p-2.5 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl cursor-pointer bg-white transition-colors">
-                        <svg class="w-5 h-5 text-gray-400 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
-                        </svg>
-                        <span class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">+ Tambah Foto (Maks. 5)</span>
-                        <input type="file"
-                               id="act-foto-kegiatan"
-                               name="foto_kegiatan[]"
-                               multiple
-                               accept="image/jpeg,image/png,image/jpg,image/webp"
-                               onchange="handleActPhotoChange(event)"
-                               class="hidden">
-                    </label>
-                </div>
-                <div id="act-photo-preview-grid" class="grid grid-cols-5 gap-2 pt-1 hidden"></div>
-            </div>
-
+ 
             <div class="flex items-center justify-end gap-2 pt-2">
                 <button type="button" onclick="closeModal('modal-tambah-kegiatan')"
                         class="px-4 py-2 rounded-xl border border-gray-200 text-xs font-medium text-text-secondary hover:bg-gray-50">
@@ -1150,6 +1164,7 @@
     </div>
 </div>
 
+@if (!$isHss)
 {{-- 4. Modal Konfirmasi Panen --}}
 <div id="modal-panen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-slide-up">
@@ -1232,6 +1247,7 @@
         </form>
     </div>
 </div>
+@endif
 
 {{-- 5. Modal Akhiri Tanaman Ini --}}
 <div id="modal-end-crop" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden">
@@ -1252,7 +1268,7 @@
                 <label for="end-crop-tanggal" class="block text-xs font-semibold text-text mb-1">Tanggal Diakhiri <span class="text-red-500">*</span></label>
                 <input type="date" id="end-crop-tanggal" name="tanggal_akhir" required value="{{ now()->toDateString() }}"
                        class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
-                <p class="text-[11px] text-text-muted mt-1">HST akan dikunci pada tanggal ini dan tanaman dipindahkan ke Riwayat Tanam.</p>
+                <p class="text-[11px] text-text-muted mt-1">{{ $labelCode }} akan dikunci pada tanggal ini dan tanaman dipindahkan ke {{ $isHss ? 'Riwayat Semai' : 'Riwayat Tanam' }}.</p>
             </div>
 
             <div>
@@ -1281,6 +1297,66 @@
                 <button type="submit"
                         class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-sm transition-all">
                     Ya, Akhiri Tanaman
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal Mulai Tanam (Pindah ke HST) --}}
+<div id="modal-pindah-tanam" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-slide-up">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <div>
+                <h3 class="text-lg font-bold text-text">Mulai Tanam ke Lahan (HST)</h3>
+                <p id="modal-pindah-crop-title" class="text-xs text-primary font-semibold mt-0.5"></p>
+            </div>
+            <button type="button" onclick="closeModal('modal-pindah-tanam')" class="p-1.5 rounded-lg text-text-muted hover:bg-gray-100 cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form id="form-pindah-tanam" method="POST" action="" class="space-y-4">
+            @csrf
+            <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 leading-relaxed">
+                Bibit semai ini akan diarsipkan ke <strong>Riwayat Semai</strong> dan secara otomatis dibuatkan tanaman baru di <strong>Kalender HST</strong> mulai dari <strong>0 HST</strong> pada tanggal tanam berikut.
+            </div>
+
+            <div>
+                <label for="pindah-tanggal" class="block text-xs font-semibold text-text mb-1">
+                    Tanggal Mulai Tanam di Lahan (0 HST) <span class="text-red-500">*</span>
+                </label>
+                <input type="date" id="pindah-tanggal" name="tanggal_tanam" required value="{{ now()->toDateString() }}"
+                       class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
+            </div>
+
+            <div>
+                <label for="pindah-populasi" class="block text-xs font-semibold text-text mb-1">
+                    Populasi di Lahan <span class="text-text-muted font-normal">(opsional)</span>
+                </label>
+                <input type="text" id="pindah-populasi" name="populasi" placeholder="Contoh: 2.000 Pohon / 1 Ha"
+                       class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
+            </div>
+
+            <div>
+                <label for="pindah-catatan" class="block text-xs font-semibold text-text mb-1">
+                    Catatan Pindah Tanam <span class="text-text-muted font-normal">(opsional)</span>
+                </label>
+                <textarea id="pindah-catatan" name="catatan" rows="2" placeholder="Kondisi bibit saat pindah tanam, bedengan lahan, dll..."
+                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm resize-none"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('modal-pindah-tanam')"
+                        class="px-4 py-2 rounded-xl border border-gray-200 text-xs font-medium text-text-secondary hover:bg-gray-50 cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                    </svg>
+                    Mulai Tanam Sekarang (0 HST)
                 </button>
             </div>
         </form>
@@ -1326,14 +1402,17 @@
     }
 
     // Edit Crop Modal
-    function openEditCropModal(id, nama, varietas, populasi, tanggalTanam, catatan) {
+    function openEditCropModal(id, nama, varietas, populasi, tanggalTanam, catatan, tipe) {
         const form = document.getElementById('form-edit-tanaman');
         form.action = '/kalender-hst/tanaman/' + id;
         document.getElementById('edit-crop-nama').value = nama;
         document.getElementById('edit-crop-varietas').value = varietas || '';
         document.getElementById('edit-crop-populasi').value = populasi || '';
         document.getElementById('edit-crop-tanggal-tanam').value = tanggalTanam;
-        document.getElementById('edit-crop-catatan').value = catatan || '';
+        const editCat = document.getElementById('edit-crop-catatan');
+        if (editCat) editCat.value = catatan || '';
+        const tipeInput = document.getElementById('edit-crop-tipe');
+        if (tipeInput) tipeInput.value = tipe || '{{ $isHss ? "hss" : "hst" }}';
         openModal('modal-edit-tanaman');
     }
 
@@ -1400,11 +1479,12 @@
 
     function openModalActivity(cropId, cropName) {
         const form = document.getElementById('form-tambah-kegiatan');
-        form.action = '/kalender-hst/tanaman/' + cropId + '/kegiatan';
+        form.action = '{{ $isHss ? '/kalender-hss' : '/kalender-hst' }}/tanaman/' + cropId + '/kegiatan';
         document.getElementById('modal-activity-crop-title').innerText = 'Untuk: ' + cropName;
         document.getElementById('act-nama').value = '';
         document.getElementById('act-hst').value = '';
-        document.getElementById('act-catatan').value = '';
+        const actCat = document.getElementById('act-catatan');
+        if (actCat) actCat.value = '';
 
         // Reset foto
         actSelectedFiles = [];
@@ -1414,6 +1494,7 @@
         openModal('modal-tambah-kegiatan');
     }
 
+    @if (!$isHss)
     // Harvest Modal
     function openHarvestModal(cropId, cropName, tanggalTanam, nextNumber) {
         const form = document.getElementById('form-panen');
@@ -1434,6 +1515,7 @@
         if (submitBtn) submitBtn.innerText = 'Simpan Panen ke-' + num;
         openModal('modal-panen');
     }
+    @endif
 
     // End Crop Modal
     function openEndCropModal(cropId, cropName, tanggalTanam) {
@@ -1446,6 +1528,24 @@
         const catatanEl = document.getElementById('end-crop-catatan');
         if (catatanEl) catatanEl.value = '';
         openModal('modal-end-crop');
+    }
+
+    // Pindah Tanam / Mulai Tanam ke HST Modal
+    function openPindahTanamModal(cropId, cropName, plantDate, populasi = '') {
+        const form = document.getElementById('form-pindah-tanam');
+        if (form) form.action = '/kalender-hss/tanaman/' + cropId + '/pindah-tanam';
+        const titleEl = document.getElementById('modal-pindah-crop-title');
+        if (titleEl) titleEl.innerText = 'Bibit: ' + cropName;
+        const tglEl = document.getElementById('pindah-tanggal');
+        if (tglEl) {
+            tglEl.min = plantDate;
+            tglEl.value = '{{ now()->toDateString() }}';
+        }
+        const popEl = document.getElementById('pindah-populasi');
+        if (popEl) popEl.value = populasi || '';
+        const catEl = document.getElementById('pindah-catatan');
+        if (catEl) catEl.value = '';
+        openModal('modal-pindah-tanam');
     }
 
     // Close modal on Escape
@@ -1517,6 +1617,191 @@
             totalEl.addEventListener('input', autoCalcGross);
             hargaEl.addEventListener('input', autoCalcGross);
         }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('open_fonnte') === '1') {
+            openFonnteModal();
+        }
     });
+
+    // ── Fonnte WhatsApp Functions ──
+    function openFonnteModal() {
+        openModal('modal-fonnte-settings');
+        loadFonnteSettings();
+    }
+
+    function loadFonnteSettings() {
+        fetch('/pengaturan/fonnte')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.settings) {
+                    const tokenInput = document.getElementById('fonnte-token');
+                    const phoneInput = document.getElementById('fonnte-target-phone');
+                    const enabledInput = document.getElementById('fonnte-enabled');
+                    const webhookInput = document.getElementById('fonnte-webhook-url');
+
+                    if (tokenInput) tokenInput.value = data.settings.token || '';
+                    if (phoneInput) phoneInput.value = data.settings.target_phone || '';
+                    if (enabledInput) enabledInput.checked = !!data.settings.enabled;
+                    if (webhookInput && data.settings.webhook_url) webhookInput.value = data.settings.webhook_url;
+                }
+            })
+            .catch(err => {
+                console.error('Gagal memuat pengaturan Fonnte:', err);
+            });
+    }
+
+    function saveFonnteSettings(e) {
+        e.preventDefault();
+        const token = document.getElementById('fonnte-token')?.value.trim() || '';
+        const target_phone = document.getElementById('fonnte-target-phone')?.value.trim() || '';
+        const enabled = document.getElementById('fonnte-enabled')?.checked ? 1 : 0;
+        const btn = document.getElementById('btn-save-fonnte');
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = 'Menyimpan...';
+        }
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        fetch('/pengaturan/fonnte', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ token, target_phone, enabled })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan Pengaturan`;
+            }
+            if (data.success) {
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastSuccess(data.message || 'Pengaturan berhasil disimpan');
+                } else if (window.Swal) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil', text: data.message });
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                alert(data.message || 'Gagal menyimpan pengaturan');
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan Pengaturan`;
+            }
+            alert('Terjadi kesalahan saat menyimpan pengaturan.');
+        });
+    }
+
+    function copyWebhookUrl() {
+        const input = document.getElementById('fonnte-webhook-url');
+        if (!input) return;
+        input.select();
+        navigator.clipboard.writeText(input.value).then(() => {
+            if (window.AgriSwal) {
+                window.AgriSwal.toastSuccess('Webhook URL berhasil disalin!');
+            } else {
+                alert('Webhook URL berhasil disalin!');
+            }
+        });
+    }
+
+    function testFonnteSend() {
+        const phone = document.getElementById('fonnte-target-phone')?.value.trim() || '';
+        const btn = document.getElementById('btn-fonnte-test');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = 'Mengirim...';
+        }
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        fetch('/pengaturan/fonnte/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ target_phone: phone })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Kirim Pesan Tes`;
+            }
+            if (data.success) {
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastSuccess(data.message);
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                alert(data.message || 'Gagal mengirim pesan tes');
+            }
+        })
+        .catch(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Kirim Pesan Tes`;
+            }
+            alert('Terjadi kesalahan pada server saat mengirim pesan tes.');
+        });
+    }
+
+    function triggerFonnteReminder(type) {
+        const phone = document.getElementById('fonnte-target-phone')?.value.trim() || '';
+        const btnId = type === 'afternoon' ? 'btn-fonnte-afternoon' : 'btn-fonnte-morning';
+        const btn = document.getElementById(btnId);
+        const origText = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = 'Memproses...';
+        }
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        fetch('/pengaturan/fonnte/trigger', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ type: type, target_phone: phone })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origText;
+            }
+            if (data.success) {
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastSuccess(data.message);
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                alert(data.message || 'Pemberitahuan: ' + (data.result?.message || 'Tidak ada kegiatan atau pesan gagal'));
+            }
+        })
+        .catch(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origText;
+            }
+            alert('Terjadi kesalahan pada server.');
+        });
+    }
 </script>
 @endpush

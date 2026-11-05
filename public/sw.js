@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agritrack-v7';
+const CACHE_NAME = 'agritrack-v13';
 const PRECACHE_ASSETS = [
     '/',
     '/dashboard',
@@ -9,6 +9,7 @@ const PRECACHE_ASSETS = [
     '/data-obat',
     '/data-obat/tambah',
     '/keuangan',
+    '/config-fonnte',
     '/images/icon.png',
     '/manifest.json'
 ];

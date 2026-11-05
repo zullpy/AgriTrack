@@ -15,6 +15,7 @@ class Crop extends Model
         'populasi',
         'tanggal_tanam',
         'status',
+        'tipe',
         'tanggal_panen',
         'total_hst_panen',
         'total_panen',
@@ -25,6 +26,8 @@ class Crop extends Model
 
     protected $appends = [
         'current_hst',
+        'current_hss',
+        'is_hss',
         'emoji',
         'next_harvest_number',
         'harvest_count',
@@ -78,12 +81,37 @@ class Crop extends Model
         return $val > 0 ? 'Rp '.number_format($val, 0, ',', '.') : '—';
     }
 
+    public function getIsHssAttribute(): bool
+    {
+        return ($this->tipe ?? 'hst') === 'hss';
+    }
+
+    public function getCurrentHssAttribute(): int
+    {
+        return $this->current_hst;
+    }
+
+    public function getLabelHstOrHssAttribute(): string
+    {
+        return $this->is_hss ? 'HSS' : 'HST';
+    }
+
+    public function getLabelHariAttribute(): string
+    {
+        return $this->is_hss ? 'Hari Setelah Semai' : 'Hari Setelah Tanam';
+    }
+
+    public function getLabelTanggalAttribute(): string
+    {
+        return $this->is_hss ? 'Tanggal Semai' : 'Tanggal Menanam';
+    }
+
     /**
      * Hitung HST berjalan hari ini (atau HST terkunci jika sudah dipanen / diakhiri).
      */
     public function getCurrentHstAttribute(): int
     {
-        if ($this->status !== 'Sedang Ditanam') {
+        if (! in_array($this->status, ['Sedang Ditanam', 'Sedang Disemai'])) {
             return (int) ($this->total_hst_panen ?? 0);
         }
 
@@ -111,7 +139,7 @@ class Crop extends Model
         }
 
         // Jika sudah dipanen / diakhiri dan tanggal cek melewati tanggal panen / akhir
-        if ($this->status !== 'Sedang Ditanam' && $this->tanggal_panen) {
+        if (! in_array($this->status, ['Sedang Ditanam', 'Sedang Disemai']) && $this->tanggal_panen) {
             $harvestDate = Carbon::parse($this->tanggal_panen)->startOfDay();
             if ($targetDate->gt($harvestDate)) {
                 return null;
@@ -291,12 +319,24 @@ class Crop extends Model
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'Sedang Ditanam');
+        return $query->whereIn('status', ['Sedang Ditanam', 'Sedang Disemai']);
     }
 
     public function scopeHarvested(Builder $query): Builder
     {
-        return $query->whereIn('status', ['Sudah Dipanen', 'Diakhiri']);
+        return $query->whereIn('status', ['Sudah Dipanen', 'Diakhiri', 'Sudah Pindah Tanam']);
+    }
+
+    public function scopeHst(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            $q->where('tipe', 'hst')->orWhereNull('tipe');
+        });
+    }
+
+    public function scopeHss(Builder $query): Builder
+    {
+        return $query->where('tipe', 'hss');
     }
 
     /**
@@ -334,11 +374,20 @@ class Crop extends Model
             }
 
             $totalAplikasiCount++;
+            $metode = $act->metode_aplikasi ?: 'Semprot';
+            $isPerPlant = in_array($metode, ['Kocor', 'Tabur'], true);
+            $populasi = (float) ($act->populasi_target ?: ($this->numeric_populasi ?: 1.0));
+
             $tanks = (float) ($act->jumlah_tank ?? 1.0);
             if ($tanks <= 0) {
                 $tanks = 1.0;
             }
-            $totalTankCount += $tanks;
+
+            $hasPerPlantSuffix = (bool) preg_match('/\/\s*(?:tanaman|pohon|polybag|polibag|bedeng|titik)\b/i', $act->aplikasi_obat);
+            $multiplierUnits = $isPerPlant ? ($hasPerPlantSuffix ? max(1.0, $populasi) : 1.0) : $tanks;
+            if (! $isPerPlant) {
+                $totalTankCount += $tanks;
+            }
 
             $rowExplicitBiaya = (float) ($act->total_biaya_obat ?? 0);
 
@@ -380,18 +429,22 @@ class Crop extends Model
 
                 $canonicalName = $matched ? $matched->nama : $medName;
                 $jenis = $matched ? $matched->jenis : null;
-                $baseUnit = $doseUnit ?: ($matched ? $matched->base_unit_label : 'satuan');
+                $isMg = in_array(strtolower($doseUnit), ['mg', 'miligram'], true);
+                $baseUnit = $isMg ? ($matched ? $matched->base_unit_label : 'gram') : ($doseUnit ?: ($matched ? $matched->base_unit_label : 'satuan'));
+
+                $unitMultiplier = 1.0;
+                if (in_array(strtolower($doseUnit), ['kg', 'kilogram', 'liter', 'ltr', 'lt', 'l'], true)) {
+                    $unitMultiplier = 1000.0;
+                } elseif ($isMg) {
+                    $unitMultiplier = 0.001;
+                }
 
                 if ($itemBiaya <= 0 && $doseQty > 0 && $matched && $matched->harga_per_base_unit > 0) {
-                    $multiplier = 1.0;
-                    if (in_array($doseUnit, ['kg', 'kilogram', 'liter', 'ltr', 'lt', 'l'])) {
-                        $multiplier = 1000.0;
-                    }
-                    $itemBiaya = round($doseQty * $multiplier * $matched->harga_per_base_unit * $tanks);
+                    $itemBiaya = round($doseQty * $unitMultiplier * $matched->harga_per_base_unit * $multiplierUnits);
                 }
 
                 $rowParsedBiayaTotal += $itemBiaya;
-                $totalDoseInField = $doseQty > 0 ? ($doseQty * $tanks) : 0.0;
+                $totalDoseInField = $doseQty > 0 ? ($doseQty * $unitMultiplier * $multiplierUnits) : 0.0;
 
                 $normKey = strtolower($canonicalName);
                 if (! isset($aggregated[$normKey])) {
@@ -407,7 +460,9 @@ class Crop extends Model
                 }
 
                 $aggregated[$normKey]['frekuensi']++;
-                $aggregated[$normKey]['total_tank'] += $tanks;
+                if (! $isPerPlant) {
+                    $aggregated[$normKey]['total_tank'] += $tanks;
+                }
                 $aggregated[$normKey]['total_biaya'] += $itemBiaya;
 
                 if ($totalDoseInField > 0) {
@@ -418,12 +473,19 @@ class Crop extends Model
                     ? (((float) $totalDoseInField == (int) $totalDoseInField ? (string) (int) $totalDoseInField : (string) round($totalDoseInField, 1)).' '.$baseUnit)
                     : '—';
 
+                $unitLabelForDose = $doseUnit ?: ($isPerPlant ? ($metode === 'Tabur' ? 'gram' : 'ml') : $baseUnit);
+                $doseTextLabel = $isPerPlant
+                    ? ($doseQty > 0 ? (((float) $doseQty == (int) $doseQty ? (string) (int) $doseQty : (string) $doseQty).' '.$unitLabelForDose.($hasPerPlantSuffix ? '/tanaman' : '')) : '—')
+                    : ($doseQty > 0 ? (((float) $doseQty == (int) $doseQty ? (string) (int) $doseQty : (string) $doseQty).' '.$baseUnit.'/tank') : '—');
+
                 $aggregated[$normKey]['riwayat'][] = [
                     'hst' => $act->target_hst,
                     'tanggal' => $act->target_date ? $act->target_date->translatedFormat('d M Y') : null,
                     'nama_kegiatan' => $act->nama_kegiatan,
-                    'dosis_per_tank_text' => $doseQty > 0 ? (((float) $doseQty == (int) $doseQty ? (string) (int) $doseQty : (string) $doseQty).' '.$baseUnit.'/tank') : '—',
-                    'jumlah_tank' => $tanks,
+                    'metode' => $metode,
+                    'dosis_per_tank_text' => $doseTextLabel,
+                    'jumlah_tank' => $isPerPlant ? 0 : $tanks,
+                    'populasi_target' => $isPerPlant ? $populasi : null,
                     'total_dosis_text' => $fmtTotalDose,
                     'biaya' => $itemBiaya,
                     'formatted_biaya' => $itemBiaya > 0 ? 'Rp '.number_format($itemBiaya, 0, ',', '.') : '—',

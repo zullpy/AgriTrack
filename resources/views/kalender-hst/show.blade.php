@@ -1,6 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Menu HST - ' . $crop->nama_tanaman . ' | AgriTrack')
+@php
+    $labelCode = $crop->label_hst_or_hss;
+    $labelHari = $crop->label_hari;
+    $labelTanggal = $crop->label_tanggal;
+    $baseRoute = $crop->is_hss ? '/kalender-hss' : '/kalender-hst';
+    $cropRoute = $baseRoute . '/tanaman/' . $crop->id;
+    $isActiveCrop = in_array($crop->status, ['Sedang Ditanam', 'Sedang Disemai']);
+@endphp
+
+@section('title', 'Menu ' . $labelCode . ' - ' . $crop->nama_tanaman . ' | AgriTrack')
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-12">
@@ -8,27 +17,40 @@
     {{-- ── Breadcrumbs & Action Header ── --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-2 text-xs sm:text-sm text-text-muted">
-            <a href="/kalender-hst?tab={{ $crop->status !== 'Sedang Ditanam' ? 'riwayat' : 'aktif' }}"
+            <a href="{{ $baseRoute }}?tab={{ !$isActiveCrop ? 'riwayat' : 'aktif' }}"
                class="inline-flex items-center gap-1 text-text-secondary hover:text-primary transition-colors font-medium">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
                 </svg>
-                Kembali ke Kalender HST
+                Kembali ke Kalender {{ $labelCode }}
             </a>
             <span class="text-gray-300">/</span>
             <span class="text-text font-semibold truncate">{{ $crop->nama_tanaman }}</span>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-            @if ($crop->status === 'Sedang Ditanam')
+            @if ($crop->is_hss && $crop->status === 'Sedang Disemai')
                 <button type="button"
-                        onclick="openHarvestModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}', {{ $crop->next_harvest_number }})"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold transition-all shadow-xs">
+                        onclick="openPindahTanamModal()"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-dark active:scale-95 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                     </svg>
-                    Panen ke-{{ $crop->next_harvest_number }}
+                    Mulai Tanam (Ke HST)
                 </button>
+            @endif
+
+            @if ($isActiveCrop)
+                @if (!$crop->is_hss)
+                    <button type="button"
+                            onclick="openHarvestModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}', {{ $crop->next_harvest_number }})"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold transition-all shadow-xs">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Panen ke-{{ $crop->next_harvest_number }}
+                    </button>
+                @endif
 
                 <button type="button"
                         onclick="openEndCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ $crop->tanggal_tanam->toDateString() }}')"
@@ -36,7 +58,7 @@
                     <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
                     </svg>
-                    Akhiri Tanaman
+                    {{ $crop->is_hss ? 'Akhiri Semai' : 'Akhiri Tanaman' }}
                 </button>
             @endif
 
@@ -52,13 +74,13 @@
             </button> -->
 
             <form method="POST"
-                  action="/kalender-hst/tanaman/{{ $crop->id }}"
+                  action="{{ $cropRoute }}"
                   data-confirm-delete="{{ $crop->nama_tanaman }}"
                   data-confirm-title="Hapus Tanaman?"
                   class="inline">
                 @csrf
                 @method('DELETE')
-                <input type="hidden" name="redirect_tab" value="{{ in_array($crop->status, ['Sudah Dipanen', 'Diakhiri']) ? 'riwayat' : 'aktif' }}">
+                <input type="hidden" name="redirect_tab" value="{{ in_array($crop->status, ['Sudah Dipanen', 'Diakhiri', 'Sudah Pindah Tanam']) ? 'riwayat' : 'aktif' }}">
                 <button type="submit"
                         class="p-2 rounded-xl border border-gray-200 bg-white text-text-muted hover:text-red-500 hover:bg-red-50 transition-all shadow-xs"
                         title="Hapus Tanaman">
@@ -79,6 +101,26 @@
                 </svg>
             </div>
             <span>{{ session('success') }}</span>
+        </div>
+    @endif
+    @if (session('warning'))
+        <div class="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm font-medium shadow-xs">
+            <div class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <span>{{ session('warning') }}</span>
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-900 text-sm font-medium shadow-xs">
+            <div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+            <span>{{ session('error') }}</span>
         </div>
     @endif
 
@@ -110,7 +152,7 @@
                 </div>
 
                 <div class="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
-                    @if ($crop->harvest_count > 0)
+                    @if (!$crop->is_hss && $crop->harvest_count > 0)
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
                             <svg class="w-3.5 h-3.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c-2 2-3 5-3 9 0 3.5 1 6.5 3 9m0-18c2 2 3 5 3 9 0 3.5-1 6.5-3 9M6.5 7.5c2 1 4.5 1.5 5.5 1.5m-5.5 5c2 1 4.5 1.5 5.5 1.5m11-6.5c-2 1-4.5 1.5-5.5 1.5m5.5 5c-2 1-4.5 1.5-5.5 1.5"/>
@@ -126,14 +168,16 @@
                             </span>
                         @endif
                     @endif
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold {{ $crop->status === 'Sedang Ditanam' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($crop->status === 'Diakhiri' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-blue-50 text-blue-700 border border-blue-200') }}">
-                        @if ($crop->status === 'Sedang Ditanam')
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold {{ $isActiveCrop ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($crop->status === 'Diakhiri' ? 'bg-amber-50 text-amber-800 border border-amber-200' : ($crop->status === 'Sudah Pindah Tanam' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-blue-50 text-blue-700 border border-blue-200')) }}">
+                        @if ($isActiveCrop)
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            HST {{ $currentHst }} • Sedang Ditanam
+                            {{ $labelCode }} {{ $currentHst }} • {{ $crop->status }}
+                        @elseif ($crop->status === 'Sudah Pindah Tanam')
+                            Sudah Pindah Tanam ({{ $labelCode }} {{ $crop->total_hst_panen ?? 0 }})
                         @elseif ($crop->status === 'Diakhiri')
-                            Tanaman Diakhiri (HST {{ $crop->total_hst_panen ?? 0 }})
+                            Tanaman Diakhiri ({{ $labelCode }} {{ $crop->total_hst_panen ?? 0 }})
                         @else
-                            Sudah Dipanen (HST {{ $crop->total_hst_panen ?? 0 }})
+                            Sudah Dipanen ({{ $labelCode }} {{ $crop->total_hst_panen ?? 0 }})
                         @endif
                     </span>
                     <button type="button"
@@ -150,7 +194,7 @@
             {{-- Bottom Row: Key Information Cards / Grid --}}
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3.5">
                 <div class="p-3 rounded-xl bg-gray-50/80 border border-gray-100">
-                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Benih yang Ditanam</span>
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Benih yang {{ $crop->is_hss ? 'Disemai' : 'Ditanam' }}</span>
                     <span class="text-xs sm:text-sm font-bold text-gray-900 mt-0.5 block truncate" title="{{ $crop->varietas ?: ($crop->nama_tanaman ?? '-') }}">
                         {{ $crop->varietas ? $crop->varietas : ($crop->nama_tanaman ?? '-') }}
                     </span>
@@ -164,7 +208,7 @@
                 </div>
 
                 <div class="p-3 rounded-xl bg-gray-50/80 border border-gray-100">
-                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Tanggal Menanam</span>
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">{{ $labelTanggal }}</span>
                     <span class="text-xs sm:text-sm font-bold text-gray-900 mt-0.5 block">
                         {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->locale('id')->isoFormat('dddd') }}, {{ \Carbon\Carbon::parse($crop->tanggal_tanam)->format('d-m-Y') }}
                     </span>
@@ -196,7 +240,7 @@
         {{-- ── Action Bar ── --}}
         <div class="p-3 sm:p-4 bg-gray-50/90 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
             <div class="flex items-center justify-between sm:justify-start gap-2 flex-wrap">
-                <span class="font-bold text-gray-700 uppercase tracking-wider text-[11px] whitespace-nowrap">Log Kegiatan Per HST</span>
+                <span class="font-bold text-gray-700 uppercase tracking-wider text-[11px] whitespace-nowrap">Log Kegiatan Per {{ $labelCode }}</span>
                 @if ($medicineSummary['total_aplikasi_count'] > 0)
                     <button type="button"
                             onclick="switchDetailTab('obat')"
@@ -210,7 +254,7 @@
                     </button>
                 @endif
             </div>
-            @if ($crop->status === 'Sedang Ditanam')
+            @if ($isActiveCrop)
                 <button type="button"
                         onclick="openAddActivityModal({{ $currentHst }})"
                         class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 rounded-xl sm:rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold transition-all shadow-xs shrink-0 cursor-pointer w-full sm:w-auto text-xs sm:text-sm">
@@ -224,7 +268,7 @@
                     <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
                     </svg>
-                    <span>Arsip Log HST (Riwayat)</span>
+                    <span>Arsip Log {{ $labelCode }} (Riwayat)</span>
                 </span>
             @endif
         </div>
@@ -242,7 +286,7 @@
             <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
             </svg>
-            <span>Log Kalender HST</span>
+            <span>Log Kalender {{ $labelCode }}</span>
             <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700 shrink-0">
                 {{ count($tableRows) }} Hari
             </span>
@@ -391,7 +435,7 @@
                                         <th class="py-2.5 px-3.5 text-center">Frekuensi & Tangki</th>
                                         <th class="py-2.5 px-3.5 text-center">Total Dosis</th>
                                         <th class="py-2.5 px-3.5 text-right">Total Estimasi Biaya</th>
-                                        <th class="py-2.5 px-3.5 text-center">Riwayat HST</th>
+                                        <th class="py-2.5 px-3.5 text-center">Riwayat {{ $labelCode }}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -434,8 +478,8 @@
                                                 <div class="flex items-center justify-center gap-1 flex-wrap max-w-xs mx-auto">
                                                     @foreach ($item['riwayat'] as $r)
                                                         <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-800" 
-                                                              title="{{ $r['nama_kegiatan'] }} ({{ $r['tanggal'] ?? 'HST '.$r['hst'] }}): {{ $r['dosis_per_tank_text'] }} ({{ $r['jumlah_tank'] }} Tank = {{ $r['total_dosis_text'] }}, {{ $r['formatted_biaya'] }})">
-                                                            HST {{ $r['hst'] }}
+                                                              title="{{ $r['nama_kegiatan'] }} ({{ $r['tanggal'] ?? $labelCode.' '.$r['hst'] }}): {{ $r['dosis_per_tank_text'] }} ({{ $r['jumlah_tank'] }} Tank = {{ $r['total_dosis_text'] }}, {{ $r['formatted_biaya'] }})">
+                                                            {{ $labelCode }} {{ $r['hst'] }}
                                                         </span>
                                                     @endforeach
                                                 </div>
@@ -489,13 +533,12 @@
                     {{-- Table Header --}}
                     <thead>
                         <tr class="bg-gray-100 text-gray-900 font-bold uppercase tracking-wider text-center">
-                            <th class="py-3 px-2 w-[76px] min-w-[76px] max-w-[76px] border-b-2 border-r border-gray-300 font-extrabold sticky left-0 z-30 bg-gray-100 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.14)]">HST</th>
+                            <th class="py-3 px-2 w-[76px] min-w-[76px] max-w-[76px] border-b-2 border-r border-gray-300 font-extrabold sticky left-0 z-30 bg-gray-100 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.14)]">{{ $labelCode }}</th>
                             <th class="py-3 px-4 w-44 sm:w-56 border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">KALENDER</th>
                             <th class="py-3 px-4 w-40 sm:w-48 border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">KEGIATAN</th>
                             <th class="py-3 px-4 min-w-[220px] max-w-[320px] border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">APLIKASI OBAT</th>
                             <th class="py-3 px-4 w-36 sm:w-44 border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">SASARAN</th>
-                            <th class="py-3 px-4 min-w-[180px] max-w-[260px] border-b-2 border-r border-gray-300 font-extrabold text-left bg-gray-100">KETERANGAN</th>
-                            <th class="py-3 px-3 w-28 sm:w-36 border-b-2 border-gray-300 font-extrabold text-center bg-gray-100">FOTO</th>
+                            <th class="py-3 px-4 min-w-[180px] max-w-[260px] border-b-2 border-gray-300 font-extrabold text-left bg-gray-100">KETERANGAN</th>
                         </tr>
                     </thead>
 
@@ -516,11 +559,11 @@
                                 data-has-pending="{{ $hasPending ? '1' : '0' }}"
                                 class="hst-table-row transition-colors group">
 
-                                {{-- 1. Kolom HST (Sticky di Mobile saat Scroll ke Samping, Solid 100% Opaque) --}}
+                                {{-- 1. Kolom HST / HSS (Sticky di Mobile saat Scroll ke Samping, Solid 100% Opaque) --}}
                                 <td class="py-3 px-2 text-center align-top font-mono font-bold whitespace-nowrap sticky left-0 z-20 w-[76px] min-w-[76px] max-w-[76px] border-b border-r shadow-[3px_0_6px_-2px_rgba(0,0,0,0.14)] {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-500 text-emerald-950' : ($isTomorrow ? 'bg-[#fef3c7] border-b-[#fde68a] border-r-amber-400 text-gray-900' : ($isPlantingDay ? 'bg-[#ecfdf5] border-b-[#a7f3d0] border-r-emerald-400 text-gray-900' : 'bg-white group-hover:bg-gray-50 border-b-gray-200 border-r-gray-300 text-gray-900')) }}">
                                     <div class="flex flex-col items-center justify-center">
                                         <span class="text-sm sm:text-base font-black {{ $isToday ? 'text-emerald-900' : 'text-gray-900' }}">
-                                            {{ $row['hst'] }}HST
+                                            {{ $row['hst'] }}{{ $labelCode }}
                                         </span>
                                         @if ($isToday)
                                             <span class="mt-0.5 px-2 py-0.5 rounded text-[9px] font-black bg-[#16a34a] text-white tracking-wider shadow-xs">
@@ -544,7 +587,7 @@
                                         <svg class="w-3 h-3 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7.58 8.42 4 4 4c0 4.42 3.58 8 8 8zm0 0c0-4.42 3.58-8 8-8 0 4.42-3.58 8-8 8z"/>
                                         </svg>
-                                        <span>Hari Pertama Tanam</span>
+                                        <span>{{ $crop->is_hss ? 'Hari Pertama Semai' : 'Hari Pertama Tanam' }}</span>
                                     </div>
                                 @endif
                                 @if (!empty($row['harvests']) && $row['harvests']->isNotEmpty())
@@ -568,6 +611,14 @@
                             <td class="py-3 px-4 align-top border-b border-r border-gray-300 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-300 text-emerald-950' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a]' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0]' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200')) }}">
                                 @if ($hasAct)
                                     <div class="space-y-2">
+                                        @if ($isPlantingDay)
+                                            <div class="text-emerald-800 font-bold flex items-center gap-1.5 pb-1 border-b border-gray-100">
+                                                <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7.58 8.42 4 4 4c0 4.42 3.58 8 8 8zm0 0c0-4.42 3.58-8 8-8 0 4.42-3.58 8-8 8z"/>
+                                                </svg>
+                                                <span>{{ $crop->is_hss ? 'Menyemai Bibit' : 'Menanam Bibit' }}</span>
+                                            </div>
+                                        @endif
                                         @foreach ($row['activities'] as $act)
                                             @php
                                                 $isDone = $act->status === 'Selesai';
@@ -594,7 +645,7 @@
                                                 {{-- Tombol Edit / Hapus Kegiatan --}}
                                                 <div class="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
                                                     <button type="button"
-                                                            onclick="openEditActivityModal({{ $act->id }}, '{{ addslashes($act->nama_kegiatan) }}', {{ $act->target_hst }}, '{{ $row['date']->toDateString() }}', `{{ addslashes($act->aplikasi_obat ?? '') }}`, `{{ addslashes($act->sasaran ?? '') }}`, `{{ addslashes($act->keterangan ?? $act->catatan ?? '') }}`, {{ json_encode($act->foto_urls) }}, {{ (float) ($act->jumlah_tank ?? 1) }}, {{ (float) ($act->total_biaya_obat ?? 0) }})"
+                                                            onclick="openEditActivityModal({{ $act->id }}, '{{ addslashes($act->nama_kegiatan) }}', {{ $act->target_hst }}, '{{ $row['date']->toDateString() }}', `{{ addslashes($act->aplikasi_obat ?? '') }}`, `{{ addslashes($act->sasaran ?? '') }}`, `{{ addslashes($act->keterangan ?? $act->catatan ?? '') }}`, {{ json_encode($act->foto_urls) }}, {{ (float) ($act->jumlah_tank ?? 1) }}, {{ (float) ($act->total_biaya_obat ?? 0) }}, '{{ $act->metode_aplikasi ?? 'Semprot' }}', {{ (float) ($act->populasi_target ?? ($crop->numeric_populasi ?? 0)) }}, {{ $act->dosis_per_tanaman !== null ? (float) $act->dosis_per_tanaman : 'null' }})"
                                                             title="Edit kegiatan"
                                                             class="p-1 rounded hover:bg-gray-200 text-text-secondary">
                                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -616,7 +667,7 @@
                                                 </div>
                                             </div>
                                         @endforeach
-                                        @if ($crop->status === 'Sedang Ditanam')
+                                        @if ($isActiveCrop)
                                             <button type="button"
                                                     onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
                                                     class="mt-1 text-[11px] font-semibold text-primary hover:underline inline-flex items-center gap-0.5 opacity-80 hover:opacity-100 cursor-pointer">
@@ -630,15 +681,15 @@
                                             <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7.58 8.42 4 4 4c0 4.42 3.58 8 8 8zm0 0c0-4.42 3.58-8 8-8 0 4.42-3.58 8-8 8z"/>
                                             </svg>
-                                            <span>Menanam Bibit</span>
+                                            <span>{{ $crop->is_hss ? 'Menyemai Bibit' : 'Menanam Bibit' }}</span>
                                         </div>
-                                        @if ($crop->status === 'Sedang Ditanam')
-                                            {{-- <button type="button"
+                                        @if ($isActiveCrop)
+                                            <button type="button"
                                                     onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer">
+                                                    class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 shadow-2xs transition-colors cursor-pointer">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                                <span>Catat Kegiatan / Obat</span>
-                                            </button> --}}
+                                                <span>Catat</span>
+                                            </button>
                                         @endif
                                     </div>
                                 @endif
@@ -675,7 +726,7 @@
                                     </div>
                                 @endif
 
-                                @if ($crop->status === 'Sedang Ditanam' && ! $hasAct && ! $isPlantingDay)
+                                @if ($isActiveCrop && ! $hasAct && ! $isPlantingDay)
                                     <button type="button"
                                             onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
                                             class="{{ $isToday ? 'inline-flex font-bold text-emerald-800 bg-white px-2.5 py-1 rounded-md border border-emerald-300 shadow-xs' : 'inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 shadow-2xs transition-colors' }} cursor-pointer {{ !empty($row['harvests']) && $row['harvests']->isNotEmpty() ? 'mt-2' : '' }}">
@@ -743,9 +794,17 @@
                                                         </div>
                                                     @endif
 
-                                                    @if (($act->jumlah_tank && $act->jumlah_tank > 1) || $act->total_biaya_obat)
+                                                    @if ($act->metode_aplikasi === 'Kocor' || $act->metode_aplikasi === 'Tabur' || ($act->jumlah_tank && $act->jumlah_tank > 1) || $act->total_biaya_obat)
                                                         <div class="flex items-center gap-1.5 flex-wrap mt-1.5 pt-1 border-t border-emerald-100/60">
-                                                            @if ($act->jumlah_tank)
+                                                            @if ($act->metode_aplikasi === 'Kocor')
+                                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title="Metode Kocor">
+                                                                    <span>🪣 Kocor @if ($act->dosis_per_tanaman) ({{ (float) $act->dosis_per_tanaman }} ml/{{ $crop->populasi_unit_label }}) @endif</span>
+                                                                </span>
+                                                            @elseif ($act->metode_aplikasi === 'Tabur')
+                                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-50 text-orange-800 border border-orange-200" title="Metode Tabur">
+                                                                    <span>🌾 Tabur @if ($act->dosis_per_tanaman) ({{ (float) $act->dosis_per_tanaman }} g/{{ $crop->populasi_unit_label }}) @endif</span>
+                                                                </span>
+                                                            @elseif ($act->jumlah_tank)
                                                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200" title="Jumlah tank semprot">
                                                                     <svg class="w-3 h-3 text-blue-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
@@ -775,11 +834,11 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    @if ($crop->status === 'Sedang Ditanam')
+                                    @if ($isActiveCrop)
                                         <button type="button"
                                                 onclick="openAddActivityModal({{ $row['hst'] }}, '{{ $row['date']->toDateString() }}')"
                                                 class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
-                                                title="Catat aplikasi obat pada HST ini">
+                                                title="Catat aplikasi obat pada {{ $labelCode }} ini">
                                             <span>+ Tambah Obat</span>
                                         </button>
                                     @else
@@ -810,11 +869,11 @@
                             </td>
 
                             {{-- 6. Kolom KETERANGAN (Expandable jika Panjang) --}}
-                            <td class="py-3 px-4 align-top border-b border-r border-gray-300 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] border-r-emerald-300 text-emerald-950 font-medium' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a] text-gray-800' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0] text-gray-800' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200 text-gray-800')) }}">
+                            <td class="py-3 px-4 align-top border-b border-gray-300 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] text-emerald-950 font-medium' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a] text-gray-800' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0] text-gray-800' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200 text-gray-800')) }}">
                                 @if ($isPlantingDay)
                                     <div class="font-bold text-emerald-800 flex items-center gap-1.5">
                                         <span class="px-2 py-0.5 rounded-md bg-emerald-100 border border-emerald-300 text-emerald-900">
-                                            Hari Menanam
+                                            {{ $crop->is_hss ? 'Hari Semai' : 'Hari Menanam' }}
                                         </span>
                                     </div>
                                     @if ($crop->catatan)
@@ -849,88 +908,40 @@
                                 @endif
                             </td>
 
-                            {{-- 7. Kolom FOTO (Kolom Khusus Dokumentasi Foto) --}}
-                            <td class="py-3 px-3 align-top text-center border-b border-gray-200 {{ $isToday ? 'bg-[#dcfce7] border-b-[#86efac] text-emerald-950 font-medium' : ($isTomorrow ? 'bg-[#fffbeb] border-b-[#fde68a] text-gray-800' : ($isPlantingDay ? 'bg-[#f0fdf4] border-b-[#a7f3d0] text-gray-800' : 'bg-white group-hover:bg-gray-50/50 border-b-gray-200 text-gray-800')) }}">
-                                @php
-                                    $rowPhotos = [];
-                                    if ($hasAct) {
-                                        foreach ($row['activities'] as $aItem) {
-                                            if (!empty($aItem->foto_urls)) {
-                                                foreach ($aItem->foto_urls as $u) {
-                                                    $rowPhotos[] = [
-                                                        'url' => $u,
-                                                        'name' => $aItem->nama_kegiatan,
-                                                        'hst' => $aItem->target_hst,
-                                                        'all' => $aItem->foto_urls,
-                                                        'activity_id' => $aItem->id,
-                                                    ];
-                                                }
-                                            }
-                                        }
-                                    }
-                                @endphp
-                                @if (!empty($rowPhotos))
-                                    <div class="flex items-center justify-center">
-                                        @php
-                                            $firstPhoto = $rowPhotos[0];
-                                            $lightboxItems = array_map(function($p) {
-                                                return [
-                                                    'url' => $p['url'],
-                                                    'activityId' => $p['activity_id'],
-                                                    'name' => $p['name'] . ' (HST ' . $p['hst'] . ')',
-                                                ];
-                                            }, $rowPhotos);
-                                        @endphp
-                                        <button type="button"
-                                                onclick="openImageLightbox({{ json_encode($lightboxItems) }}, 0, '{{ addslashes($firstPhoto['name']) }} (HST {{ $firstPhoto['hst'] }})', {{ $firstPhoto['activity_id'] }})"
-                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:scale-95 border border-emerald-300 text-emerald-800 text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer group whitespace-nowrap"
-                                                title="Klik untuk melihat {{ count($rowPhotos) }} foto dokumentasi">
-                                            <svg class="w-3.5 h-3.5 text-emerald-700 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
-                                            </svg>
-                                            <span>Lihat Foto ({{ count($rowPhotos) }})</span>
-                                        </button>
-                                    </div>
-                                @else
-                                    <span class="{{ $isToday ? 'text-emerald-500' : 'text-gray-300' }} text-center block">-</span>
-                                @endif
-                            </td>
-
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
 
-        {{-- ── Footer Bar / Load More HST ── --}}
+        {{-- ── Footer Bar / Load More {{ $labelCode }} ── --}}
         <div class="p-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div class="text-text-muted">
-                @if ($crop->status === 'Sedang Ditanam' && $maxRowHst > $currentHst + 1)
-                    Menampilkan baris HST 0 sampai HST {{ $maxRowHst }} <span class="text-gray-400 font-normal">(Hari ini: HST {{ $currentHst }}, Besok: HST {{ $currentHst + 1 }})</span>.
-                @elseif ($crop->status === 'Sedang Ditanam')
-                    Menampilkan baris HST 0 sampai besok (HST {{ $maxRowHst }}).
+                @if ($isActiveCrop && $maxRowHst > $currentHst + 1)
+                    Menampilkan baris {{ $labelCode }} 0 sampai {{ $labelCode }} {{ $maxRowHst }} <span class="text-gray-400 font-normal">(Hari ini: {{ $labelCode }} {{ $currentHst }}, Besok: {{ $labelCode }} {{ $currentHst + 1 }})</span>.
+                @elseif ($isActiveCrop)
+                    Menampilkan baris {{ $labelCode }} 0 sampai besok ({{ $labelCode }} {{ $maxRowHst }}).
                 @else
-                    Menampilkan baris HST 0 sampai panen (HST {{ $maxRowHst }}).
+                    Menampilkan baris {{ $labelCode }} 0 sampai selesai ({{ $labelCode }} {{ $maxRowHst }}).
                 @endif
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
-                @if ($crop->status === 'Sedang Ditanam')
+                @if ($isActiveCrop)
                     @if ($maxRowHst > $currentHst + 1)
-                        <a href="/kalender-hst/tanaman/{{ $crop->id }}?limit_hst=reset"
+                        <a href="{{ $cropRoute }}?limit_hst=reset"
                            class="px-3.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 font-semibold text-amber-800 transition-colors shadow-xs"
-                           title="Kembalikan batas tampilan kalender ke besok (HST {{ $currentHst + 1 }})">
-                            ↺ Reset ke Besok (HST {{ $currentHst + 1 }})
+                           title="Kembalikan batas tampilan kalender ke besok ({{ $labelCode }} {{ $currentHst + 1 }})">
+                            ↺ Reset ke Besok ({{ $labelCode }} {{ $currentHst + 1 }})
                         </a>
                     @endif
-                    <a href="/kalender-hst/tanaman/{{ $crop->id }}?limit_hst={{ $maxRowHst + 15 }}#hst-row-{{ $maxRowHst }}"
+                    <a href="{{ $cropRoute }}?limit_hst={{ $maxRowHst + 15 }}#hst-row-{{ $maxRowHst }}"
                        class="px-3.5 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-semibold text-gray-800 transition-colors shadow-xs">
-                        + Tambah 15 Baris HST
+                        + Tambah 15 Baris {{ $labelCode }}
                     </a>
-                    <a href="/kalender-hst/tanaman/{{ $crop->id }}?limit_hst=120#hst-row-{{ $maxRowHst }}"
+                    <a href="{{ $cropRoute }}?limit_hst=120#hst-row-{{ $maxRowHst }}"
                        class="px-3.5 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-semibold text-gray-800 transition-colors shadow-xs">
-                        Tampilkan 120 HST (1 Musim Penuh)
+                        Tampilkan 120 {{ $labelCode }} (1 Musim Penuh)
                     </a>
                 @endif
             </div>
@@ -959,7 +970,7 @@
         </div>
 
         {{-- Form & Scrollable Body --}}
-        <form id="form-add-activity" method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/kegiatan" enctype="multipart/form-data" class="flex-1 flex flex-col min-h-0">
+        <form id="form-add-activity" method="POST" action="{{ $cropRoute }}/kegiatan" enctype="multipart/form-data" class="flex-1 flex flex-col min-h-0">
             @csrf
             <input type="hidden" name="redirect_to" value="show">
 
@@ -971,7 +982,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label for="add-target-hst" class="block text-xs font-semibold text-emerald-950 mb-1">
-                            Target HST (Hari Setelah Tanam)
+                            Target {{ $labelCode }} ({{ $labelHari }})
                         </label>
                         <div class="relative flex items-center">
                             <input type="number"
@@ -981,7 +992,7 @@
                                    value="{{ $currentHst }}"
                                    oninput="syncFromHst('add')"
                                    class="field-input w-full px-3 py-2 rounded-xl border border-emerald-300 text-sm font-mono font-bold text-emerald-950 bg-white focus:border-primary">
-                            <span class="absolute right-3 text-xs font-mono font-semibold text-emerald-700">HST</span>
+                            <span class="absolute right-3 text-xs font-mono font-semibold text-emerald-700">{{ $labelCode }}</span>
                         </div>
                     </div>
 
@@ -998,7 +1009,7 @@
                     </div>
                 </div>
                 <p class="text-[11px] text-emerald-800">
-                    HST 0 = Tanggal Menanam ({{ $crop->tanggal_tanam->format('d-m-Y') }}). Mengubah tanggal atau HST akan sinkron otomatis.
+                    {{ $labelCode }} 0 = {{ $labelTanggal }} ({{ $crop->tanggal_tanam->format('d-m-Y') }}). Mengubah tanggal atau {{ $labelCode }} akan sinkron otomatis.
                 </p>
             </div>
 
@@ -1039,12 +1050,49 @@
                     </div>
                 </div>
 
+                {{-- Pilihan 3 Metode Aplikasi Sebelum Dosis Obat: Semprot, Kocor, Tabur --}}
+                <div class="p-2.5 rounded-xl bg-white border border-emerald-200/90 shadow-2xs space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+                            </svg>
+                            <span>Metode Aplikasi</span>
+                        </span>
+                        <span id="add-metode-badge" class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">Semprot</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 pt-1">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="metode_aplikasi" value="Semprot" checked onchange="setMetodeAplikasi('add', 'Semprot')" class="sr-only peer">
+                            <div class="py-2 px-2 text-center rounded-xl border border-gray-200 bg-gray-50/70 peer-checked:bg-emerald-600 peer-checked:border-emerald-600 peer-checked:text-white font-bold text-xs text-gray-700 transition-all shadow-2xs flex flex-col sm:flex-row items-center justify-center gap-1">
+                                <span>🌧️</span>
+                                <span>Semprot</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="metode_aplikasi" value="Kocor" onchange="setMetodeAplikasi('add', 'Kocor')" class="sr-only peer">
+                            <div class="py-2 px-2 text-center rounded-xl border border-gray-200 bg-gray-50/70 peer-checked:bg-amber-600 peer-checked:border-amber-600 peer-checked:text-white font-bold text-xs text-gray-700 transition-all shadow-2xs flex flex-col sm:flex-row items-center justify-center gap-1">
+                                <span>🪣</span>
+                                <span>Kocor</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="metode_aplikasi" value="Tabur" onchange="setMetodeAplikasi('add', 'Tabur')" class="sr-only peer">
+                            <div class="py-2 px-2 text-center rounded-xl border border-gray-200 bg-gray-50/70 peer-checked:bg-orange-600 peer-checked:border-orange-600 peer-checked:text-white font-bold text-xs text-gray-700 transition-all shadow-2xs flex flex-col sm:flex-row items-center justify-center gap-1">
+                                <span>🌾</span>
+                                <span>Tabur</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 {{-- Interactive Rows Container --}}
                 <div id="add-obat-rows-container" class="space-y-2.5"></div>
 
-                {{-- Kontrol Jumlah Tank & Total Estimasi Biaya Obat --}}
+                {{-- Kontrol Multiplier: Jumlah Tank (Semprot) vs Populasi Target (Kocor / Tabur) --}}
                 <div class="rounded-xl border border-emerald-200 bg-white p-3 space-y-2.5 shadow-2xs">
-                    <div class="flex items-center justify-between gap-2">
+                    {{-- 1. Blok Kontrol Tank (Semprot) --}}
+                    <div id="add-tank-control-wrapper" class="flex items-center justify-between gap-2">
                         <div class="space-y-0.5 min-w-0">
                             <label for="add-jumlah-tank" class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
                                 <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1079,6 +1127,51 @@
                                         title="Tambah 1 tank">
                                     +
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 2. Blok Dosis Campuran per Tanaman (Kocor & Tabur) - Mengambil Populasi Otomatis dari Data Tanaman --}}
+                    <div id="add-populasi-control-wrapper" class="hidden flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200 shadow-2xs">
+                        <div class="space-y-0.5 min-w-0">
+                            <label for="add-dosis-per-tanaman" id="add-dosis-per-tanaman-label" class="text-xs font-bold text-amber-950 flex items-center gap-1.5 cursor-pointer">
+                                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                </svg>
+                                <span id="add-dosis-per-tanaman-title">Dosis Air Kocor per {{ $crop->populasi_unit_label }}</span>
+                            </label>
+                            <p id="add-populasi-hint-text" class="text-[11px] text-amber-800">
+                                Takaran air kocor per {{ $crop->populasi_unit_label }} untuk seluruh populasi ({{ $crop->numeric_populasi }} {{ $crop->populasi_unit_label }}). Dosis obat adalah total campuran.
+                            </p>
+                        </div>
+                        <div class="shrink-0 flex flex-wrap items-center gap-2">
+                            {{-- Input Tersembunyi: Otomatis Mengambil Populasi Tanaman --}}
+                            <input type="hidden"
+                                   id="add-populasi-target"
+                                   name="populasi_target"
+                                   value="{{ (float) ($crop->numeric_populasi ?: 1) }}">
+
+                            {{-- Badge Info Populasi Tanaman --}}
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 bg-white shadow-2xs font-bold text-xs text-amber-950" title="Populasi tanaman otomatis dari data komoditas">
+                                <span class="text-[10px] text-gray-500 font-medium">Populasi:</span>
+                                <span class="font-extrabold text-amber-950">{{ $crop->populasi ?: ($crop->numeric_populasi . ' ' . $crop->populasi_unit_label) }}</span>
+                            </div>
+
+                            {{-- Volume Air Kocor (Khusus Metode Kocor) --}}
+                            <div id="add-dosis-air-kocor-wrapper" class="inline-flex items-center rounded-xl border border-amber-300 bg-white p-0.5 shadow-2xs" title="Volume larutan siraman air per tanaman">
+                                <span class="text-[10px] font-semibold text-gray-500 pl-2 pr-1">Air:</span>
+                                <input type="number"
+                                       id="add-dosis-per-tanaman"
+                                       name="dosis_per_tanaman"
+                                       value="200"
+                                       min="0.1"
+                                       step="any"
+                                       placeholder="200"
+                                       class="w-14 text-center font-black text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none p-0"
+                                       oninput="updateObatSummary('add', true)">
+                                <span id="add-dosis-per-tanaman-unit" class="text-xs font-bold text-amber-900 pr-2 pl-1 select-none">
+                                    ml / {{ $crop->populasi_unit_label }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1123,6 +1216,9 @@
                     </div>
                 </div>
 
+                {{-- Alert Peringatan Melebihi Stok Gudang --}}
+                <div id="add-stok-summary-alert" class="hidden"></div>
+
                 {{-- Input tersembunyi untuk menyimpan rincian aplikasi_obat dan total_biaya_obat saat submit --}}
                 <input type="hidden" id="add-aplikasi-obat" name="aplikasi_obat" value="">
                 <input type="hidden" id="add-total-biaya-obat" name="total_biaya_obat" value="0">
@@ -1150,42 +1246,6 @@
                           rows="2"
                           placeholder="Catatan teknis, takaran air, kondisi tanaman, dsb."
                           class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary"></textarea>
-            </div>
-
-            {{-- Upload Dokumentasi Foto (Maksimal 5 Foto) --}}
-            <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 space-y-2">
-                <div class="flex items-center justify-between">
-                    <label class="block text-xs font-semibold text-gray-900">
-                        Dokumentasi Foto Kegiatan <span class="text-text-muted font-normal">(Maks. 5 foto)</span>
-                    </label>
-                    <span id="add-photo-counter" class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        0/5 Foto
-                    </span>
-                </div>
-                <p class="text-[11px] text-text-muted">
-                    Format: JPG, PNG, WEBP. Foto otomatis dikompresi sebelum disimpan dan diunggah ke Cloudinary.
-                </p>
-
-                <div class="mt-2">
-                    <label for="add-foto-kegiatan"
-                           class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl cursor-pointer bg-white transition-colors">
-                        <svg class="w-6 h-6 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
-                        </svg>
-                        <span class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">+ Pilih / Jepret Foto (Maks. 5)</span>
-                        <input type="file"
-                               id="add-foto-kegiatan"
-                               name="foto_kegiatan[]"
-                               multiple
-                               accept="image/jpeg,image/png,image/jpg,image/webp"
-                               onchange="handleAddPhotoChange(event)"
-                               class="hidden">
-                    </label>
-                </div>
-
-                {{-- Container Pratinjau Foto --}}
-                <div id="add-photo-preview-grid" class="grid grid-cols-5 gap-2 pt-1 hidden"></div>
             </div>
 
             {{-- Status: Tandai Langsung Selesai --}}
@@ -1252,7 +1312,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label for="edit-target-hst" class="block text-xs font-semibold text-emerald-950 mb-1">
-                            Target HST
+                            Target {{ $labelCode }}
                         </label>
                         <div class="relative flex items-center">
                             <input type="number"
@@ -1262,7 +1322,7 @@
                                    required
                                    oninput="syncFromHst('edit')"
                                    class="field-input w-full px-3 py-2 rounded-xl border border-emerald-300 text-sm font-mono font-bold text-emerald-950 bg-white focus:border-primary">
-                            <span class="absolute right-3 text-xs font-mono font-semibold text-emerald-700">HST</span>
+                            <span class="absolute right-3 text-xs font-mono font-semibold text-emerald-700">{{ $labelCode }}</span>
                         </div>
                     </div>
 
@@ -1311,12 +1371,49 @@
                     </div>
                 </div>
 
+                {{-- Pilihan 3 Metode Aplikasi Sebelum Dosis Obat: Semprot, Kocor, Tabur --}}
+                <div class="p-2.5 rounded-xl bg-white border border-emerald-200/90 shadow-2xs space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+                            </svg>
+                            <span>Metode Aplikasi</span>
+                        </span>
+                        <span id="edit-metode-badge" class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">Semprot</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 pt-1">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="metode_aplikasi" value="Semprot" checked onchange="setMetodeAplikasi('edit', 'Semprot')" class="sr-only peer">
+                            <div class="py-2 px-2 text-center rounded-xl border border-gray-200 bg-gray-50/70 peer-checked:bg-emerald-600 peer-checked:border-emerald-600 peer-checked:text-white font-bold text-xs text-gray-700 transition-all shadow-2xs flex flex-col sm:flex-row items-center justify-center gap-1">
+                                <span>🌧️</span>
+                                <span>Semprot</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="metode_aplikasi" value="Kocor" onchange="setMetodeAplikasi('edit', 'Kocor')" class="sr-only peer">
+                            <div class="py-2 px-2 text-center rounded-xl border border-gray-200 bg-gray-50/70 peer-checked:bg-amber-600 peer-checked:border-amber-600 peer-checked:text-white font-bold text-xs text-gray-700 transition-all shadow-2xs flex flex-col sm:flex-row items-center justify-center gap-1">
+                                <span>🪣</span>
+                                <span>Kocor</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="metode_aplikasi" value="Tabur" onchange="setMetodeAplikasi('edit', 'Tabur')" class="sr-only peer">
+                            <div class="py-2 px-2 text-center rounded-xl border border-gray-200 bg-gray-50/70 peer-checked:bg-orange-600 peer-checked:border-orange-600 peer-checked:text-white font-bold text-xs text-gray-700 transition-all shadow-2xs flex flex-col sm:flex-row items-center justify-center gap-1">
+                                <span>🌾</span>
+                                <span>Tabur</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 {{-- Interactive Rows Container --}}
                 <div id="edit-obat-rows-container" class="space-y-2.5"></div>
 
-                {{-- Kontrol Jumlah Tank & Total Estimasi Biaya Obat (Edit Mode) --}}
+                {{-- Kontrol Multiplier: Jumlah Tank (Semprot) vs Populasi Target (Kocor / Tabur) --}}
                 <div class="rounded-xl border border-emerald-200 bg-white p-3 space-y-2.5 shadow-2xs">
-                    <div class="flex items-center justify-between gap-2">
+                    {{-- 1. Blok Kontrol Tank (Semprot) --}}
+                    <div id="edit-tank-control-wrapper" class="flex items-center justify-between gap-2">
                         <div class="space-y-0.5 min-w-0">
                             <label for="edit-jumlah-tank" class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
                                 <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1351,6 +1448,51 @@
                                         title="Tambah 1 tank">
                                     +
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 2. Blok Dosis Campuran per Tanaman (Kocor & Tabur) - Mengambil Populasi Otomatis dari Data Tanaman --}}
+                    <div id="edit-populasi-control-wrapper" class="hidden flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200 shadow-2xs">
+                        <div class="space-y-0.5 min-w-0">
+                            <label for="edit-dosis-per-tanaman" id="edit-dosis-per-tanaman-label" class="text-xs font-bold text-amber-950 flex items-center gap-1.5 cursor-pointer">
+                                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                </svg>
+                                <span id="edit-dosis-per-tanaman-title">Dosis Air Kocor per {{ $crop->populasi_unit_label }}</span>
+                            </label>
+                            <p id="edit-populasi-hint-text" class="text-[11px] text-amber-800">
+                                Takaran air kocor per {{ $crop->populasi_unit_label }} untuk seluruh populasi ({{ $crop->numeric_populasi }} {{ $crop->populasi_unit_label }}). Dosis obat adalah total campuran.
+                            </p>
+                        </div>
+                        <div class="shrink-0 flex flex-wrap items-center gap-2">
+                            {{-- Input Tersembunyi: Otomatis Mengambil Populasi Tanaman --}}
+                            <input type="hidden"
+                                   id="edit-populasi-target"
+                                   name="populasi_target"
+                                   value="{{ (float) ($crop->numeric_populasi ?: 1) }}">
+
+                            {{-- Badge Info Populasi Tanaman --}}
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 bg-white shadow-2xs font-bold text-xs text-amber-950" title="Populasi tanaman otomatis dari data komoditas">
+                                <span class="text-[10px] text-gray-500 font-medium">Populasi:</span>
+                                <span class="font-extrabold text-amber-950">{{ $crop->populasi ?: ($crop->numeric_populasi . ' ' . $crop->populasi_unit_label) }}</span>
+                            </div>
+
+                            {{-- Volume Air Kocor (Khusus Metode Kocor) --}}
+                            <div id="edit-dosis-air-kocor-wrapper" class="inline-flex items-center rounded-xl border border-amber-300 bg-white p-0.5 shadow-2xs" title="Volume larutan siraman air per tanaman">
+                                <span class="text-[10px] font-semibold text-gray-500 pl-2 pr-1">Air:</span>
+                                <input type="number"
+                                       id="edit-dosis-per-tanaman"
+                                       name="dosis_per_tanaman"
+                                       value="200"
+                                       min="0.1"
+                                       step="any"
+                                       placeholder="200"
+                                       class="w-14 text-center font-black text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none p-0"
+                                       oninput="updateObatSummary('edit', true)">
+                                <span id="edit-dosis-per-tanaman-unit" class="text-xs font-bold text-amber-900 pr-2 pl-1 select-none">
+                                    ml / {{ $crop->populasi_unit_label }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1395,6 +1537,9 @@
                     </div>
                 </div>
 
+                {{-- Alert Peringatan Melebihi Stok Gudang --}}
+                <div id="edit-stok-summary-alert" class="hidden"></div>
+
                 {{-- Input tersembunyi untuk menyimpan rincian aplikasi_obat dan total_biaya_obat saat submit --}}
                 <input type="hidden" id="edit-aplikasi-obat" name="aplikasi_obat" value="">
                 <input type="hidden" id="edit-total-biaya-obat" name="total_biaya_obat" value="0">
@@ -1418,46 +1563,6 @@
                           name="keterangan"
                           rows="2"
                           class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary"></textarea>
-            </div>
-
-            {{-- Manajemen Foto Dokumentasi (Maks. 5 Foto) --}}
-            <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 space-y-3">
-                <div class="flex items-center justify-between">
-                    <label class="block text-xs font-semibold text-gray-900">
-                        Dokumentasi Foto Kegiatan <span class="text-text-muted font-normal">(Maks. 5 foto)</span>
-                    </label>
-                    <span id="edit-photo-quota-badge" class="text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-300">
-                        0/5 Foto
-                    </span>
-                </div>
-
-                {{-- Foto yang Sudah Ada --}}
-                <div id="edit-existing-photos-section" class="space-y-1.5 hidden">
-                    <span class="text-[11px] font-semibold text-gray-700 block">Foto Tersimpan:</span>
-                    <div id="edit-existing-photos-grid" class="grid grid-cols-5 gap-2"></div>
-                </div>
-
-                {{-- Input Foto Baru --}}
-                <div id="edit-upload-box" class="space-y-1">
-                    <label for="edit-foto-kegiatan"
-                           class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl cursor-pointer bg-white transition-colors">
-                        <svg class="w-6 h-6 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-                        </svg>
-                        <span id="edit-upload-label-text" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">+ Tambah Foto Baru</span>
-                        <input type="file"
-                               id="edit-foto-kegiatan"
-                               name="foto_kegiatan[]"
-                               multiple
-                               accept="image/jpeg,image/png,image/jpg,image/webp"
-                               onchange="handleEditPhotoChange(event)"
-                               class="hidden">
-                    </label>
-                    <div id="edit-new-photo-preview-grid" class="grid grid-cols-5 gap-2 pt-1 hidden"></div>
-                </div>
-
-                {{-- Hidden input container untuk menandai foto yang dihapus saat submit form --}}
-                <div id="edit-deleted-photos-container"></div>
             </div>
 
             </div>
@@ -1559,8 +1664,8 @@
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100">
             <div>
-                <h3 class="text-base font-bold text-gray-900">Edit Profil Tanaman</h3>
-                <p class="text-xs text-text-muted mt-0.5">Perbarui benih, populasi, dan tanggal menanam</p>
+                <h3 class="text-base font-bold text-gray-900">Edit Profil {{ $crop->is_hss ? 'Tanaman Semai' : 'Tanaman' }}</h3>
+                <p class="text-xs text-text-muted mt-0.5">Perbarui benih, populasi, dan {{ strtolower($labelTanggal) }}</p>
             </div>
             <button type="button" onclick="closeModal('modal-edit-crop')" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1569,9 +1674,10 @@
             </button>
         </div>
 
-        <form method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}" class="mt-4 space-y-4">
+        <form method="POST" action="{{ $cropRoute }}" class="mt-4 space-y-4">
             @csrf
             @method('PUT')
+            <input type="hidden" name="tipe" value="{{ $crop->tipe ?? 'hst' }}">
 
             <div>
                 <label for="edit-crop-nama" class="block text-xs font-semibold text-gray-900 mb-1">
@@ -1588,7 +1694,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label for="edit-crop-varietas" class="block text-xs font-semibold text-gray-900 mb-1">
-                        Benih yang Ditanam / Varietas
+                        Benih yang {{ $crop->is_hss ? 'Disemai' : 'Ditanam' }} / Varietas
                     </label>
                     <input type="text"
                            id="edit-crop-varietas"
@@ -1613,7 +1719,7 @@
 
             <div>
                 <label for="edit-crop-tanggal" class="block text-xs font-semibold text-gray-900 mb-1">
-                    Tanggal Menanam (0 HST) <span class="text-red-500">*</span>
+                    {{ $labelTanggal }} (0 {{ $labelCode }}) <span class="text-red-500">*</span>
                 </label>
                 <input type="date"
                        id="edit-crop-tanggal"
@@ -1648,6 +1754,7 @@
     </div>
 </div>
 
+@if (!$crop->is_hss)
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- MODAL: TANDAI SUDAH DIPANEN                                  --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
@@ -1665,7 +1772,7 @@
             </button>
         </div>
 
-        <form id="form-harvest" method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/panen" class="mt-4 space-y-4">
+        <form id="form-harvest" method="POST" action="{{ $cropRoute }}/panen" class="mt-4 space-y-4">
             @csrf
             <div>
                 <label for="harvest-date" class="block text-xs font-semibold text-gray-900 mb-1">
@@ -1678,7 +1785,7 @@
                        required
                        class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
                 <p class="text-[11px] text-text-muted mt-1">
-                    Catatan panen/petikan akan dicatat pada HST ini. Tanaman tetap aktif hingga Anda memilih 'Akhiri Tanaman'.
+                    Catatan panen/petikan akan dicatat pada {{ $labelCode }} ini. Tanaman tetap aktif hingga Anda memilih '{{ $crop->is_hss ? 'Akhiri Semai' : 'Akhiri Tanaman' }}'.
                 </p>
             </div>
 
@@ -1758,6 +1865,7 @@
         </form>
     </div>
 </div>
+@endif
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- MODAL: AKHIRI TANAMAN INI                                      --}}
@@ -1766,7 +1874,7 @@
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100">
             <div>
-                <h3 class="text-base font-bold text-gray-900">Akhiri Tanaman Ini</h3>
+                <h3 class="text-base font-bold text-gray-900">{{ $crop->is_hss ? 'Akhiri Semai Ini' : 'Akhiri Tanaman Ini' }}</h3>
                 <p class="text-xs text-amber-700 font-semibold mt-0.5">{{ $crop->nama_tanaman }}</p>
             </div>
             <button type="button" onclick="closeModal('modal-end-crop')" class="text-gray-400 hover:text-gray-600">
@@ -1776,7 +1884,7 @@
             </button>
         </div>
 
-        <form id="form-end-crop" method="POST" action="/kalender-hst/tanaman/{{ $crop->id }}/akhiri" class="mt-4 space-y-4">
+        <form id="form-end-crop" method="POST" action="{{ $cropRoute }}/akhiri" class="mt-4 space-y-4">
             @csrf
             <div>
                 <label for="end-date" class="block text-xs font-semibold text-gray-900 mb-1">
@@ -1789,7 +1897,7 @@
                        required
                        class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
                 <p class="text-[11px] text-text-muted mt-1">
-                    HST akan dikunci pada tanggal ini dan tanaman dipindahkan ke Riwayat Tanam.
+                    {{ $labelCode }} akan dikunci pada tanggal ini dan tanaman dipindahkan ke {{ $crop->is_hss ? 'Riwayat Semai' : 'Riwayat Tanam' }}.
                 </p>
             </div>
 
@@ -1826,19 +1934,102 @@
                 </button>
                 <button type="submit"
                         class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-sm">
-                    Ya, Akhiri Tanaman
+                    Ya, {{ $crop->is_hss ? 'Akhiri Semai' : 'Akhiri Tanaman' }}
                 </button>
             </div>
         </form>
     </div>
 </div>
 
+@if ($crop->is_hss && $crop->status === 'Sedang Disemai')
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- MODAL: PINDAH TANAM KE LAHAN (HST)                           --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="modal-pindah-tanam" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div>
+                <h3 class="text-base font-bold text-gray-900">Pindah Tanam ke Lahan (HST)</h3>
+                <p class="text-xs text-text-muted mt-0.5">Bibit semai siap dipindahkan ke tahap Kalender HST</p>
+            </div>
+            <button type="button" onclick="closeModal('modal-pindah-tanam')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form method="POST" action="/kalender-hss/tanaman/{{ $crop->id }}/pindah-tanam" class="mt-4 space-y-4">
+            @csrf
+            <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800">
+                Bibit semai <strong>{{ $crop->nama_tanaman }}</strong> akan ditandai <em>Sudah Pindah Tanam</em> pada Kalender HSS, dan otomatis dibuatkan data tanaman baru di <strong>Kalender HST</strong> mulai dari tanggal tanam yang dipilih di bawah.
+            </div>
+
+            <div>
+                <label for="pindah-tanggal" class="block text-xs font-semibold text-gray-900 mb-1">
+                    Tanggal Pindah Tanam ke Lahan (0 HST) <span class="text-red-500">*</span>
+                </label>
+                <input type="date"
+                       id="pindah-tanggal"
+                       name="tanggal_tanam"
+                       value="{{ now()->toDateString() }}"
+                       required
+                       class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
+            </div>
+
+            <div>
+                <label for="pindah-populasi" class="block text-xs font-semibold text-gray-900 mb-1">
+                    Populasi di Lahan <span class="text-text-muted font-normal">(opsional)</span>
+                </label>
+                <input type="text"
+                       id="pindah-populasi"
+                       name="populasi"
+                       value="{{ $crop->populasi }}"
+                       placeholder="Contoh: 2.000 Pohon / 1 Ha"
+                       class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
+            </div>
+
+            <div>
+                <label for="pindah-catatan" class="block text-xs font-semibold text-gray-900 mb-1">
+                    Catatan Pindah Tanam <span class="text-text-muted font-normal">(opsional)</span>
+                </label>
+                <textarea id="pindah-catatan"
+                          name="catatan"
+                          rows="2"
+                          placeholder="Kondisi bibit saat pindah tanam, bedengan, dll..."
+                          class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary resize-none"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                <button type="button"
+                        onclick="closeModal('modal-pindah-tanam')"
+                        class="px-4 py-2 rounded-xl border border-gray-200 text-text-secondary hover:bg-gray-50 text-xs font-semibold">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                    </svg>
+                    Mulai Tanam Sekarang (0 HST)
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
 <script>
+    const LABEL_CODE = '{{ $labelCode }}';
     const PLANT_DATE_STRING = '{{ $crop->tanggal_tanam->toDateString() }}';
     const PLANT_DATE = new Date(PLANT_DATE_STRING + 'T00:00:00');
     const CROP_NUMERIC_POPULASI = {{ (float) ($crop->numeric_populasi ?? 0) }};
     const CROP_POPULASI_UNIT = '{{ addslashes($crop->populasi_unit_label ?? "tanaman") }}';
     const CROP_POPULASI_RAW = '{{ addslashes($crop->populasi ?? "") }}';
+
+    function openPindahTanamModal() {
+        openModal('modal-pindah-tanam');
+    }
 
     function formatRupiahPerPopulasi(amount, unit = 'tanaman') {
         if (isNaN(amount) || amount <= 0) return `Rp 0 / ${unit}`;
@@ -1952,6 +2143,20 @@
         const medSasaran = selectedMed ? (selectedMed.sasaran_obat || '') : '';
         const medJenis = selectedMed ? (selectedMed.jenis || '') : '';
 
+        const currentMetode = getMetodeAplikasi(prefix);
+        const isCurrentEq = isEquipment(medUnit, medJenis, medName);
+        const activeUnit = medUnit;
+        const activePlaceholder = isCurrentEq ? 'Misal: 1' : (medDosis ? 'Misal: ' + medDosis : (medUnit === 'ml' ? 'Misal: 50' : 'Misal: 250'));
+        const activeLabel = isCurrentEq 
+            ? 'Jumlah Dipakai (Langsung)' 
+            : (currentMetode === 'Semprot' ? 'Dosis Obat (per Tank)' : (currentMetode === 'Kocor' ? 'Dosis Obat (Campuran Kocor)' : 'Total Dosis Obat (Tabur)'));
+        const activeCostLabel = isCurrentEq
+            ? 'Biaya Perlengkapan (Langsung)'
+            : (currentMetode === 'Semprot' ? 'Perkiraan Biaya Dosis' : 'Total Biaya Obat');
+        const activeHint = isCurrentEq
+            ? 'Langsung (tidak dikali tangki)'
+            : (medDosis ? 'Anjuran: ' + escapeHtml(medDosis) : '');
+
         const row = document.createElement('div');
         row.className = 'obat-row bg-white rounded-xl p-3 border border-emerald-100 shadow-2xs space-y-2 transition-all';
         
@@ -2005,10 +2210,10 @@
                 <div>
                     <div class="flex items-center justify-between mb-1">
                         <label class="dosis-label-title block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                            Dosis Obat
+                            ${escapeHtml(activeLabel)}
                         </label>
                         <span class="dosis-hint text-[10px] text-emerald-800 font-medium truncate max-w-[150px]">
-                            ${medDosis ? 'Anjuran: ' + escapeHtml(medDosis) : ''}
+                            ${escapeHtml(activeHint)}
                         </span>
                     </div>
                     <div class="relative flex items-center">
@@ -2016,25 +2221,28 @@
                                step="any" 
                                min="0" 
                                value="${initialDose}" 
-                               placeholder="Misal: 5" 
+                               placeholder="${escapeHtml(activePlaceholder)}" 
                                class="dosis-input field-input w-full rounded-xl border border-gray-300 text-xs font-bold text-gray-900 focus:border-primary"
                                style="padding-left: 0.875rem !important; padding-right: 4.5rem !important; padding-top: 0.6rem; padding-bottom: 0.6rem;">
                         <span class="dosis-unit-badge absolute right-2.5 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-[10px] font-black tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-200 select-none z-10">
-                            ${escapeHtml(medUnit)}
+                            ${escapeHtml(activeUnit)}
                         </span>
                     </div>
                 </div>
 
                 <div>
                     <label class="cost-label-title block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                        Perkiraan Biaya Dosis
+                        ${escapeHtml(activeCostLabel)}
                     </label>
                     <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 font-bold text-xs" style="min-height: 38px;">
-                        <span class="cost-calc-detail text-[11px] text-emerald-800 font-medium truncate max-w-[150px]">0 ${escapeHtml(medUnit)} × Rp 0</span>
+                        <span class="cost-calc-detail text-[11px] text-emerald-800 font-medium truncate max-w-[150px]">0 ${escapeHtml(activeUnit)} × Rp 0</span>
                         <span class="cost-amount font-black text-emerald-900 text-sm whitespace-nowrap ml-2">Rp 0</span>
                     </div>
                 </div>
             </div>
+
+            {{-- Dedicated Slot for Stock Alert --}}
+            <div class="stok-alert-slot"></div>
         `;
 
         container.appendChild(row);
@@ -2120,12 +2328,12 @@
 
         // Dosage input
         doseInput.addEventListener('input', () => {
-            calculateObatRowCost(row);
-            updateObatSummary(prefix);
+            calculateObatRowCost(row, prefix);
+            updateObatSummary(prefix, true);
         });
 
-        calculateObatRowCost(row);
-        updateObatSummary(prefix);
+        calculateObatRowCost(row, prefix);
+        updateObatSummary(prefix, false);
     }
 
     function renderObatSuggestions(row, query, prefix) {
@@ -2279,10 +2487,23 @@
 
         const doseLabel = row.querySelector('.dosis-label-title');
         const costLabel = row.querySelector('.cost-label-title');
-        if (doseLabel) doseLabel.textContent = isEq ? 'Jumlah Dipakai (Non-Tank)' : 'Dosis Obat (per Tank)';
-        if (costLabel) costLabel.textContent = isEq ? 'Biaya Perlengkapan (Langsung)' : 'Perkiraan Biaya Dosis';
+        const metode = getMetodeAplikasi(prefix);
+        const isPerPlant = (metode === 'Kocor' || metode === 'Tabur');
+        const activeUnit = unit;
 
-        if (unitBadge) unitBadge.textContent = unit;
+        if (doseLabel) {
+            doseLabel.textContent = isEq 
+                ? 'Jumlah Dipakai (Langsung)' 
+                : (metode === 'Semprot' ? 'Dosis Obat (per Tank)' : (metode === 'Kocor' ? 'Dosis Obat (Campuran Kocor)' : 'Total Dosis Obat (Tabur)'));
+        }
+        if (costLabel) {
+            costLabel.textContent = isEq ? 'Biaya Perlengkapan (Langsung)' : (isPerPlant ? 'Total Biaya Obat' : 'Perkiraan Biaya Dosis');
+        }
+
+        if (unitBadge) unitBadge.textContent = activeUnit;
+        if (doseInput) {
+            doseInput.placeholder = isEq ? 'Misal: 1' : (dosis ? 'Misal: ' + dosis : (unit === 'ml' ? 'Misal: 50' : 'Misal: 250'));
+        }
         if (dosisHint) {
             if (isEq) {
                 dosisHint.textContent = 'Langsung (tidak dikali tangki)';
@@ -2302,7 +2523,7 @@
 
         if (dropdown) dropdown.classList.add('hidden');
 
-        calculateObatRowCost(row);
+        calculateObatRowCost(row, prefix);
         updateObatSummary(prefix);
 
         if (autoFocusDose && doseInput) {
@@ -2311,7 +2532,131 @@
         }
     }
 
-    function calculateObatRowCost(row) {
+    function getMetodeAplikasi(prefix) {
+        const modal = document.getElementById(`modal-${prefix}-activity`);
+        if (!modal) return 'Semprot';
+        const checked = modal.querySelector('input[name="metode_aplikasi"]:checked');
+        return checked ? checked.value : 'Semprot';
+    }
+
+    function setMetodeAplikasi(prefix, newMetode = 'Semprot') {
+        const modal = document.getElementById(`modal-${prefix}-activity`);
+        if (!modal) return;
+
+        const radios = modal.querySelectorAll('input[name="metode_aplikasi"]');
+        radios.forEach(r => {
+            r.checked = (r.value === newMetode);
+        });
+
+        const badge = document.getElementById(`${prefix}-metode-badge`);
+        if (badge) {
+            badge.textContent = newMetode;
+            if (newMetode === 'Kocor') {
+                badge.className = 'text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full';
+            } else if (newMetode === 'Tabur') {
+                badge.className = 'text-[10px] font-bold text-orange-800 bg-orange-100 px-2 py-0.5 rounded-full';
+            } else {
+                badge.className = 'text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full';
+            }
+        }
+
+        const isPerPlant = (newMetode === 'Kocor' || newMetode === 'Tabur');
+        const tankWrapper = document.getElementById(`${prefix}-tank-control-wrapper`);
+        const popWrapper = document.getElementById(`${prefix}-populasi-control-wrapper`);
+
+        if (tankWrapper) {
+            tankWrapper.classList.toggle('hidden', isPerPlant);
+        }
+        if (popWrapper) {
+            popWrapper.classList.toggle('hidden', !isPerPlant);
+        }
+
+        const titleEl = document.getElementById(`${prefix}-dosis-per-tanaman-title`);
+        const hintEl = document.getElementById(`${prefix}-populasi-hint-text`);
+        const unitEl = document.getElementById(`${prefix}-dosis-per-tanaman-unit`);
+        const dosePlantInput = document.getElementById(`${prefix}-dosis-per-tanaman`);
+        const airWrapper = document.getElementById(`${prefix}-dosis-air-kocor-wrapper`);
+
+        if (airWrapper) {
+            airWrapper.classList.toggle('hidden', newMetode !== 'Kocor');
+        }
+
+        if (newMetode === 'Tabur') {
+            if (titleEl) titleEl.textContent = `Aplikasi Tabur`;
+            if (hintEl) hintEl.textContent = `Dosis obat di bawah adalah total takaran obat yang ditaburkan untuk seluruh populasi (${CROP_NUMERIC_POPULASI} ${CROP_POPULASI_UNIT}).`;
+            if (unitEl) unitEl.textContent = `gram / ${CROP_POPULASI_UNIT}`;
+            if (dosePlantInput && (!dosePlantInput.value || dosePlantInput.value === '200')) {
+                dosePlantInput.value = '10';
+            }
+        } else if (newMetode === 'Kocor') {
+            if (titleEl) titleEl.textContent = `Dosis Air Kocor per ${CROP_POPULASI_UNIT}`;
+            if (hintEl) hintEl.textContent = `Takaran air kocor per tanaman. Dosis obat di bawah adalah total obat yang dicampurkan.`;
+            if (unitEl) unitEl.textContent = `ml / ${CROP_POPULASI_UNIT}`;
+            if (dosePlantInput && (!dosePlantInput.value || dosePlantInput.value === '10')) {
+                dosePlantInput.value = '200';
+            }
+        }
+
+        const container = document.getElementById(`${prefix}-obat-rows-container`);
+        if (container) {
+            container.querySelectorAll('.obat-row').forEach(row => {
+                const unitInput = row.querySelector('.obat-unit-val');
+                const nameInput = row.querySelector('.obat-name-val');
+                const searchInput = row.querySelector('.obat-search-input');
+                const idInput = row.querySelector('.obat-id-val');
+                const medName = (nameInput?.value || searchInput?.value || '').trim();
+                const medObj = ALL_MEDICINES.find(m => String(m.id) === String(idInput?.value || ''))
+                    || ALL_MEDICINES.find(m => m.nama.toLowerCase() === medName.toLowerCase());
+                const medUnit = unitInput?.value || 'gram';
+                const isEq = isEquipment(medUnit, medObj?.jenis || '', medName);
+
+                const unitBadge = row.querySelector('.dosis-unit-badge');
+                const doseInput = row.querySelector('.dosis-input');
+                const dosisHint = row.querySelector('.dosis-hint');
+                const doseLabel = row.querySelector('.dosis-label-title');
+                const costLabel = row.querySelector('.cost-label-title');
+                const dosisAnjuran = row.querySelector('.obat-dosis-val')?.value;
+
+                if (unitBadge) {
+                    unitBadge.textContent = medUnit;
+                }
+                if (doseInput) {
+                    doseInput.placeholder = isEq ? 'Misal: 1' : (dosisAnjuran ? 'Misal: ' + dosisAnjuran : (medUnit === 'ml' ? 'Misal: 50' : 'Misal: 250'));
+                }
+                if (doseLabel) {
+                    doseLabel.textContent = isEq 
+                        ? 'Jumlah Dipakai (Langsung)' 
+                        : (newMetode === 'Semprot' ? 'Dosis Obat (per Tank)' : (newMetode === 'Kocor' ? 'Dosis Obat (Campuran Kocor)' : 'Total Dosis Obat (Tabur)'));
+                }
+                if (costLabel) {
+                    costLabel.textContent = isEq 
+                        ? 'Biaya Perlengkapan (Langsung)' 
+                        : (isPerPlant ? 'Total Biaya Obat' : 'Perkiraan Biaya Dosis');
+                }
+                if (dosisHint) {
+                    if (isEq) {
+                        dosisHint.textContent = 'Langsung (tidak dikali tangki)';
+                    } else {
+                        dosisHint.textContent = dosisAnjuran ? `Anjuran: ${dosisAnjuran}` : '';
+                    }
+                }
+
+                calculateObatRowCost(row, prefix);
+            });
+        }
+
+        updateObatSummary(prefix);
+    }
+
+    function calculateObatRowCost(row, prefix = null) {
+        if (!prefix) {
+            prefix = row.closest('#modal-edit-activity') ? 'edit' : 'add';
+        }
+        const metode = getMetodeAplikasi(prefix);
+        const isKocor = (metode === 'Kocor');
+        const isTabur = (metode === 'Tabur');
+        const isPerPlant = (isKocor || isTabur);
+
         const doseInput = row.querySelector('.dosis-input');
         const costCalc = row.querySelector('.cost-calc-detail');
         const costAmount = row.querySelector('.cost-amount');
@@ -2320,6 +2665,9 @@
         const nameInput = row.querySelector('.obat-name-val');
         const searchInput = row.querySelector('.obat-search-input');
         const idInput = row.querySelector('.obat-id-val');
+        const unitBadge = row.querySelector('.dosis-unit-badge');
+        const doseLabel = row.querySelector('.dosis-label-title');
+        const costLabel = row.querySelector('.cost-label-title');
 
         const medName = (nameInput?.value || searchInput?.value || '').trim();
         if (!medName) {
@@ -2336,27 +2684,37 @@
             || ALL_MEDICINES.find(m => m.nama.toLowerCase() === medName.toLowerCase());
         const isEq = isEquipment(unit, medObj?.jenis || '', medName);
 
-        const doseLabel = row.querySelector('.dosis-label-title');
-        const costLabel = row.querySelector('.cost-label-title');
-        if (doseLabel) doseLabel.textContent = isEq ? 'Jumlah Dipakai (Non-Tank)' : 'Dosis Obat (per Tank)';
-        if (costLabel) costLabel.textContent = isEq ? 'Biaya Perlengkapan (Langsung)' : 'Perkiraan Biaya Dosis';
+        const activeUnit = unit;
+        if (unitBadge) unitBadge.textContent = activeUnit;
 
-        const eqTag = isEq ? ' (Non-Tank)' : '';
+        if (doseLabel) {
+            doseLabel.textContent = isEq 
+                ? 'Jumlah Dipakai (Langsung)' 
+                : (metode === 'Semprot' ? 'Dosis Obat (per Tank)' : (metode === 'Kocor' ? 'Dosis Obat (Campuran Kocor)' : 'Total Dosis Obat (Tabur)'));
+        }
+        if (costLabel) {
+            costLabel.textContent = isEq 
+                ? 'Biaya Perlengkapan (Langsung)' 
+                : (isPerPlant ? 'Total Biaya Obat' : 'Perkiraan Biaya Dosis');
+        }
+
+        const eqTag = isEq ? ' (Langsung)' : (metode === 'Semprot' ? ' (per Tank)' : ' (Campuran)');
 
         if (dose > 0 && rate > 0) {
             const cost = Math.round(dose * rate);
-            const formattedCost = 'Rp ' + Number(cost).toLocaleString('id-ID');
             const formattedRate = 'Rp ' + (rate < 10 && rate % 1 !== 0 ? rate.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(rate).toLocaleString('id-ID'));
+
             if (costCalc) costCalc.textContent = `${dose} ${unit} × ${formattedRate}/${unit}${eqTag}`;
+            const formattedCost = 'Rp ' + Number(cost).toLocaleString('id-ID');
             if (costAmount) costAmount.textContent = formattedCost;
             return cost;
         } else if (dose > 0) {
-            if (costCalc) costCalc.textContent = `${dose} ${unit} (Harga belum diset)${eqTag}`;
+            if (costCalc) costCalc.textContent = `${dose} ${activeUnit} (Harga belum diset)${eqTag}`;
             if (costAmount) costAmount.textContent = 'Rp —';
             return 0;
         } else {
             const formattedRate = rate > 0 ? `Rp ${Math.round(rate).toLocaleString('id-ID')}/${unit}` : 'Rp 0';
-            if (costCalc) costCalc.textContent = `0 ${unit} × ${formattedRate}${eqTag}`;
+            if (costCalc) costCalc.textContent = `0 ${activeUnit} × ${formattedRate}${eqTag}`;
             if (costAmount) costAmount.textContent = 'Rp 0';
             return 0;
         }
@@ -2368,25 +2726,228 @@
         let val = parseFloat(input.value) || 1;
         val = Math.max(0.1, Math.round((val + step) * 10) / 10);
         input.value = val;
-        updateObatSummary(prefix);
+        updateObatSummary(prefix, true);
     }
 
     function setTank(prefix, val) {
         const input = document.getElementById(`${prefix}-jumlah-tank`);
         if (!input) return;
         input.value = val;
-        updateObatSummary(prefix);
+        updateObatSummary(prefix, true);
     }
 
     function removeObatRow(btn, prefix) {
         const row = btn.closest('.obat-row');
         if (row) {
             row.remove();
-            updateObatSummary(prefix);
+            updateObatSummary(prefix, false);
         }
     }
 
-    function updateObatSummary(prefix) {
+    // ── Helper Validasi & Format Stok Obat ──
+    function getMedicineAvailableStock(medObj) {
+        if (!medObj) return 0;
+        const vol = parseFloat(medObj.stok_volume !== undefined && medObj.stok_volume !== null ? medObj.stok_volume : 0);
+        const qty = parseFloat(medObj.stok !== undefined && medObj.stok !== null ? medObj.stok : 0);
+        const baseTotal = parseFloat(medObj.base_total_unit !== undefined && medObj.base_total_unit !== null ? medObj.base_total_unit : 1);
+
+        if (vol > 0) return vol;
+        if (qty > 0) return qty * baseTotal;
+        return 0;
+    }
+
+    function formatStockQty(qty, unit = '') {
+        if (isNaN(qty) || qty === null || qty === undefined) return '0 ' + (unit || '');
+        const num = Math.round(qty * 100) / 100;
+        const str = num.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+        const u = (unit || '').toLowerCase().trim();
+
+        if (u === 'gram' && num >= 1000) {
+            const kg = Math.round((num / 1000) * 100) / 100;
+            return `${str} gram (${kg.toLocaleString('id-ID', { maximumFractionDigits: 2 })} kg)`;
+        }
+        if (u === 'ml' && num >= 1000) {
+            const ltr = Math.round((num / 1000) * 100) / 100;
+            return `${str} ml (${ltr.toLocaleString('id-ID', { maximumFractionDigits: 2 })} L)`;
+        }
+
+        return unit ? `${str} ${unit}` : str;
+    }
+
+    let stockToastDebounceTimer = null;
+    function triggerStockToastAlert(exceededList) {
+        clearTimeout(stockToastDebounceTimer);
+        stockToastDebounceTimer = setTimeout(() => {
+            if (!exceededList || exceededList.length === 0) return;
+            const first = exceededList[0];
+            const msg = `⚠️ Stok "${first.nama}" tidak cukup! Butuh ${formatStockQty(first.needed, first.unit)}, stok tersedia hanya ${formatStockQty(first.available, first.unit)}.`;
+            if (window.AgriSwal && typeof window.AgriSwal.toastError === 'function') {
+                window.AgriSwal.toastError(msg);
+            } else if (window.Swal) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: msg,
+                    showConfirmButton: false,
+                    timer: 4500
+                });
+            }
+        }, 550);
+    }
+
+    function getExceededStockList(prefix) {
+        const container = document.getElementById(`${prefix}-obat-rows-container`);
+        if (!container) return [];
+
+        const metode = getMetodeAplikasi(prefix);
+        const isPerPlant = (metode === 'Kocor' || metode === 'Tabur');
+        const tankInput = document.getElementById(`${prefix}-jumlah-tank`);
+        const popInput = document.getElementById(`${prefix}-populasi-target`);
+
+        let jumlahTank = parseFloat(tankInput?.value || '1');
+        if (isNaN(jumlahTank) || jumlahTank <= 0) jumlahTank = 1;
+
+        let populasiTarget = parseFloat(popInput?.value || '0');
+        if (isNaN(populasiTarget) || populasiTarget < 0) {
+            populasiTarget = CROP_NUMERIC_POPULASI > 0 ? CROP_NUMERIC_POPULASI : 0;
+        }
+
+        const activeMultiplier = isPerPlant ? 1 : jumlahTank;
+
+        const rows = container.querySelectorAll('.obat-row');
+        const medStockMap = {};
+
+        rows.forEach(r => {
+            const idInput = r.querySelector('.obat-id-val');
+            const nameInput = r.querySelector('.obat-name-val');
+            const searchInput = r.querySelector('.obat-search-input');
+            const unitInput = r.querySelector('.obat-unit-val');
+            const doseInput = r.querySelector('.dosis-input');
+
+            const medName = (nameInput?.value || searchInput?.value || '').trim();
+            if (!medName) return;
+
+            const medObj = ALL_MEDICINES.find(m => String(m.id) === String(idInput?.value || ''))
+                || ALL_MEDICINES.find(m => m.nama.toLowerCase() === medName.toLowerCase());
+
+            if (!medObj) return;
+
+            const unit = unitInput?.value || medObj.base_unit_label || 'gram';
+            const isEq = isEquipment(unit, medObj.jenis || '', medName);
+            const dose = parseFloat(doseInput?.value || '0');
+
+            const mult = isEq ? 1 : (isPerPlant ? 1 : jumlahTank);
+            const rowNeeded = dose > 0 ? (dose * mult) : 0;
+
+            const medKey = String(medObj.id);
+            if (!medStockMap[medKey]) {
+                medStockMap[medKey] = {
+                    medObj: medObj,
+                    totalNeeded: 0,
+                    unit: unit,
+                    isEq: isEq,
+                    rows: []
+                };
+            }
+            medStockMap[medKey].totalNeeded += rowNeeded;
+            medStockMap[medKey].rows.push({
+                row: r,
+                doseInput: doseInput,
+                dose: dose,
+                rowNeeded: rowNeeded
+            });
+        });
+
+        const exceededList = [];
+        Object.keys(medStockMap).forEach(key => {
+            const item = medStockMap[key];
+            const med = item.medObj;
+            const available = getMedicineAvailableStock(med);
+            const needed = item.totalNeeded;
+
+            if (needed > available && needed > 0) {
+                exceededList.push({
+                    medObj: med,
+                    nama: med.nama,
+                    unit: item.unit,
+                    needed: needed,
+                    available: available,
+                    shortage: needed - available,
+                    rows: item.rows
+                });
+            }
+        });
+
+        return exceededList;
+    }
+
+    function showStockExceededSwal(prefix, exceededList, onConfirm) {
+        const listHtml = exceededList.map(item => `
+            <div class="p-2.5 rounded-xl bg-red-50 border border-red-200 text-left">
+                <div class="font-bold text-red-950 text-xs flex items-center justify-between">
+                    <span>${escapeHtml(item.nama)}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-800 font-extrabold border border-red-200">
+                        Kurang ${formatStockQty(item.shortage, item.unit)}
+                    </span>
+                </div>
+                <div class="text-[11px] text-red-800 mt-1">
+                    Total butuh: <b>${formatStockQty(item.needed, item.unit)}</b> • Sisa stok di gudang: <b>${formatStockQty(item.available, item.unit)}</b>
+                </div>
+            </div>
+        `).join('');
+
+        if (window.Swal) {
+            Swal.fire({
+                title: 'Stok Obat Tidak Mencukupi!',
+                html: `
+                    <div class="mt-1 text-left">
+                        <p class="agri-swal-subtitle text-xs text-gray-600 mb-3 text-center sm:text-left leading-relaxed">
+                            Total pemakaian obat berikut melebihi sisa persediaan di gudang:
+                        </p>
+                        <div class="space-y-2 max-h-48 overflow-y-auto mb-3 font-sans">
+                            ${listHtml}
+                        </div>
+                        <p class="text-[11px] text-gray-500 text-center sm:text-left">
+                            Apakah Anda ingin tetap menyimpan kegiatan ini? (Stok di gudang akan habis/0).
+                        </p>
+                    </div>
+                `,
+                icon: 'warning',
+                iconColor: '#E4574C',
+                showCancelButton: true,
+                confirmButtonText: 'Tetap Simpan',
+                cancelButtonText: 'Periksa & Ubah Dosis',
+                reverseButtons: true,
+                focusCancel: true,
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'agri-swal-popup agri-swal-popup-wide',
+                    title: 'agri-swal-title',
+                    htmlContainer: 'agri-swal-html',
+                    confirmButton: 'agri-swal-btn-danger',
+                    cancelButton: 'agri-swal-btn-cancel',
+                    actions: 'agri-swal-actions'
+                }
+            }).then((result) => {
+                if (result.isConfirmed && typeof onConfirm === 'function') {
+                    onConfirm();
+                } else {
+                    const firstRow = exceededList[0]?.rows[0]?.doseInput;
+                    if (firstRow) {
+                        firstRow.focus();
+                        firstRow.select();
+                    }
+                }
+            });
+        } else {
+            if (confirm('Perhatian: Total obat melebihi stok gudang! Tetap simpan?')) {
+                onConfirm();
+            }
+        }
+    }
+
+    function updateObatSummary(prefix, triggerToast = false) {
         const container = document.getElementById(`${prefix}-obat-rows-container`);
         const subtotalDisplay = document.getElementById(`${prefix}-obat-subtotal-display`);
         const tankDisplay = document.getElementById(`${prefix}-obat-tank-display`);
@@ -2395,16 +2956,33 @@
         const hiddenAplikasiObat = document.getElementById(`${prefix}-aplikasi-obat`);
         const hiddenTotalBiaya = document.getElementById(`${prefix}-total-biaya-obat`);
         const tankInput = document.getElementById(`${prefix}-jumlah-tank`);
+        const popInput = document.getElementById(`${prefix}-populasi-target`);
 
         if (!container) return;
+
+        const metode = getMetodeAplikasi(prefix);
+        const isKocor = (metode === 'Kocor');
+        const isTabur = (metode === 'Tabur');
+        const isPerPlant = (isKocor || isTabur);
 
         let jumlahTank = parseFloat(tankInput?.value || '1');
         if (isNaN(jumlahTank) || jumlahTank <= 0) {
             jumlahTank = 1;
         }
 
+        let populasiTarget = parseFloat(popInput?.value || '0');
+        if (isNaN(populasiTarget) || populasiTarget < 0) {
+            populasiTarget = CROP_NUMERIC_POPULASI > 0 ? CROP_NUMERIC_POPULASI : 0;
+        }
+
+        const dosisPerTanamanInput = document.getElementById(`${prefix}-dosis-per-tanaman`);
+        let dosisPerTanaman = parseFloat(dosisPerTanamanInput?.value || '0');
+        if (isNaN(dosisPerTanaman) || dosisPerTanaman < 0) {
+            dosisPerTanaman = 0;
+        }
+
         const rows = container.querySelectorAll('.obat-row');
-        let subtotalObatPerTank = 0;
+        let subtotalObatPerUnit = 0;
         let totalEquipmentDirect = 0;
         let obatCount = 0;
         let equipCount = 0;
@@ -2429,19 +3007,25 @@
                 const isEq = isEquipment(unit, medObj?.jenis || '', medName);
 
                 let itemCost = 0;
-                if (dose > 0 && rate > 0) {
-                    itemCost = Math.round(dose * rate);
-                }
-
                 let itemGrandTotal = 0;
+
+                const multiplier = isEq ? 1 : (isPerPlant ? 1 : jumlahTank);
+
                 if (isEq) {
                     equipCount++;
-                    itemGrandTotal = itemCost; // Langsung, TIDAK dikali tank!
+                    if (dose > 0 && rate > 0) itemCost = Math.round(dose * rate);
+                    itemGrandTotal = itemCost;
                     totalEquipmentDirect += itemCost;
+                } else if (isPerPlant) {
+                    obatCount++;
+                    if (dose > 0 && rate > 0) itemCost = Math.round(dose * rate);
+                    itemGrandTotal = itemCost;
+                    subtotalObatPerUnit += itemCost;
                 } else {
                     obatCount++;
-                    itemGrandTotal = Math.round(itemCost * jumlahTank); // Dikalikan tank
-                    subtotalObatPerTank += itemCost;
+                    if (dose > 0 && rate > 0) itemCost = Math.round(dose * rate);
+                    itemGrandTotal = Math.round(itemCost * jumlahTank);
+                    subtotalObatPerUnit += itemCost;
                 }
 
                 if (dose > 0) {
@@ -2456,38 +3040,64 @@
             }
         });
 
-        const totalObat = Math.round(subtotalObatPerTank * jumlahTank);
+        const activeMultiplier = isPerPlant
+            ? 1
+            : jumlahTank;
+        const totalObat = isPerPlant
+            ? Math.round(subtotalObatPerUnit)
+            : Math.round(subtotalObatPerUnit * jumlahTank);
         const grandTotal = totalObat + totalEquipmentDirect;
         const fmtTank = (Math.round(jumlahTank * 100) / 100).toString().replace('.', ',');
 
         const subtotalLabel = document.getElementById(`${prefix}-obat-subtotal-label`);
         if (subtotalLabel) {
-            if (obatCount > 0 && equipCount > 0) {
-                subtotalLabel.textContent = 'Dosis Obat / Tank';
-            } else if (obatCount === 0 && equipCount > 0) {
-                subtotalLabel.textContent = 'Total Perlengkapan';
+            if (isPerPlant) {
+                if (obatCount > 0 && equipCount > 0) {
+                    subtotalLabel.textContent = 'Total Obat Dicampur';
+                } else if (obatCount === 0 && equipCount > 0) {
+                    subtotalLabel.textContent = 'Total Perlengkapan';
+                } else {
+                    subtotalLabel.textContent = 'Total Obat Dicampur';
+                }
             } else {
-                subtotalLabel.textContent = 'Subtotal Dosis';
+                if (obatCount > 0 && equipCount > 0) {
+                    subtotalLabel.textContent = 'Dosis Obat / Tank';
+                } else if (obatCount === 0 && equipCount > 0) {
+                    subtotalLabel.textContent = 'Total Perlengkapan';
+                } else {
+                    subtotalLabel.textContent = 'Subtotal Dosis';
+                }
             }
         }
 
         if (subtotalDisplay) {
-            if (obatCount > 0 && equipCount > 0) {
-                subtotalDisplay.textContent = 'Rp ' + subtotalObatPerTank.toLocaleString('id-ID');
-            } else if (obatCount === 0 && equipCount > 0) {
+            if (obatCount > 0) {
+                subtotalDisplay.textContent = 'Rp ' + subtotalObatPerUnit.toLocaleString('id-ID');
+            } else if (equipCount > 0) {
                 subtotalDisplay.textContent = 'Rp ' + totalEquipmentDirect.toLocaleString('id-ID');
             } else {
-                subtotalDisplay.textContent = 'Rp ' + subtotalObatPerTank.toLocaleString('id-ID');
+                subtotalDisplay.textContent = 'Rp 0';
             }
         }
 
         if (tankDisplay) {
-            if (obatCount > 0 && equipCount > 0) {
-                tankDisplay.textContent = `× ${fmtTank} Tank (+ Alat Rp ${totalEquipmentDirect.toLocaleString('id-ID')})`;
-            } else if (obatCount === 0 && equipCount > 0) {
-                tankDisplay.textContent = '(Non-Tank)';
+            if (isPerPlant) {
+                const popNum = (populasiTarget > 0 ? populasiTarget : CROP_NUMERIC_POPULASI);
+                const popFormatted = popNum.toLocaleString('id-ID');
+                let extraAir = '';
+                if (isKocor && dosisPerTanaman > 0) {
+                    const totalAirL = Math.round((dosisPerTanaman * popNum) / 1000 * 10) / 10;
+                    extraAir = ` • Total Air: ${totalAirL.toLocaleString('id-ID')} L`;
+                }
+                tankDisplay.textContent = `(${popFormatted} ${CROP_POPULASI_UNIT}${extraAir})`;
             } else {
-                tankDisplay.textContent = `× ${fmtTank} Tank`;
+                if (obatCount > 0 && equipCount > 0) {
+                    tankDisplay.textContent = `× ${fmtTank} Tank (+ Alat Rp ${totalEquipmentDirect.toLocaleString('id-ID')})`;
+                } else if (obatCount === 0 && equipCount > 0) {
+                    tankDisplay.textContent = '(Non-Tank)';
+                } else {
+                    tankDisplay.textContent = `× ${fmtTank} Tank`;
+                }
             }
         }
 
@@ -2540,6 +3150,156 @@
         if (hiddenAplikasiObat) {
             hiddenAplikasiObat.value = summaryItems.join(', ');
         }
+
+        // ── Evaluasi Stok Obat Melebihi Persediaan ──
+        const medStockMap = {};
+
+        rows.forEach(r => {
+            const idInput = r.querySelector('.obat-id-val');
+            const nameInput = r.querySelector('.obat-name-val');
+            const searchInput = r.querySelector('.obat-search-input');
+            const unitInput = r.querySelector('.obat-unit-val');
+            const doseInput = r.querySelector('.dosis-input');
+
+            const medName = (nameInput?.value || searchInput?.value || '').trim();
+            if (!medName) return;
+
+            const medObj = ALL_MEDICINES.find(m => String(m.id) === String(idInput?.value || ''))
+                || ALL_MEDICINES.find(m => m.nama.toLowerCase() === medName.toLowerCase());
+
+            if (!medObj) return;
+
+            const unit = unitInput?.value || medObj.base_unit_label || 'gram';
+            const isEq = isEquipment(unit, medObj.jenis || '', medName);
+            const dose = parseFloat(doseInput?.value || '0');
+
+            const mult = isEq ? 1 : (isPerPlant ? 1 : jumlahTank);
+            const rowNeeded = dose > 0 ? (dose * mult) : 0;
+
+            const medKey = String(medObj.id);
+            if (!medStockMap[medKey]) {
+                medStockMap[medKey] = {
+                    medObj: medObj,
+                    totalNeeded: 0,
+                    unit: unit,
+                    isEq: isEq,
+                    rows: []
+                };
+            }
+            medStockMap[medKey].totalNeeded += rowNeeded;
+            medStockMap[medKey].rows.push({
+                row: r,
+                doseInput: doseInput,
+                dose: dose,
+                rowNeeded: rowNeeded
+            });
+        });
+
+        const exceededList = [];
+        const exceededRowMap = new Map();
+
+        Object.keys(medStockMap).forEach(key => {
+            const item = medStockMap[key];
+            const med = item.medObj;
+            const available = getMedicineAvailableStock(med);
+            const needed = item.totalNeeded;
+
+            if (needed > available && needed > 0) {
+                const shortage = needed - available;
+                const exceededData = {
+                    medObj: med,
+                    nama: med.nama,
+                    unit: item.unit,
+                    needed: needed,
+                    available: available,
+                    shortage: shortage,
+                    rows: item.rows
+                };
+                exceededList.push(exceededData);
+
+                item.rows.forEach(rObj => {
+                    if (rObj.dose > 0) {
+                        exceededRowMap.set(rObj.row, exceededData);
+                    }
+                });
+            }
+        });
+
+        // Update UI tiap baris (slot alert dan border merah pada input dosis)
+        rows.forEach(r => {
+            const doseInput = r.querySelector('.dosis-input');
+            const alertSlot = r.querySelector('.stok-alert-slot');
+            const exceededData = exceededRowMap.get(r);
+
+            if (exceededData) {
+                if (doseInput) {
+                    doseInput.classList.add('border-red-500', 'bg-red-50/50', 'text-red-900', 'ring-1', 'ring-red-400');
+                    doseInput.classList.remove('border-gray-300');
+                }
+                if (alertSlot) {
+                    alertSlot.innerHTML = `
+                        <div class="stok-warning-alert mt-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs flex items-start gap-2 shadow-2xs">
+                            <svg class="w-4 h-4 text-red-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-red-900 flex items-center justify-between gap-1 flex-wrap">
+                                    <span>⚠️ Dosis Melebihi Stok Gudang!</span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-800 font-black border border-red-200">
+                                        Kurang ${formatStockQty(exceededData.shortage, exceededData.unit)}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-red-700 mt-0.5 leading-snug">
+                                    Total butuh: <b class="font-bold text-red-900">${formatStockQty(exceededData.needed, exceededData.unit)}</b>, sisa stok di gudang: <b class="font-bold text-red-900">${formatStockQty(exceededData.available, exceededData.unit)}</b>.
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                if (doseInput) {
+                    doseInput.classList.remove('border-red-500', 'bg-red-50/50', 'text-red-900', 'ring-1', 'ring-red-400');
+                    doseInput.classList.add('border-gray-300');
+                }
+                if (alertSlot) {
+                    alertSlot.innerHTML = '';
+                }
+            }
+        });
+
+        // Update Global Summary Banner di bawah total biaya
+        const summaryAlertEl = document.getElementById(`${prefix}-stok-summary-alert`);
+        if (summaryAlertEl) {
+            if (exceededList.length > 0) {
+                summaryAlertEl.classList.remove('hidden');
+                summaryAlertEl.innerHTML = `
+                    <div class="p-3 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs shadow-2xs space-y-1.5">
+                        <div class="flex items-center gap-2 font-bold text-red-800">
+                            <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <span>Peringatan: Pemakaian Melebihi Stok Gudang!</span>
+                        </div>
+                        <ul class="list-disc list-inside text-[11px] text-red-700 space-y-0.5 pl-1 font-medium">
+                            ${exceededList.map(item => `
+                                <li><b>${escapeHtml(item.nama)}</b>: butuh <b>${formatStockQty(item.needed, item.unit)}</b> (stok tersedia: <b>${formatStockQty(item.available, item.unit)}</b>, kurang <b>${formatStockQty(item.shortage, item.unit)}</b>)</li>
+                            `).join('')}
+                        </ul>
+                        <p class="text-[10px] text-red-600 font-medium italic pt-0.5 border-t border-red-200/60">
+                            💡 Harap kurangi dosis/populasi atau catat pembelian stok baru di menu Stok Obat.
+                        </p>
+                    </div>
+                `;
+            } else {
+                summaryAlertEl.classList.add('hidden');
+                summaryAlertEl.innerHTML = '';
+            }
+        }
+
+        // Trigger Toast Alert jika dari interaksi input langsung
+        if (triggerToast && exceededList.length > 0) {
+            triggerStockToastAlert(exceededList);
+        }
     }
 
     function parseObatItems(rawText) {
@@ -2548,17 +3308,22 @@
         const parsed = [];
 
         parts.forEach(part => {
+            // Bersihkan format biaya (Rp ...) jika ada
+            let cleanPart = part.replace(/\(Rp\s*[\d.,]+\)/i, '').trim();
+            // Bersihkan suffix per tanaman jika ada
+            cleanPart = cleanPart.replace(/\/\s*(?:tanaman|pohon|polybag|polibag|bedeng|titik)\b/i, '').trim();
+
             let matchedMed = null;
             let foundDose = '';
 
             for (const m of ALL_MEDICINES) {
-                if (part.toLowerCase().includes(m.nama.toLowerCase())) {
+                if (cleanPart.toLowerCase().includes(m.nama.toLowerCase())) {
                     matchedMed = m;
                     break;
                 }
             }
 
-            const doseMatch = part.match(/(\d+(?:[.,]\d+)?)\s*(?:gram|gr|g|ml|liter|ltr|lt|l|kg|sachet|bungkus|sendok|sdm|pcs|buah|lembar|rol|roll|gulung|karung|unit|pack|pak|meter|m|biji|ikat|batang|sak|tali|kresek)/i);
+            const doseMatch = cleanPart.match(/(\d+(?:[.,]\d+)?)\s*(?:mg|miligram|gram|gr|g|ml|liter|ltr|lt|l|kg|sachet|bungkus|sendok|sdm|pcs|buah|lembar|rol|roll|gulung|karung|unit|pack|pak|meter|m|biji|ikat|batang|sak|tali|kresek)/i);
             if (doseMatch) {
                 foundDose = doseMatch[1].replace(',', '.');
             }
@@ -2570,15 +3335,15 @@
                     dose: foundDose
                 });
             } else {
-                let customName = part;
-                if (part.includes(':')) {
-                    customName = part.split(':')[0].trim();
+                let customName = cleanPart;
+                if (cleanPart.includes(':')) {
+                    customName = cleanPart.split(':')[0].trim();
                 } else if (doseMatch) {
-                    customName = part.substring(0, doseMatch.index).trim();
+                    customName = cleanPart.substring(0, doseMatch.index).trim();
                 }
                 parsed.push({
                     medId: '',
-                    medName: customName || part,
+                    medName: customName || cleanPart,
                     dose: foundDose
                 });
             }
@@ -2587,12 +3352,24 @@
         return parsed;
     }
 
-    function initObatBuilder(prefix, existingText = '', initialTank = 1) {
+    function initObatBuilder(prefix, existingText = '', initialTank = 1, initialMetode = 'Semprot', initialPopulasi = null, initialDosisPerTanaman = null) {
         const container = document.getElementById(`${prefix}-obat-rows-container`);
         const hiddenAplikasiObat = document.getElementById(`${prefix}-aplikasi-obat`);
         const tankInput = document.getElementById(`${prefix}-jumlah-tank`);
+        const popInput = document.getElementById(`${prefix}-populasi-target`);
+        const dosisInput = document.getElementById(`${prefix}-dosis-per-tanaman`);
 
         if (tankInput) tankInput.value = initialTank || 1;
+        if (popInput) popInput.value = initialPopulasi || (CROP_NUMERIC_POPULASI > 0 ? CROP_NUMERIC_POPULASI : 0);
+        if (dosisInput) {
+            if (initialDosisPerTanaman !== null && initialDosisPerTanaman !== undefined && initialDosisPerTanaman !== '') {
+                dosisInput.value = initialDosisPerTanaman;
+            } else {
+                dosisInput.value = (initialMetode === 'Tabur' ? 10 : 200);
+            }
+        }
+
+        setMetodeAplikasi(prefix, initialMetode || 'Semprot');
 
         if (!container || !hiddenAplikasiObat) return;
 
@@ -2701,8 +3478,12 @@
         if (sasaranInput) sasaranInput.value = '';
         if (ketInput) ketInput.value = '';
         if (tankInput) tankInput.value = '1';
+        const popInput = document.getElementById('add-populasi-target');
+        if (popInput) popInput.value = CROP_NUMERIC_POPULASI > 0 ? CROP_NUMERIC_POPULASI : 0;
+        const dosisInput = document.getElementById('add-dosis-per-tanaman');
+        if (dosisInput) dosisInput.value = '200';
 
-        initObatBuilder('add', '', 1);
+        initObatBuilder('add', '', 1, 'Semprot', CROP_NUMERIC_POPULASI > 0 ? CROP_NUMERIC_POPULASI : 0, 200);
 
         const statusCb = document.getElementById('add-status-selesai');
         if (statusCb) statusCb.checked = true;
@@ -2779,7 +3560,7 @@
     let editExistingPhotos = [];
     let editNewFiles = [];
 
-    function openEditActivityModal(id, nama, targetHst, targetDate, obat, sasaran, ket, existingPhotos = [], jumlahTank = 1, totalBiaya = 0) {
+    function openEditActivityModal(id, nama, targetHst, targetDate, obat, sasaran, ket, existingPhotos = [], jumlahTank = 1, totalBiaya = 0, metodeAplikasi = 'Semprot', populasiTarget = null, dosisPerTanaman = null) {
         currentEditActivityId = id;
         editExistingPhotos = Array.isArray(existingPhotos) ? [...existingPhotos] : [];
         editNewFiles = [];
@@ -2796,7 +3577,16 @@
         const tankInput = document.getElementById('edit-jumlah-tank');
         if (tankInput) tankInput.value = jumlahTank || 1;
 
-        initObatBuilder('edit', obat || '', jumlahTank || 1);
+        const popInput = document.getElementById('edit-populasi-target');
+        const resolvedPop = populasiTarget || (CROP_NUMERIC_POPULASI > 0 ? CROP_NUMERIC_POPULASI : 0);
+        if (popInput) popInput.value = resolvedPop;
+
+        const dosisInput = document.getElementById('edit-dosis-per-tanaman');
+        if (dosisInput) {
+            dosisInput.value = (dosisPerTanaman !== null && dosisPerTanaman !== undefined) ? dosisPerTanaman : (metodeAplikasi === 'Tabur' ? 10 : 200);
+        }
+
+        initObatBuilder('edit', obat || '', jumlahTank || 1, metodeAplikasi || 'Semprot', resolvedPop, dosisPerTanaman);
 
         const deletedContainer = document.getElementById('edit-deleted-photos-container');
         if (deletedContainer) deletedContainer.innerHTML = '';
@@ -3238,6 +4028,7 @@
         if (e.key === 'ArrowRight') nextLightboxImage();
     }
 
+    @if (!$crop->is_hss)
     function openHarvestModal(cropId, cropName, plantDate, nextNumber) {
         const heading = document.getElementById('harvest-modal-heading');
         if (heading && nextNumber) {
@@ -3257,6 +4048,7 @@
         if (notesInput) notesInput.value = '';
         openModal('modal-harvest');
     }
+    @endif
 
     function openEndCropModal(cropId, cropName, plantDate) {
         const reasonInput = document.getElementById('end-reason');
@@ -3335,8 +4127,8 @@
                 targetRow.classList.remove('bg-amber-100/80', 'ring-2', 'ring-amber-400');
             }, 2500);
         } else {
-            if (confirm(`Baris HST ${hstVal} belum masuk dalam rentang tampilan (saat ini sampai HST {{ $maxRowHst }}).\n\nMuat tabel sampai HST ${hstVal + 5}?`)) {
-                window.location.href = `/kalender-hst/tanaman/{{ $crop->id }}?limit_hst=${hstVal + 5}#hst-row-${hstVal}`;
+            if (confirm(`Baris ${LABEL_CODE} ${hstVal} belum masuk dalam rentang tampilan (saat ini sampai ${LABEL_CODE} {{ $maxRowHst }}).\n\nMuat tabel sampai ${LABEL_CODE} ${hstVal + 5}?`)) {
+                window.location.href = `{{ $cropRoute }}?limit_hst=${hstVal + 5}#hst-row-${hstVal}`;
             }
         }
     }
@@ -3634,10 +4426,24 @@
             }
         }
 
-        // Intercept form tambah kegiatan: SweetAlert konfirmasi tanaman & offline handling
+        // Intercept form tambah kegiatan: SweetAlert konfirmasi tanaman, validasi stok & offline handling
         const addForm = document.getElementById('form-add-activity');
         if (addForm) {
             addForm.addEventListener('submit', async (e) => {
+                // Tahap Validasi Stok Gudang
+                if (!addForm.dataset.stockApproved) {
+                    const exceededList = getExceededStockList('add');
+                    if (exceededList.length > 0) {
+                        e.preventDefault();
+                        showStockExceededSwal('add', exceededList, () => {
+                            addForm.dataset.stockApproved = 'true';
+                            addForm.requestSubmit();
+                        });
+                        return;
+                    }
+                }
+                addForm.dataset.stockApproved = '';
+
                 // 1. Tahap Konfirmasi Pilihan Tanaman (Sebelum Simpan)
                 if (!isAddActivityConfirmed) {
                     e.preventDefault();
@@ -3669,7 +4475,7 @@
                                     <span class="text-xl leading-none shrink-0">{{ $crop->emoji }}</span>
                                     <div class="min-w-0 truncate">
                                         <div class="text-xs font-bold text-emerald-950 truncate">{{ $crop->nama_tanaman }}</div>
-                                        <div class="text-[10px] text-emerald-700 font-medium">{{ $crop->varietas ? $crop->varietas . ' • ' : '' }}HST {{ $currentHst }}</div>
+                                        <div class="text-[10px] text-emerald-700 font-medium">{{ $crop->varietas ? $crop->varietas . ' • ' : '' }}{{ $labelCode }} {{ $currentHst }}</div>
                                     </div>
                                 </div>
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-200/70 px-2 py-0.5 rounded-md shrink-0 ml-2">
@@ -3695,7 +4501,7 @@
                                            id="swal-crop-${c.id}">
                                     <div class="min-w-0 truncate">
                                         <div class="text-xs font-bold text-gray-900 group-hover:text-emerald-950 truncate">${c.emoji || '🌱'} ${escapeHtml(c.nama_tanaman)}</div>
-                                        <div class="text-[10px] text-gray-500 font-medium">${c.varietas ? escapeHtml(c.varietas) + ' • ' : ''}HST ${c.current_hst}</div>
+                                        <div class="text-[10px] text-gray-500 font-medium">${c.varietas ? escapeHtml(c.varietas) + ' • ' : ''}${LABEL_CODE} ${c.current_hst}</div>
                                     </div>
                                 </div>
                                 <span class="text-[10px] text-gray-400 font-medium group-hover:text-emerald-700 shrink-0 ml-2">Terapkan</span>
@@ -3793,6 +4599,9 @@
                             target_hst: hstVal,
                             tanggal_kegiatan: fd.get('tanggal_kegiatan') || '',
                             aplikasi_obat: fd.get('aplikasi_obat') || null,
+                            metode_aplikasi: fd.get('metode_aplikasi') || 'Semprot',
+                            populasi_target: fd.get('populasi_target') ? parseFloat(fd.get('populasi_target')) : null,
+                            dosis_per_tanaman: fd.get('dosis_per_tanaman') ? parseFloat(fd.get('dosis_per_tanaman')) : null,
                             jumlah_tank: fd.get('jumlah_tank') ? parseFloat(fd.get('jumlah_tank')) : 1.0,
                             total_biaya_obat: fd.get('total_biaya_obat') ? parseFloat(fd.get('total_biaya_obat')) : null,
                             sasaran: fd.get('sasaran') || null,
@@ -3838,6 +4647,25 @@
                         }
                     }
                 }
+            });
+        }
+
+        // Intercept form edit kegiatan: Validasi stok obat melebihi persediaan
+        const editForm = document.getElementById('form-edit-activity');
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => {
+                if (!editForm.dataset.stockApproved) {
+                    const exceededList = getExceededStockList('edit');
+                    if (exceededList.length > 0) {
+                        e.preventDefault();
+                        showStockExceededSwal('edit', exceededList, () => {
+                            editForm.dataset.stockApproved = 'true';
+                            editForm.requestSubmit();
+                        });
+                        return;
+                    }
+                }
+                editForm.dataset.stockApproved = '';
             });
         }
 

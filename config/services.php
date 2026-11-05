@@ -43,4 +43,11 @@ return [
         'upload_preset' => env('CLOUDINARY_UPLOAD_PRESET'),
     ],
 
+    'fonnte' => [
+        'token' => env('FONNTE_TOKEN', ''),
+        'target_phone' => env('FONNTE_TARGET_PHONE', ''),
+        'enabled' => env('FONNTE_ENABLED', true),
+        'url' => env('FONNTE_URL', 'https://api.fonnte.com/send'),
+    ],
+
 ];

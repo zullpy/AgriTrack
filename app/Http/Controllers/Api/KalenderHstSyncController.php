@@ -69,6 +69,9 @@ class KalenderHstSyncController extends Controller
 
                     $activity = $crop->activities()->create([
                         'nama_kegiatan' => $data['nama_kegiatan'] ?? 'Kegiatan Offline',
+                        'metode_aplikasi' => $data['metode_aplikasi'] ?? 'Semprot',
+                        'populasi_target' => isset($data['populasi_target']) ? (float) $data['populasi_target'] : ($crop->numeric_populasi ?: null),
+                        'dosis_per_tanaman' => isset($data['dosis_per_tanaman']) ? (float) $data['dosis_per_tanaman'] : null,
                         'aplikasi_obat' => $data['aplikasi_obat'] ?? null,
                         'jumlah_tank' => isset($data['jumlah_tank']) ? (float) $data['jumlah_tank'] : 1.0,
                         'total_biaya_obat' => isset($data['total_biaya_obat']) ? (float) $data['total_biaya_obat'] : null,
@@ -95,6 +98,15 @@ class KalenderHstSyncController extends Controller
                             }
                             if (isset($data['target_hst'])) {
                                 $updateData['target_hst'] = (int) $data['target_hst'];
+                            }
+                            if (isset($data['metode_aplikasi'])) {
+                                $updateData['metode_aplikasi'] = $data['metode_aplikasi'];
+                            }
+                            if (isset($data['populasi_target'])) {
+                                $updateData['populasi_target'] = (float) $data['populasi_target'];
+                            }
+                            if (isset($data['dosis_per_tanaman'])) {
+                                $updateData['dosis_per_tanaman'] = (float) $data['dosis_per_tanaman'];
                             }
                             if (isset($data['aplikasi_obat'])) {
                                 $updateData['aplikasi_obat'] = $data['aplikasi_obat'];

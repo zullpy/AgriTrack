@@ -11,8 +11,11 @@ class CropActivity extends Model
     protected $fillable = [
         'crop_id',
         'nama_kegiatan',
+        'metode_aplikasi',
         'aplikasi_obat',
         'jumlah_tank',
+        'populasi_target',
+        'dosis_per_tanaman',
         'total_biaya_obat',
         'sasaran',
         'target_hst',
@@ -30,6 +33,8 @@ class CropActivity extends Model
         return [
             'target_hst' => 'integer',
             'jumlah_tank' => 'float',
+            'populasi_target' => 'float',
+            'dosis_per_tanaman' => 'float',
             'total_biaya_obat' => 'float',
             'stok_dipotong' => 'boolean',
             'stok_deductions' => 'array',

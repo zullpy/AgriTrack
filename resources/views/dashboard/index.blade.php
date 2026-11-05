@@ -53,7 +53,7 @@
                         @if($plant['active_crop'])
                             <span class="inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-xl text-[9px] sm:text-[11px] font-bold {{ $t['active_bg'] }} text-white shadow-sm flex-shrink-0 whitespace-nowrap" title="Ada tanaman aktif di kebun">
                                 <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                                {{ $plant['active_crop']->current_hst }} HST
+                                {{ $plant['active_crop']->current_hst }} {{ $plant['active_crop']->label_hst_or_hss }}
                             </span>
                         @else
                             <span class="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-medium bg-gray-100 text-gray-500 flex-shrink-0 whitespace-nowrap" title="Panduan katalog budidaya">
@@ -151,7 +151,7 @@
         {{-- 2 Menu Options --}}
         <div class="mt-5 space-y-3 relative z-10">
 
-            {{-- 1. Kalender HST --}}
+            {{-- 1. Kalender HST / HSS --}}
             <a id="linkKalenderHst"
                href="/kalender-hst"
                class="group flex items-start gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-100 hover:border-primary bg-emerald-50/40 hover:bg-emerald-50/90 transition-all duration-200 shadow-sm hover:shadow-md">
@@ -162,38 +162,45 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-primary transition-colors">1. Kalender HST</h4>
+                        <h4 id="kalenderOptionTitle" class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-primary transition-colors">1. Kalender HST</h4>
                         <span id="kalenderHstStatusTag" class="inline-flex items-center text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">Jadwal Harian</span>
                     </div>
                     <p id="kalenderHstDesc" class="text-xs text-text-secondary mt-1 leading-relaxed">
                         Pantau umur tanaman hari demi hari, kelola jadwal penyemprotan & pemupukan harian, serta tandai panen.
                     </p>
                     <div class="mt-2.5 flex items-center text-xs font-semibold text-primary">
-                        <span>Buka Kalender HST</span>
+                        <span id="kalenderHstBtnText">Buka Kalender HST</span>
                         <span class="ml-1 transition-transform group-hover:translate-x-1">→</span>
                     </div>
                 </div>
             </a>
 
-            {{-- 2. Panduan Pemupukan --}}
+            {{-- 2. Panduan Pemupukan / Panduan Semai --}}
             <button type="button"
                     id="btnOpenFertilizer"
                     onclick="openFertilizerGuideForCurrentPlant()"
                     class="w-full text-left group flex items-start gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border-2 border-amber-100 hover:border-amber-400 bg-amber-50/40 hover:bg-amber-50/90 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer">
-                <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.309 48.309 0 01-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
-                    </svg>
+                <div id="guideOptionIconContainer" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                    <span id="guideOptionIconFertilizer">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.309 48.309 0 01-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+                        </svg>
+                    </span>
+                    <span id="guideOptionIconSemai" class="hidden">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                        </svg>
+                    </span>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-amber-800 transition-colors">2. Panduan Pemupukan</h4>
+                        <h4 id="guideOptionTitle" class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-amber-800 transition-colors">2. Panduan Pemupukan</h4>
                         <span id="fertilizerStatusTag" class="inline-flex items-center text-[10px] sm:text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">Dosis & Nutrisi</span>
                     </div>
                     <p id="fertilizerGuideDesc" class="text-xs text-text-secondary mt-1 leading-relaxed">
                         Pedoman lengkap nutrisi N-P-K, dosis per fase (dasar, vegetatif, hingga pembungaan/buah), serta cara kocor & semprot.
                     </p>
-                    <div class="mt-2.5 flex items-center text-xs font-semibold text-amber-700">
+                    <div id="guideOptionBtnRow" class="mt-2.5 flex items-center text-xs font-semibold text-amber-700">
                         <span id="fertilizerBtnText">Lihat Panduan Pemupukan</span>
                         <span class="ml-1 transition-transform group-hover:translate-x-1">→</span>
                     </div>
@@ -295,7 +302,99 @@
             {{-- Injected dynamically by JS --}}
         </div>
 
-        
+    </div>
+</div>
+
+
+{{-- ══════════════════════════════════════════════════════════════════════════
+     MODAL 3: Panduan Semai (SOP Persemaian Bibit) Lengkap
+     ══════════════════════════════════════════════════════════════════════════ --}}
+<div id="semaiGuideModal"
+     class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="semaiGuideTitle">
+
+    <div id="semaiGuideCard"
+         class="bg-surface w-full max-w-3xl h-[88vh] sm:h-auto sm:max-h-[90vh] flex flex-col rounded-t-[28px] sm:rounded-3xl shadow-2xl border border-gray-100 transform translate-y-8 sm:translate-y-0 sm:scale-95 transition-all duration-200 overflow-hidden">
+
+        {{-- Mobile drag pill indicator --}}
+        <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto my-2.5 sm:hidden flex-shrink-0"></div>
+
+        {{-- Header --}}
+        <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 bg-emerald-50/60 flex-shrink-0">
+            <div class="flex items-start justify-between gap-2.5">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                    <div id="semaiGuidePlantIcon" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-emerald-500/20 flex-shrink-0">
+                        🌱
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h3 id="semaiGuideTitle" class="text-sm sm:text-lg font-bold text-gray-900 leading-snug truncate">Panduan Semai Tanaman</h3>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span id="semaiGuideSubtitle" class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-emerald-200 text-emerald-800">SOP Persemaian</span>
+                            <span class="text-[11px] text-text-muted hidden sm:inline">• Panduan perlakuan benih & perawatan semai</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Actions on Desktop --}}
+                <div class="hidden sm:flex items-center gap-2 flex-shrink-0">
+                    <a id="btnOpenFullSemaiPage"
+                       href="/steps/penanaman-bibit"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200/80 rounded-xl transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                        Buka SOP Lengkap & Foto
+                    </a>
+                    <button type="button"
+                            onclick="backToPlantMenuFromSemai()"
+                            class="px-2.5 py-1.5 text-xs font-semibold text-text-secondary hover:text-text bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                        ← Kembali
+                    </button>
+                    <button type="button"
+                            onclick="closeSemaiGuideModal()"
+                            class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition-colors"
+                            aria-label="Tutup">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Close button on Mobile --}}
+                <button type="button"
+                        onclick="backToPlantMenuFromSemai()"
+                        class="sm:hidden w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
+                        aria-label="Tutup">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Mobile Action Bar --}}
+            <div class="flex sm:hidden items-center justify-between gap-2 mt-2.5 pt-2 border-t border-emerald-200/60">
+                <a id="btnOpenFullSemaiPageMobile"
+                   href="/steps/penanaman-bibit"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200/80 rounded-xl transition-colors">
+                    <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                    Buka SOP Lengkap & Foto
+                </a>
+            </div>
+        </div>
+
+        {{-- Steps Navigation Tabs --}}
+        <div id="semaiGuidePhaseTabs" class="px-4 sm:px-6 py-2 bg-white border-b border-gray-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+            {{-- Injected dynamically by JS --}}
+        </div>
+
+        {{-- Modal Body: Step Details Panels --}}
+        <div id="semaiGuidePhaseContent" class="p-6 overflow-y-auto flex-1 space-y-4">
+            {{-- Injected dynamically by JS --}}
+        </div>
 
     </div>
 </div>
@@ -326,56 +425,122 @@
         const fertDescEl = document.getElementById('fertilizerGuideDesc');
         const linkKalenderHst      = document.getElementById('linkKalenderHst');
         const kalenderHstStatusTag = document.getElementById('kalenderHstStatusTag');
+        const kalenderOptionTitle  = document.getElementById('kalenderOptionTitle');
+        const kalenderHstBtnText   = document.getElementById('kalenderHstBtnText');
 
-        if (titleEl)    titleEl.innerText    = plant.name;
-        if (subtitleEl) subtitleEl.innerText = 'Pilih menu perawatan atau jadwal';
-        if (badgeEl)    badgeEl.innerText    = (plant.cycle && plant.cycle !== '—') ? plant.cycle : (plant.active_crop ? 'Tanaman Aktif' : 'Komoditas');
-        if (iconEl)     iconEl.innerText     = plant.emoji;
-
-        // Kalender HST link & status
+        // Check if plant is in seedling / semai stage
+        const isHss = Boolean(plant.is_semai || (plant.active_crop && (plant.active_crop.tipe === 'hss' || plant.active_crop.is_hss)));
+        const labelCode = isHss ? 'HSS' : 'HST';
         const currentHst = (plant.active_crop && plant.active_crop.current_hst !== undefined)
             ? plant.active_crop.current_hst
             : (plant.active_crop ? 0 : null);
 
+        if (titleEl)    titleEl.innerText    = plant.name;
+        if (subtitleEl) subtitleEl.innerText = isHss ? 'Pilih menu jadwal semai atau panduan' : 'Pilih menu perawatan atau jadwal';
+        if (badgeEl)    badgeEl.innerText    = (plant.cycle && plant.cycle !== '—') ? plant.cycle : (plant.active_crop ? (isHss ? 'Tanaman Semai' : 'Tanaman Aktif') : 'Komoditas');
+        if (iconEl)     iconEl.innerText     = plant.emoji;
+
+        // 1. Kalender HST / HSS link & status
+        if (kalenderOptionTitle) kalenderOptionTitle.innerText = isHss ? '1. Kalender HSS' : '1. Kalender HST';
+        if (kalenderHstBtnText)  kalenderHstBtnText.innerText  = isHss ? 'Buka Kalender HSS' : 'Buka Kalender HST';
+
         if (plant.active_crop && plant.active_crop.id) {
-            linkKalenderHst.href = '/kalender-hst/tanaman/' + plant.active_crop.id;
-            kalenderHstStatusTag.innerText = currentHst + ' HST (Aktif)';
+            linkKalenderHst.href = (isHss ? '/kalender-hss/tanaman/' : '/kalender-hst/tanaman/') + plant.active_crop.id;
+            kalenderHstStatusTag.innerText = currentHst + ' ' + labelCode + ' (Aktif)';
             kalenderHstStatusTag.className = 'inline-flex items-center text-[11px] font-bold text-white bg-primary px-2 py-0.5 rounded-md shadow-sm';
-            hstDescEl.innerText = 'Tanaman ' + plant.name + ' saat ini berada di ' + currentHst + ' HST. Buka jadwal perawatan spesifik tanaman ini.';
+            hstDescEl.innerText = isHss
+                ? 'Bibit semai ' + plant.name + ' saat ini berada di ' + currentHst + ' HSS. Buka jadwal perawatan dan catatan semai spesifik tanaman ini.'
+                : 'Tanaman ' + plant.name + ' saat ini berada di ' + currentHst + ' HST. Buka jadwal perawatan spesifik tanaman ini.';
         } else {
-            linkKalenderHst.href = '/kalender-hst';
-            kalenderHstStatusTag.innerText = 'Buka Kalender';
+            linkKalenderHst.href = isHss ? '/kalender-hss' : '/kalender-hst';
+            kalenderHstStatusTag.innerText = isHss ? 'Buka Kalender HSS' : 'Buka Kalender';
             kalenderHstStatusTag.className = 'inline-flex items-center text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md';
-            hstDescEl.innerText = 'Pantau umur tanaman, buat jadwal perawatan baru untuk ' + plant.name + ', dan catat panen.';
+            hstDescEl.innerText = isHss
+                ? 'Pantau umur bibit semai hari demi hari, kelola jadwal penyiraman & perlindungan benih, serta catat pindah tanam.'
+                : 'Pantau umur tanaman, buat jadwal perawatan baru untuk ' + plant.name + ', dan catat panen.';
         }
 
-        // URL Tambah / Edit Panduan
-        const addGuideUrl = plant.catalog_id
-            ? '/tanaman-katalog/' + plant.catalog_id + '/edit'
-            : '/tanaman-katalog/create?name=' + encodeURIComponent(plant.name) + '&emoji=' + encodeURIComponent(plant.emoji || '🌱') + '&theme=' + encodeURIComponent(plant.theme || 'emerald');
-
-        // Update tombol Panduan Pemupukan
+        // 2. Panduan (Pemupukan vs Semai)
         const fertBtn = document.getElementById('btnOpenFertilizer');
+        const guideTitle = document.getElementById('guideOptionTitle');
         const fertStatusTag = document.getElementById('fertilizerStatusTag');
         const fertBtnText = document.getElementById('fertilizerBtnText');
+        const guideIconContainer = document.getElementById('guideOptionIconContainer');
+        const iconFertilizer = document.getElementById('guideOptionIconFertilizer');
+        const iconSemai = document.getElementById('guideOptionIconSemai');
+        const guideBtnRow = document.getElementById('guideOptionBtnRow');
 
-        if (fertBtn && fertStatusTag) {
+        if (fertBtn && guideTitle && fertStatusTag) {
             fertBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
-            if (plant.guides && plant.guides.length > 0) {
-                fertBtn.onclick = openFertilizerGuideForCurrentPlant;
-                fertStatusTag.innerText = plant.guides.length + ' Fase';
-                fertStatusTag.className = 'inline-flex items-center text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md';
-                if (fertDescEl) fertDescEl.innerText = 'Pedoman dosis nutrisi N-P-K, metode kocor/semprot, dan fase tumbuh khusus tanaman ' + plant.name + '.';
-                if (fertBtnText) fertBtnText.innerText = 'Lihat Panduan Pemupukan';
+            if (isHss) {
+                // TAMPILAN PANDUAN SEMAI
+                guideTitle.innerText = '2. Panduan Semai';
+                guideTitle.className = 'text-sm sm:text-base font-bold text-gray-900 group-hover:text-emerald-800 transition-colors';
+
+                // Ganti styling kartu ke tema emerald
+                fertBtn.className = 'w-full text-left group flex items-start gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-100 hover:border-emerald-400 bg-emerald-50/40 hover:bg-emerald-50/90 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer';
+
+                if (guideIconContainer) {
+                    guideIconContainer.className = 'w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform';
+                }
+                if (iconFertilizer) iconFertilizer.classList.add('hidden');
+                if (iconSemai) iconSemai.classList.remove('hidden');
+                if (guideBtnRow) guideBtnRow.className = 'mt-2.5 flex items-center text-xs font-semibold text-emerald-700';
+
+                const hasSemaiSteps = plant.planting_seed && plant.planting_seed.steps && plant.planting_seed.steps.length > 0;
+
+                if (hasSemaiSteps) {
+                    fertBtn.onclick = openSemaiGuideForCurrentPlant;
+                    fertStatusTag.innerText = plant.planting_seed.steps.length + ' Langkah SOP';
+                    fertStatusTag.className = 'inline-flex items-center text-[10px] sm:text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md';
+                    if (fertDescEl) fertDescEl.innerText = 'Pedoman lengkap persemaian bibit ' + plant.name + ', perlakuan benih, media tray semai, penyiraman, hingga siap pindah tanam.';
+                    if (fertBtnText) fertBtnText.innerText = 'Lihat Panduan Semai';
+                } else {
+                    fertBtn.onclick = function() {
+                        const seedParam = plant.planting_seed ? '#seed-' + plant.planting_seed.id : '';
+                        window.location.href = '/steps/penanaman-bibit' + seedParam;
+                    };
+                    fertStatusTag.innerText = '+ SOP Semai';
+                    fertStatusTag.className = 'inline-flex items-center text-[10px] sm:text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-2.5 py-0.5 rounded-md hover:bg-emerald-200 transition-colors shadow-xs';
+                    if (fertDescEl) fertDescEl.innerText = 'Panduan persemaian bibit untuk ' + plant.name + ' dapat dikelola di Tahapan Penanaman Bibit. Klik untuk membuka SOP.';
+                    if (fertBtnText) fertBtnText.innerText = 'Buka Panduan Semai';
+                }
             } else {
-                fertBtn.onclick = function() {
-                    window.location.href = addGuideUrl;
-                };
-                fertStatusTag.innerText = '+ Tambah Panduan';
-                fertStatusTag.className = 'inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-2.5 py-0.5 rounded-md hover:bg-emerald-200 transition-colors shadow-xs';
-                if (fertDescEl) fertDescEl.innerText = 'Panduan pemupukan untuk ' + plant.name + ' belum tersedia. Klik di sini untuk menyusun fase dan dosis pupuk.';
-                if (fertBtnText) fertBtnText.innerText = 'Tambah Panduan Pemupukan';
+                // TAMPILAN PANDUAN PEMUPUKAN (HST)
+                guideTitle.innerText = '2. Panduan Pemupukan';
+                guideTitle.className = 'text-sm sm:text-base font-bold text-gray-900 group-hover:text-amber-800 transition-colors';
+
+                // Styling kartu amber
+                fertBtn.className = 'w-full text-left group flex items-start gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border-2 border-amber-100 hover:border-amber-400 bg-amber-50/40 hover:bg-amber-50/90 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer';
+
+                if (guideIconContainer) {
+                    guideIconContainer.className = 'w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform';
+                }
+                if (iconFertilizer) iconFertilizer.classList.remove('hidden');
+                if (iconSemai) iconSemai.classList.add('hidden');
+                if (guideBtnRow) guideBtnRow.className = 'mt-2.5 flex items-center text-xs font-semibold text-amber-700';
+
+                // URL Tambah / Edit Panduan Pemupukan
+                const addGuideUrl = plant.catalog_id
+                    ? '/tanaman-katalog/' + plant.catalog_id + '/edit'
+                    : '/tanaman-katalog/create?name=' + encodeURIComponent(plant.name) + '&emoji=' + encodeURIComponent(plant.emoji || '🌱') + '&theme=' + encodeURIComponent(plant.theme || 'emerald');
+
+                if (plant.guides && plant.guides.length > 0) {
+                    fertBtn.onclick = openFertilizerGuideForCurrentPlant;
+                    fertStatusTag.innerText = plant.guides.length + ' Fase';
+                    fertStatusTag.className = 'inline-flex items-center text-[10px] sm:text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md';
+                    if (fertDescEl) fertDescEl.innerText = 'Pedoman dosis nutrisi N-P-K, metode kocor/semprot, dan fase tumbuh khusus tanaman ' + plant.name + '.';
+                    if (fertBtnText) fertBtnText.innerText = 'Lihat Panduan Pemupukan';
+                } else {
+                    fertBtn.onclick = function() {
+                        window.location.href = addGuideUrl;
+                    };
+                    fertStatusTag.innerText = '+ Tambah Panduan';
+                    fertStatusTag.className = 'inline-flex items-center text-[10px] sm:text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-2.5 py-0.5 rounded-md hover:bg-emerald-200 transition-colors shadow-xs';
+                    if (fertDescEl) fertDescEl.innerText = 'Panduan pemupukan untuk ' + plant.name + ' belum tersedia. Klik di sini untuk menyusun fase dan dosis pupuk.';
+                    if (fertBtnText) fertBtnText.innerText = 'Tambah Panduan Pemupukan';
+                }
             }
         }
 
@@ -602,6 +767,176 @@
         }
     }
 
+    // ── Fungsi Panduan Semai ──
+    function openSemaiGuideForCurrentPlant() {
+        closePlantMenuModal();
+        loadSemaiGuide(currentSelectedPlantKey);
+
+        const guideModal = document.getElementById('semaiGuideModal');
+        const guideCard = document.getElementById('semaiGuideCard');
+        if (guideModal && guideCard) {
+            guideModal.classList.remove('opacity-0', 'pointer-events-none');
+            guideModal.classList.add('opacity-100');
+            guideCard.classList.remove('translate-y-8', 'sm:scale-95');
+            guideCard.classList.add('translate-y-0', 'sm:scale-100');
+        }
+    }
+
+    function closeSemaiGuideModal() {
+        const guideModal = document.getElementById('semaiGuideModal');
+        const guideCard = document.getElementById('semaiGuideCard');
+        if (guideModal && guideCard) {
+            guideModal.classList.remove('opacity-100');
+            guideModal.classList.add('opacity-0', 'pointer-events-none');
+            guideCard.classList.remove('translate-y-0', 'sm:scale-100');
+            guideCard.classList.add('translate-y-8', 'sm:scale-95');
+        }
+    }
+
+    function backToPlantMenuFromSemai() {
+        closeSemaiGuideModal();
+        setTimeout(function() {
+            openPlantModal(currentSelectedPlantKey);
+        }, 150);
+    }
+
+    function loadSemaiGuide(plantKey) {
+        const plant = PLANTS_CATALOG[plantKey];
+        if (!plant) return;
+
+        currentSelectedPlantKey = plantKey;
+
+        const titleEl = document.getElementById('semaiGuideTitle');
+        const subtitleEl = document.getElementById('semaiGuideSubtitle');
+        const plantIconEl = document.getElementById('semaiGuidePlantIcon');
+        const btnFullPage = document.getElementById('btnOpenFullSemaiPage');
+        const btnFullPageMobile = document.getElementById('btnOpenFullSemaiPageMobile');
+
+        const seed = plant.planting_seed;
+        const seedUrl = seed ? ('/steps/penanaman-bibit#seed-' + seed.id) : '/steps/penanaman-bibit';
+
+        if (titleEl) titleEl.innerText = 'Panduan Semai ' + plant.name;
+        if (subtitleEl) subtitleEl.innerText = seed ? (seed.nama_bibit + (seed.varietas ? ' (' + seed.varietas + ')' : '')) : 'SOP Persemaian';
+        if (plantIconEl) plantIconEl.innerText = plant.emoji || '🌱';
+        if (btnFullPage) btnFullPage.href = seedUrl;
+        if (btnFullPageMobile) btnFullPageMobile.href = seedUrl;
+
+        const tabsContainer = document.getElementById('semaiGuidePhaseTabs');
+        const contentContainer = document.getElementById('semaiGuidePhaseContent');
+        if (!tabsContainer || !contentContainer) return;
+
+        tabsContainer.innerHTML = '';
+        contentContainer.innerHTML = '';
+
+        const steps = (seed && seed.steps) ? seed.steps : [];
+
+        if (steps.length === 0) {
+            contentContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-14 text-center px-4">
+                    <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-800 text-3xl flex items-center justify-center mb-4 shadow-inner">
+                        ${plant.emoji || '🌱'}
+                    </div>
+                    <p class="text-base font-bold text-gray-800">Panduan Semai Belum Tersedia</p>
+                    <p class="text-sm text-text-muted mt-1 mb-5">Belum ada langkah SOP persemaian khusus untuk <strong>${plant.name}</strong>.<br>Kelola SOP dan tahapan bibit baru sekarang di menu Tahapan Penanaman Bibit.</p>
+                    <a href="${seedUrl}"
+                       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all shadow-md active:scale-95">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Buka Tahapan Penanaman Bibit
+                    </a>
+                </div>
+            `;
+            return;
+        }
+
+        steps.forEach((st, idx) => {
+            // Tab button
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = 'semai-step-tab-btn-' + st.id;
+            btn.className = 'semai-step-tab flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ' +
+                (idx === 0 ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:bg-gray-100 hover:text-text');
+            btn.innerText = 'Langkah ' + (st.nomor || (idx + 1));
+            btn.onclick = () => switchSemaiStep(st.id);
+            tabsContainer.appendChild(btn);
+
+            // Content panel
+            const panel = document.createElement('div');
+            panel.id = 'semai-step-panel-' + st.id;
+            panel.className = 'semai-step-panel space-y-3.5 sm:space-y-4 ' + (idx === 0 ? 'block' : 'hidden');
+
+            panel.innerHTML = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 sm:p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200">
+                    <div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border bg-white border-emerald-300 text-emerald-800">
+                            Langkah ${st.nomor || (idx + 1)}
+                        </span>
+                        <h4 class="text-sm sm:text-base font-bold text-gray-900 mt-1">${st.judul}</h4>
+                    </div>
+                    ${st.waktu ? `
+                        <div class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-emerald-200 self-start sm:self-auto flex-shrink-0 text-xs font-semibold text-emerald-800 shadow-2xs">
+                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>${st.waktu}</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white border border-gray-200">
+                    <p class="text-xs font-bold uppercase tracking-wider text-text-muted mb-2">Instruksi & SOP Semai</p>
+                    <p class="text-xs sm:text-sm text-gray-800 leading-relaxed whitespace-pre-line">
+                        ${st.deskripsi || 'Belum ada penjelasan detail untuk langkah ini.'}
+                    </p>
+                </div>
+
+                ${st.tips ? `
+                    <div class="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200 flex items-start gap-3">
+                        <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-sm">
+                            💡
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-emerald-900">Tips Persemaian</p>
+                            <p class="text-xs text-emerald-800 mt-0.5 leading-relaxed">
+                                ${st.tips}
+                            </p>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="pt-2 flex justify-end">
+                    <a href="${seedUrl}"
+                       class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">
+                        <span>Lihat SOP Lengkap & Foto di Tahapan Bibit</span>
+                        <span>→</span>
+                    </a>
+                </div>
+            `;
+            contentContainer.appendChild(panel);
+        });
+    }
+
+    function switchSemaiStep(stepId) {
+        document.querySelectorAll('.semai-step-tab').forEach(btn => {
+            btn.className = 'semai-step-tab flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all text-text-secondary hover:bg-gray-100 hover:text-text';
+        });
+        const activeBtn = document.getElementById('semai-step-tab-btn-' + stepId);
+        if (activeBtn) {
+            activeBtn.className = 'semai-step-tab flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all bg-primary text-white shadow-sm';
+        }
+
+        document.querySelectorAll('.semai-step-panel').forEach(panel => {
+            panel.classList.add('hidden');
+            panel.classList.remove('block');
+        });
+        const activePanel = document.getElementById('semai-step-panel-' + stepId);
+        if (activePanel) {
+            activePanel.classList.remove('hidden');
+            activePanel.classList.add('block');
+        }
+    }
+
     // Close on click outside card
     document.addEventListener('click', function(e) {
         const menuModal = document.getElementById('plantMenuModal');
@@ -613,6 +948,11 @@
         if (guideModal && !guideModal.classList.contains('pointer-events-none') && e.target === guideModal) {
             closeFertilizerGuideModal();
         }
+
+        const semaiModal = document.getElementById('semaiGuideModal');
+        if (semaiModal && !semaiModal.classList.contains('pointer-events-none') && e.target === semaiModal) {
+            closeSemaiGuideModal();
+        }
     });
 
     // Close on Escape key
@@ -620,6 +960,7 @@
         if (e.key === 'Escape') {
             closePlantMenuModal();
             closeFertilizerGuideModal();
+            closeSemaiGuideModal();
         }
     });
 </script>

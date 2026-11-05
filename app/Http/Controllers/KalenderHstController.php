@@ -49,21 +49,26 @@ class KalenderHstController extends Controller
         $calendarStart = $startOfMonth->copy()->startOfWeek(Carbon::MONDAY);
         $calendarEnd = $endOfMonth->copy()->endOfWeek(Carbon::SUNDAY);
 
+        $isHss = $request->is('kalender-hss*') || $request->input('tipe') === 'hss';
+        $cropScope = $isHss ? 'hss' : 'hst';
+
         // Ambil tanaman aktif beserta kegiatannya dan riwayat panen
-        $activeCrops = Crop::active()->with(['activities', 'harvests'])->get();
+        $activeCrops = Crop::$cropScope()->active()->with(['activities', 'harvests'])->get();
 
         // Ambil tanaman yang memiliki riwayat panen (dipisah per tanaman)
-        $cropsWithHarvests = Crop::whereHas('harvests')
+        $cropsWithHarvests = Crop::$cropScope()->whereHas('harvests')
             ->with(['harvests' => function ($query) {
                 $query->orderBy('panen_ke');
             }])
             ->latest('updated_at')
             ->get();
 
-        $totalHarvestCount = CropHarvest::count();
+        $totalHarvestCount = CropHarvest::whereHas('crop', function ($query) use ($cropScope) {
+            $query->$cropScope();
+        })->count();
 
         // Ambil riwayat tanaman sudah dipanen / diakhiri
-        $harvestedCrops = Crop::harvested()
+        $harvestedCrops = Crop::$cropScope()->harvested()
             ->with(['activities', 'harvests'])
             ->latest('tanggal_panen')
             ->paginate(10, ['*'], 'history_page')
@@ -135,7 +140,7 @@ class KalenderHstController extends Controller
         }
 
         // Ambil tanaman yang memiliki catatan aplikasi obat (aktif maupun riwayat)
-        $cropsWithMedicines = Crop::with(['activities' => function ($query) {
+        $cropsWithMedicines = Crop::$cropScope()->with(['activities' => function ($query) {
             $query->where(function ($q) {
                 $q->whereNotNull('aplikasi_obat')->where('aplikasi_obat', '!=', '');
             })->orderBy('target_hst');
@@ -190,7 +195,8 @@ class KalenderHstController extends Controller
             'harvestedCrops',
             'dueThisWeekCount',
             'cropsWithMedicines',
-            'overallMedicineSummary'
+            'overallMedicineSummary',
+            'isHss'
         ));
     }
 
@@ -202,11 +208,18 @@ class KalenderHstController extends Controller
             'populasi' => 'nullable|string|max:255',
             'tanggal_tanam' => 'required|date',
             'catatan' => 'nullable|string|max:1000',
+            'tipe' => 'nullable|string|in:hst,hss',
         ]);
 
-        $validated['status'] = 'Sedang Ditanam';
+        $isHss = ($validated['tipe'] ?? null) === 'hss' || $request->is('kalender-hss*');
+        $validated['tipe'] = $isHss ? 'hss' : 'hst';
+        $validated['status'] = $isHss ? 'Sedang Disemai' : 'Sedang Ditanam';
 
         Crop::create($validated);
+
+        if ($isHss) {
+            return redirect('/kalender-hss?tab=aktif')->with('success', 'Data tanaman semai baru berhasil ditambahkan.');
+        }
 
         return redirect('/kalender-hst?tab=aktif')->with('success', 'Data tanaman baru berhasil ditambahkan.');
     }
@@ -219,17 +232,21 @@ class KalenderHstController extends Controller
             'populasi' => 'nullable|string|max:255',
             'tanggal_tanam' => 'required|date',
             'catatan' => 'nullable|string|max:1000',
+            'tipe' => 'nullable|string|in:hst,hss',
         ]);
 
         $crop->update($validated);
 
-        return redirect()->back()->with('success', 'Informasi tanaman berhasil diperbarui.');
+        $label = $crop->is_hss ? 'tanaman semai' : 'tanaman';
+
+        return redirect()->back()->with('success', "Informasi {$label} berhasil diperbarui.");
     }
 
     public function destroyCrop(Request $request, Crop $crop): RedirectResponse
     {
         $nama = $crop->nama_tanaman;
         $status = $crop->status;
+        $isHss = $crop->is_hss;
 
         // Bersihkan seluruh file fisik foto kegiatan tanaman ini dari Cloudinary/lokal
         foreach ($crop->activities as $act) {
@@ -251,9 +268,10 @@ class KalenderHstController extends Controller
             }
         }
 
-        $tab = $request->input('redirect_tab') ?? $request->input('tab') ?? (in_array($status, ['Sudah Dipanen', 'Diakhiri']) ? 'riwayat' : 'aktif');
+        $tab = $request->input('redirect_tab') ?? $request->input('tab') ?? (in_array($status, ['Sudah Dipanen', 'Diakhiri', 'Sudah Pindah Tanam']) ? 'riwayat' : 'aktif');
+        $base = $isHss ? '/kalender-hss' : '/kalender-hst';
 
-        return redirect("/kalender-hst?tab={$tab}")->with('success', "Tanaman {$nama} berhasil dihapus.");
+        return redirect("{$base}?tab={$tab}")->with('success', "Tanaman {$nama} berhasil dihapus.");
     }
 
     public function markAsHarvested(Request $request, Crop $crop): RedirectResponse
@@ -320,13 +338,18 @@ class KalenderHstController extends Controller
             'catatan' => $newCatatan,
         ]);
 
-        $successMsg = "Panen ke-{$panenKe} untuk tanaman {$crop->nama_tanaman} berhasil dicatat (HST {$hstSaatPanen}).";
+        $labelHst = $crop->is_hss ? "HSS {$hstSaatPanen}" : "HST {$hstSaatPanen}";
+        $successMsg = $crop->is_hss
+            ? "Pencatatan panen bibit / semai untuk tanaman {$crop->nama_tanaman} berhasil dicatat ({$labelHst})."
+            : "Panen ke-{$panenKe} untuk tanaman {$crop->nama_tanaman} berhasil dicatat ({$labelHst}).";
 
-        if ($request->header('referer') && str_contains($request->header('referer'), '/kalender-hst/tanaman/')) {
+        if ($request->header('referer') && (str_contains($request->header('referer'), '/kalender-hst/tanaman/') || str_contains($request->header('referer'), '/kalender-hss/tanaman/'))) {
             return redirect()->back()->with('success', $successMsg);
         }
 
-        return redirect('/kalender-hst?tab=panen')->with('success', $successMsg.' Data telah dimasukkan ke Riwayat Panen.');
+        $base = $crop->is_hss ? '/kalender-hss' : '/kalender-hst';
+
+        return redirect("{$base}?tab=panen")->with('success', $successMsg.' Data telah dimasukkan ke Riwayat Panen.');
     }
 
     public function endCrop(Request $request, Crop $crop): RedirectResponse
@@ -362,7 +385,44 @@ class KalenderHstController extends Controller
             'catatan' => $newCatatan,
         ]);
 
-        return redirect('/kalender-hst?tab=riwayat')->with('success', "Tanaman {$crop->nama_tanaman} telah diakhiri pada HST {$totalHst} dan masuk ke Riwayat Tanaman. Seluruh kalender HST dan log perawatannya tetap tersimpan.");
+        $labelHari = $crop->is_hss ? "HSS {$totalHst}" : "HST {$totalHst}";
+        $labelRiwayat = $crop->is_hss ? 'Riwayat Semai' : 'Riwayat Tanaman';
+        $base = $crop->is_hss ? '/kalender-hss' : '/kalender-hst';
+
+        return redirect("{$base}?tab=riwayat")->with('success', "Tanaman {$crop->nama_tanaman} telah diakhiri pada {$labelHari} dan masuk ke {$labelRiwayat}. Seluruh kalender dan log perawatannya tetap tersimpan.");
+    }
+
+    public function pindahTanam(Request $request, Crop $crop): RedirectResponse
+    {
+        $validated = $request->validate([
+            'tanggal_tanam' => 'required|date',
+            'populasi' => 'nullable|string|max:255',
+            'catatan' => 'nullable|string|max:1000',
+        ]);
+
+        $plantDate = Carbon::parse($crop->tanggal_tanam)->startOfDay();
+        $tanamDate = Carbon::parse($validated['tanggal_tanam'])->startOfDay();
+        $totalHss = max(0, (int) $plantDate->diffInDays($tanamDate));
+
+        $crop->update([
+            'status' => 'Sudah Pindah Tanam',
+            'tanggal_panen' => $validated['tanggal_tanam'],
+            'total_hst_panen' => $totalHss,
+            'catatan' => trim(($crop->catatan ? $crop->catatan."\n" : '')."[Mulai Tanam ke Lahan HST]: Tanggal {$validated['tanggal_tanam']} (HSS {$totalHss}). ".($validated['catatan'] ?? '')),
+        ]);
+
+        $newCrop = Crop::create([
+            'nama_tanaman' => $crop->nama_tanaman,
+            'varietas' => $crop->varietas,
+            'populasi' => $validated['populasi'] ?: $crop->populasi,
+            'tanggal_tanam' => $validated['tanggal_tanam'],
+            'status' => 'Sedang Ditanam',
+            'tipe' => 'hst',
+            'catatan' => "Berasal dari bibit semai {$crop->nama_tanaman} (Selesai pada HSS {$totalHss}). ".($validated['catatan'] ?? ''),
+        ]);
+
+        return redirect("/kalender-hst/tanaman/{$newCrop->id}")
+            ->with('success', "Tanaman semai {$crop->nama_tanaman} berhasil dipindahkan ke Riwayat Semai dan kini mulai ditanam di Kalender HST (0 HST)!");
     }
 
     public function showCrop(Request $request, Crop $crop): View
@@ -392,8 +452,11 @@ class KalenderHstController extends Controller
         $sessionKey = "crop_{$crop->id}_limit_hst";
         $cookieKey = "crop_{$crop->id}_limit_hst";
 
-        // Tentukan batas atas HST yang ditampilkan dalam tabel
-        if ($crop->status !== 'Sedang Ditanam') {
+        $isHss = $crop->is_hss;
+        $isActive = in_array($crop->status, ['Sedang Ditanam', 'Sedang Disemai']);
+
+        // Tentukan batas atas HST/HSS yang ditampilkan dalam tabel
+        if (! $isActive) {
             $harvestHst = (int) ($crop->total_hst_panen ?? 0);
             $maxRowHst = max($harvestHst, $maxActivityHst, $maxHarvestHst);
         } else {
@@ -431,10 +494,10 @@ class KalenderHstController extends Controller
         $tableRows = [];
         for ($hst = 0; $hst <= $maxRowHst; $hst++) {
             $dayDate = $plantDate->copy()->addDays($hst);
-            $isToday = $crop->status === 'Sedang Ditanam' && $dayDate->isToday();
-            $isTomorrow = $crop->status === 'Sedang Ditanam' && $dayDate->isTomorrow();
-            $isHarvestDay = ($crop->status !== 'Sedang Ditanam' && $hst === (int) $crop->total_hst_panen);
-            $isPast = $crop->status === 'Sedang Ditanam' ? ($dayDate->lt(now()->startOfDay())) : true;
+            $isToday = $isActive && $dayDate->isToday();
+            $isTomorrow = $isActive && $dayDate->isTomorrow();
+            $isHarvestDay = (! $isActive && $hst === (int) $crop->total_hst_panen);
+            $isPast = $isActive ? ($dayDate->lt(now()->startOfDay())) : true;
 
             $tableRows[] = [
                 'hst' => $hst,
@@ -455,6 +518,13 @@ class KalenderHstController extends Controller
         $completionRate = $totalActivities > 0 ? (int) round(($completedActivities / $totalActivities) * 100) : 0;
 
         $otherActiveCrops = Crop::active()
+            ->where(function ($q) use ($crop) {
+                if ($crop->is_hss) {
+                    $q->where('tipe', 'hss');
+                } else {
+                    $q->where(fn ($sub) => $sub->where('tipe', 'hst')->orWhereNull('tipe'));
+                }
+            })
             ->where('id', '!=', $crop->id)
             ->orderBy('nama_tanaman')
             ->get();
@@ -472,7 +542,8 @@ class KalenderHstController extends Controller
             'totalActivities',
             'completedActivities',
             'pendingActivities',
-            'completionRate'
+            'completionRate',
+            'isHss'
         ));
     }
 
@@ -480,6 +551,9 @@ class KalenderHstController extends Controller
     {
         $validated = $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
+            'metode_aplikasi' => 'nullable|string|in:Semprot,Kocor,Tabur',
+            'populasi_target' => 'nullable|numeric|min:0.1|max:9999999',
+            'dosis_per_tanaman' => 'nullable|numeric|min:0.01|max:99999',
             'aplikasi_obat' => 'nullable|string|max:2000',
             'jumlah_tank' => 'nullable|numeric|min:0.1|max:999',
             'total_biaya_obat' => 'nullable|numeric|min:0',
@@ -507,6 +581,9 @@ class KalenderHstController extends Controller
             $targetHst = $crop->current_hst;
         }
 
+        $metodeAplikasi = $request->input('metode_aplikasi', 'Semprot');
+        $populasiTarget = $request->filled('populasi_target') ? (float) $request->input('populasi_target') : ($crop->numeric_populasi ?: null);
+        $dosisPerTanaman = $request->filled('dosis_per_tanaman') ? (float) $request->input('dosis_per_tanaman') : null;
         $keteranganFinal = $validated['keterangan'] ?? $validated['catatan'] ?? null;
         $jumlahTank = $request->filled('jumlah_tank') ? (float) $request->input('jumlah_tank') : 1.0;
         $totalBiayaObat = $request->filled('total_biaya_obat') ? (float) $request->input('total_biaya_obat') : null;
@@ -552,8 +629,11 @@ class KalenderHstController extends Controller
 
         $createdActivity = $crop->activities()->create([
             'nama_kegiatan' => $validated['nama_kegiatan'],
+            'metode_aplikasi' => $metodeAplikasi,
+            'populasi_target' => $populasiTarget,
+            'dosis_per_tanaman' => $dosisPerTanaman,
             'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
-            'jumlah_tank' => $jumlahTank,
+            'jumlah_tank' => $metodeAplikasi === 'Semprot' ? $jumlahTank : 1.0,
             'total_biaya_obat' => $totalBiayaObat,
             'sasaran' => $validated['sasaran'] ?? null,
             'target_hst' => $targetHst,
@@ -564,8 +644,14 @@ class KalenderHstController extends Controller
             'foto_kegiatan' => ! empty($uploadedPhotos) ? $uploadedPhotos : null,
         ]);
 
+        $stockShortages = [];
         if ($status === 'Selesai') {
-            $this->stockService->deductForActivity($createdActivity);
+            $deductions = $this->stockService->deductForActivity($createdActivity);
+            foreach ($deductions as $d) {
+                if (! empty($d['shortage']) && $d['shortage'] > 0) {
+                    $stockShortages[] = "{$d['medicine_name']} (kurang {$d['shortage']} {$d['unit']})";
+                }
+            }
         }
 
         // Terapkan kegiatan ke tanaman lain yang dipilih
@@ -586,11 +672,15 @@ class KalenderHstController extends Controller
             foreach ($otherCrops as $otherCrop) {
                 $otherPlantDate = Carbon::parse($otherCrop->tanggal_tanam)->startOfDay();
                 $otherHst = max(0, (int) $otherPlantDate->diffInDays($activityDate, false));
+                $otherPopulasiTarget = $otherCrop->numeric_populasi ?: $populasiTarget;
 
                 $otherActivity = $otherCrop->activities()->create([
                     'nama_kegiatan' => $validated['nama_kegiatan'],
+                    'metode_aplikasi' => $metodeAplikasi,
+                    'populasi_target' => $otherPopulasiTarget,
+                    'dosis_per_tanaman' => $dosisPerTanaman,
                     'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
-                    'jumlah_tank' => $jumlahTank,
+                    'jumlah_tank' => $metodeAplikasi === 'Semprot' ? $jumlahTank : 1.0,
                     'total_biaya_obat' => $totalBiayaObat,
                     'sasaran' => $validated['sasaran'] ?? null,
                     'target_hst' => $otherHst,
@@ -602,31 +692,48 @@ class KalenderHstController extends Controller
                 ]);
 
                 if ($status === 'Selesai') {
-                    $this->stockService->deductForActivity($otherActivity);
+                    $otherDeductions = $this->stockService->deductForActivity($otherActivity);
+                    foreach ($otherDeductions as $od) {
+                        if (! empty($od['shortage']) && $od['shortage'] > 0) {
+                            $stockShortages[] = "{$od['medicine_name']} (kurang {$od['shortage']} {$od['unit']})";
+                        }
+                    }
                 }
 
                 $appliedOtherCrops[] = $otherCrop->nama_tanaman;
             }
         }
 
+        $labelCode = $crop->is_hss ? 'HSS' : 'HST';
         if (! empty($appliedOtherCrops)) {
             $otherNames = implode(', ', $appliedOtherCrops);
             $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat untuk {$crop->nama_tanaman} dan diterapkan juga ke: {$otherNames}.";
         } else {
-            $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat pada HST {$targetHst}.";
+            $msg = "Kegiatan '{$validated['nama_kegiatan']}' berhasil dicatat pada {$labelCode} {$targetHst}.";
+        }
+
+        if (! empty($stockShortages)) {
+            $msg .= ' • Peringatan: Stok obat berikut melebihi persediaan gudang dan kini tersisa 0: '.implode(', ', array_unique($stockShortages)).'.';
         }
 
         if ($request->input('redirect_to') === 'show') {
-            return redirect('/kalender-hst/tanaman/'.$crop->id)->with('success', $msg);
+            $basePath = $crop->is_hss ? '/kalender-hss/tanaman/' : '/kalender-hst/tanaman/';
+
+            return redirect($basePath.$crop->id)->with('success', $msg);
         }
 
-        return redirect()->back(fallback: '/kalender-hst?tab=aktif')->with('success', $msg);
+        $fallback = $crop->is_hss ? '/kalender-hss?tab=aktif' : '/kalender-hst?tab=aktif';
+
+        return redirect()->back(fallback: $fallback)->with('success', $msg);
     }
 
     public function updateActivity(Request $request, CropActivity $activity): RedirectResponse
     {
         $validated = $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
+            'metode_aplikasi' => 'nullable|string|in:Semprot,Kocor,Tabur',
+            'populasi_target' => 'nullable|numeric|min:0.1|max:9999999',
+            'dosis_per_tanaman' => 'nullable|numeric|min:0.01|max:99999',
             'aplikasi_obat' => 'nullable|string|max:2000',
             'jumlah_tank' => 'nullable|numeric|min:0.1|max:999',
             'total_biaya_obat' => 'nullable|numeric|min:0',
@@ -640,6 +747,13 @@ class KalenderHstController extends Controller
             'deleted_photos.*' => 'string',
         ]);
 
+        $metodeAplikasi = $request->input('metode_aplikasi', $activity->metode_aplikasi ?? 'Semprot');
+        $populasiTarget = $request->filled('populasi_target')
+            ? (float) $request->input('populasi_target')
+            : ($activity->populasi_target ?? ($activity->crop?->numeric_populasi ?: null));
+        $dosisPerTanaman = $request->filled('dosis_per_tanaman')
+            ? (float) $request->input('dosis_per_tanaman')
+            : $activity->dosis_per_tanaman;
         $keteranganFinal = $validated['keterangan'] ?? $validated['catatan'] ?? null;
         $jumlahTank = $request->filled('jumlah_tank') ? (float) $request->input('jumlah_tank') : ($activity->jumlah_tank ?? 1.0);
         $totalBiayaObat = $request->filled('total_biaya_obat') ? (float) $request->input('total_biaya_obat') : $activity->total_biaya_obat;
@@ -710,8 +824,11 @@ class KalenderHstController extends Controller
 
         $activity->update([
             'nama_kegiatan' => $validated['nama_kegiatan'],
+            'metode_aplikasi' => $metodeAplikasi,
+            'populasi_target' => $populasiTarget,
+            'dosis_per_tanaman' => $dosisPerTanaman,
             'aplikasi_obat' => $validated['aplikasi_obat'] ?? null,
-            'jumlah_tank' => $jumlahTank,
+            'jumlah_tank' => $metodeAplikasi === 'Semprot' ? $jumlahTank : 1.0,
             'total_biaya_obat' => $totalBiayaObat,
             'sasaran' => $validated['sasaran'] ?? null,
             'target_hst' => (int) $validated['target_hst'],
@@ -720,11 +837,22 @@ class KalenderHstController extends Controller
             'foto_kegiatan' => ! empty($remainingPhotos) ? array_values($remainingPhotos) : null,
         ]);
 
+        $stockShortages = [];
         if ($activity->status === 'Selesai') {
-            $this->stockService->deductForActivity($activity);
+            $deductions = $this->stockService->deductForActivity($activity);
+            foreach ($deductions as $d) {
+                if (! empty($d['shortage']) && $d['shortage'] > 0) {
+                    $stockShortages[] = "{$d['medicine_name']} (kurang {$d['shortage']} {$d['unit']})";
+                }
+            }
         }
 
-        return redirect()->back()->with('success', 'Data kegiatan perawatan berhasil diperbarui.');
+        $msg = 'Data kegiatan perawatan berhasil diperbarui.';
+        if (! empty($stockShortages)) {
+            $msg .= ' • Peringatan: Stok obat berikut melebihi persediaan gudang dan kini tersisa 0: '.implode(', ', array_unique($stockShortages)).'.';
+        }
+
+        return redirect()->back()->with('success', $msg);
     }
 
     /**
@@ -769,11 +897,23 @@ class KalenderHstController extends Controller
     public function toggleActivityStatus(Request $request, CropActivity $activity)
     {
         $newStatus = $activity->status === 'Selesai' ? 'Belum' : 'Selesai';
+        $shortageMsg = '';
 
         if ($newStatus === 'Selesai') {
-            $this->stockService->deductForActivity($activity);
+            $deductions = $this->stockService->deductForActivity($activity);
+            $stockShortages = [];
+            foreach ($deductions as $d) {
+                if (! empty($d['shortage']) && $d['shortage'] > 0) {
+                    $stockShortages[] = "{$d['medicine_name']} (kurang {$d['shortage']} {$d['unit']})";
+                }
+            }
+            if (! empty($stockShortages)) {
+                $shortageMsg = ' • Peringatan: Stok obat berikut melebihi persediaan dan kini tersisa 0: '.implode(', ', array_unique($stockShortages)).'.';
+            }
+            $statusMsg = 'Status kegiatan selesai dan stok obat/perlengkapan berhasil dipotong.'.$shortageMsg;
         } else {
             $this->stockService->restoreForActivity($activity);
+            $statusMsg = 'Status kegiatan dibatalkan dan stok obat/perlengkapan telah dikembalikan.';
         }
 
         $activity->update([
@@ -786,14 +926,12 @@ class KalenderHstController extends Controller
                 'success' => true,
                 'status' => $newStatus,
                 'stok_dipotong' => $activity->stok_dipotong,
-                'message' => $newStatus === 'Selesai'
-                    ? 'Status kegiatan selesai dan stok obat/perlengkapan berhasil dipotong.'
-                    : 'Status kegiatan dibatalkan dan stok obat/perlengkapan berhasil dikembalikan.',
+                'message' => $statusMsg,
             ]);
         }
 
         return redirect()->back()->with('success', $newStatus === 'Selesai'
-            ? 'Kegiatan ditandai selesai! Stok obat/perlengkapan telah dipotong otomatis.'
+            ? ('Kegiatan ditandai selesai! Stok obat/perlengkapan telah dipotong otomatis.'.$shortageMsg)
             : 'Status kegiatan diubah ke Belum! Stok obat/perlengkapan telah dikembalikan.');
     }
 
