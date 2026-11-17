@@ -416,7 +416,7 @@
 
                                 <div class="flex items-center gap-1 shrink-0">
                                     <button type="button"
-                                            onclick="openEditCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ addslashes($crop->varietas ?? '') }}', '{{ addslashes($crop->populasi ?? '') }}', '{{ $crop->tanggal_tanam->toDateString() }}', `{{ addslashes($crop->catatan ?? '') }}`, '{{ $crop->tipe ?? ($isHss ? "hss" : "hst") }}')"
+                                            onclick="openEditCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ addslashes($crop->varietas ?? '') }}', '{{ addslashes($crop->populasi ?? '') }}', '{{ $crop->tanggal_tanam->toDateString() }}', `{{ addslashes($crop->catatan ?? '') }}`, '{{ $crop->tipe ?? ($isHss ? "hss" : "hst") }}', '{{ addslashes($crop->emoji) }}')"
                                             title="Edit data tanaman"
                                             class="p-2 rounded-xl border border-gray-200 text-text-secondary hover:text-text hover:bg-gray-50 transition-all shadow-xs">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -1029,9 +1029,40 @@
         <form method="POST" action="/kalender-hst/tanaman" class="space-y-4">
             @csrf
             <input type="hidden" name="tipe" value="{{ $isHss ? 'hss' : 'hst' }}">
+
+            {{-- Icon / Emoji Tanaman Picker --}}
+            <div>
+                <label class="block text-xs font-semibold text-text mb-1.5">Icon / Emoji Tanaman</label>
+                <div class="flex items-center gap-3">
+                    <div id="add-crop-emoji-preview" class="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-2xl shadow-inner shrink-0 select-none">
+                        🌱
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <input type="text" id="add-crop-emoji" name="emoji" value="🌱"
+                               oninput="updateEmojiPreview('add-crop-emoji', 'add-crop-emoji-preview')"
+                               placeholder="e.g. 🍅, 🌶️, 🥒, 🌱"
+                               class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
+                        <p class="text-[11px] text-text-muted mt-1">Pilih dari tombol di bawah atau ketik emoji pilihan Anda.</p>
+                    </div>
+                </div>
+
+                {{-- Quick Emoji Palettes --}}
+                <div class="mt-2.5 flex flex-wrap gap-1.5 p-2 bg-gray-50 rounded-xl border border-gray-200/80 max-h-24 overflow-y-auto">
+                    @foreach(['🌱', '🌿', '🌾', '🌽', '🌶️', '🍅', '🥒', '🍆', '🍉', '🍈', '🥕', '🥔', '🧅', '🥬', '🫑', '🥦', '🍓', '🍇', '🥜', '🪴', '🌻', '🫘', '🌴', '☕'] as $emo)
+                        <button type="button"
+                                onclick="selectEmojiForInput('{{ $emo }}', 'add-crop-emoji', 'add-crop-emoji-preview')"
+                                class="w-8 h-8 rounded-lg bg-white hover:bg-emerald-100 hover:scale-110 active:scale-95 border border-gray-200 text-lg flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                            {{ $emo }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
             <div>
                 <label for="crop-nama" class="block text-xs font-semibold text-text mb-1">Nama {{ $isHss ? 'Tanaman / Bibit' : 'Tanaman' }} <span class="text-red-500">*</span></label>
-                <input type="text" id="crop-nama" name="nama_tanaman" required placeholder="{{ $isHss ? 'Contoh: Cabai Rawit, Tomat Servo, Terong Ungu' : 'Contoh: Jagung Manis, Padi Ciherang, Cabai Rawit' }}"
+                <input type="text" id="crop-nama" name="nama_tanaman" required
+                       oninput="autoDetectEmoji(this.value, 'add-crop-emoji', 'add-crop-emoji-preview')"
+                       placeholder="{{ $isHss ? 'Contoh: Cabai Rawit, Tomat Servo, Terong Ungu' : 'Contoh: Jagung Manis, Padi Ciherang, Cabai Rawit' }}"
                        class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
             </div>
 
@@ -1069,7 +1100,7 @@
 
 {{-- 2. Modal Edit Tanaman --}}
 <div id="modal-edit-tanaman" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-slide-up">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-slide-up max-h-[92vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
             <h3 class="text-lg font-bold text-text">Edit Data Tanaman</h3>
             <button type="button" onclick="closeModal('modal-edit-tanaman')" class="p-1.5 rounded-lg text-text-muted hover:bg-gray-100">
@@ -1081,6 +1112,35 @@
             @csrf
             @method('PUT')
             <input type="hidden" id="edit-crop-tipe" name="tipe" value="">
+
+            {{-- Icon / Emoji Tanaman Picker --}}
+            <div>
+                <label class="block text-xs font-semibold text-text mb-1.5">Icon / Emoji Tanaman</label>
+                <div class="flex items-center gap-3">
+                    <div id="edit-crop-emoji-preview" class="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-2xl shadow-inner shrink-0 select-none">
+                        🌱
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <input type="text" id="edit-crop-emoji" name="emoji"
+                               oninput="updateEmojiPreview('edit-crop-emoji', 'edit-crop-emoji-preview')"
+                               placeholder="e.g. 🍅, 🌶️, 🥒, 🌱"
+                               class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm">
+                        <p class="text-[11px] text-text-muted mt-1">Pilih dari tombol di bawah atau ketik emoji pilihan Anda.</p>
+                    </div>
+                </div>
+
+                {{-- Quick Emoji Palettes --}}
+                <div class="mt-2.5 flex flex-wrap gap-1.5 p-2 bg-gray-50 rounded-xl border border-gray-200/80 max-h-24 overflow-y-auto">
+                    @foreach(['🌱', '🌿', '🌾', '🌽', '🌶️', '🍅', '🥒', '🍆', '🍉', '🍈', '🥕', '🥔', '🧅', '🥬', '🫑', '🥦', '🍓', '🍇', '🥜', '🪴', '🌻', '🫘', '🌴', '☕'] as $emo)
+                        <button type="button"
+                                onclick="selectEmojiForInput('{{ $emo }}', 'edit-crop-emoji', 'edit-crop-emoji-preview')"
+                                class="w-8 h-8 rounded-lg bg-white hover:bg-emerald-100 hover:scale-110 active:scale-95 border border-gray-200 text-lg flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                            {{ $emo }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
             <div>
                 <label for="edit-crop-nama" class="block text-xs font-semibold text-text mb-1">Nama Tanaman <span class="text-red-500">*</span></label>
                 <input type="text" id="edit-crop-nama" name="nama_tanaman" required
@@ -1401,8 +1461,45 @@
         if (m) m.classList.add('hidden');
     }
 
+    // Emoji helpers
+    function updateEmojiPreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        if (input && preview) {
+            preview.innerText = input.value.trim() || '🌱';
+        }
+    }
+
+    function selectEmojiForInput(emoji, inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        if (input) input.value = emoji;
+        if (preview) preview.innerText = emoji;
+    }
+
+    const COMMON_EMOJIS = {
+        'cabai': '🌶️', 'cabe': '🌶️', 'tomat': '🍅', 'jagung': '🌽', 'timun': '🥒', 'mentimun': '🥒',
+        'terong': '🍆', 'semangka': '🍉', 'melon': '🍈', 'padi': '🌾', 'bawang': '🧅', 'kentang': '🥔',
+        'wortel': '🥕', 'sawi': '🥬', 'bayam': '🥬', 'kangkung': '🥬', 'kedelai': '🫘', 'kacang': '🥜',
+        'stroberi': '🍓', 'kopi': '☕'
+    };
+
+    function autoDetectEmoji(text, inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        if (!input || !preview) return;
+        const lower = (text || '').toLowerCase();
+        for (const [key, val] of Object.entries(COMMON_EMOJIS)) {
+            if (lower.includes(key)) {
+                input.value = val;
+                preview.innerText = val;
+                return;
+            }
+        }
+    }
+
     // Edit Crop Modal
-    function openEditCropModal(id, nama, varietas, populasi, tanggalTanam, catatan, tipe) {
+    function openEditCropModal(id, nama, varietas, populasi, tanggalTanam, catatan, tipe, emoji) {
         const form = document.getElementById('form-edit-tanaman');
         form.action = '/kalender-hst/tanaman/' + id;
         document.getElementById('edit-crop-nama').value = nama;
@@ -1413,6 +1510,13 @@
         if (editCat) editCat.value = catatan || '';
         const tipeInput = document.getElementById('edit-crop-tipe');
         if (tipeInput) tipeInput.value = tipe || '{{ $isHss ? "hss" : "hst" }}';
+
+        const emojiVal = emoji || '🌱';
+        const emojiInput = document.getElementById('edit-crop-emoji');
+        if (emojiInput) emojiInput.value = emojiVal;
+        const previewEl = document.getElementById('edit-crop-emoji-preview');
+        if (previewEl) previewEl.innerText = emojiVal;
+
         openModal('modal-edit-tanaman');
     }
 

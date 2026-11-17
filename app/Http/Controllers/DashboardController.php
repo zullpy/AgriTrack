@@ -57,9 +57,11 @@ class DashboardController extends Controller
             });
 
             $cropEmoji = $activeCrop->emoji ?: Crop::getEmojiForName($name);
-            $emoji = ($matched && ! empty($matched->emoji) && $matched->emoji !== '🌱')
-                ? $matched->emoji
-                : $cropEmoji;
+            $emoji = (! empty($activeCrop->attributes['emoji']))
+                ? $activeCrop->attributes['emoji']
+                : (($matched && ! empty($matched->emoji) && $matched->emoji !== '🌱')
+                    ? $matched->emoji
+                    : $cropEmoji);
 
             $theme = $matched
                 ? $matched->theme

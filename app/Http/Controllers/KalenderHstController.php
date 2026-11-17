@@ -205,6 +205,7 @@ class KalenderHstController extends Controller
         $validated = $request->validate([
             'nama_tanaman' => 'required|string|max:255',
             'varietas' => 'nullable|string|max:255',
+            'emoji' => 'nullable|string|max:16',
             'populasi' => 'nullable|string|max:255',
             'tanggal_tanam' => 'required|date',
             'catatan' => 'nullable|string|max:1000',
@@ -229,6 +230,7 @@ class KalenderHstController extends Controller
         $validated = $request->validate([
             'nama_tanaman' => 'required|string|max:255',
             'varietas' => 'nullable|string|max:255',
+            'emoji' => 'nullable|string|max:16',
             'populasi' => 'nullable|string|max:255',
             'tanggal_tanam' => 'required|date',
             'catatan' => 'nullable|string|max:1000',
@@ -414,6 +416,7 @@ class KalenderHstController extends Controller
         $newCrop = Crop::create([
             'nama_tanaman' => $crop->nama_tanaman,
             'varietas' => $crop->varietas,
+            'emoji' => $crop->attributes['emoji'] ?? null,
             'populasi' => $validated['populasi'] ?: $crop->populasi,
             'tanggal_tanam' => $validated['tanggal_tanam'],
             'status' => 'Sedang Ditanam',

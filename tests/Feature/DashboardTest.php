@@ -51,16 +51,20 @@ class DashboardTest extends TestCase
         $response->assertSee('🌽');
     }
 
-    public function test_dashboard_contains_two_menus_for_plants(): void
+    public function test_dashboard_contains_four_menus_for_plants(): void
     {
         $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
 
-        // Assert 2 menus are present in modal
-        $response->assertSee('1. Kalender HST');
-        $response->assertSee('2. Panduan Pemupukan');
+        // Assert 4 menus are present in modal
+        $response->assertSee('Tahap Semai Bibit');
+        $response->assertSee('Tahap Penanaman');
+        $response->assertSee('Pemeliharaan');
+        $response->assertSee('Tips dan Catatan Penting');
         $response->assertSee('/kalender-hst');
+        $response->assertSee('/steps/penanaman-bibit');
+        $response->assertSee('/steps/catatan');
     }
 
     public function test_dashboard_renders_active_crop_badge_on_matching_card(): void
@@ -234,7 +238,6 @@ class DashboardTest extends TestCase
         $response->assertSee('Cabai Rawit');
         $response->assertSee('10 HSS');
         $response->assertSee('Tanaman Semai');
-        $response->assertSee('kalenderOptionTitle', false);
-        $response->assertSee('2. Panduan Semai');
+        $response->assertSee('Tahap Semai Bibit');
     }
 }

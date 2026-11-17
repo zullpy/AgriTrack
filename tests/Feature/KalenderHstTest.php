@@ -657,4 +657,46 @@ class KalenderHstTest extends TestCase
         $response->assertSee('Biaya per Populasi:');
         $response->assertSee('Rp 20 / tanaman');
     }
+
+    public function test_can_store_crop_with_custom_emoji(): void
+    {
+        $response = $this->post('/kalender-hst/tanaman', [
+            'nama_tanaman' => 'Tanaman Eksperimen',
+            'varietas' => 'Uji Coba',
+            'emoji' => '🍉',
+            'tanggal_tanam' => Carbon::today()->toDateString(),
+            'tipe' => 'hst',
+        ]);
+
+        $response->assertRedirect('/kalender-hst?tab=aktif');
+        $this->assertDatabaseHas('crops', [
+            'nama_tanaman' => 'Tanaman Eksperimen',
+            'emoji' => '🍉',
+        ]);
+
+        $crop = Crop::where('nama_tanaman', 'Tanaman Eksperimen')->first();
+        $this->assertEquals('🍉', $crop->emoji);
+    }
+
+    public function test_can_update_crop_with_custom_emoji(): void
+    {
+        $crop = Crop::create([
+            'nama_tanaman' => 'test',
+            'tanggal_tanam' => Carbon::today()->toDateString(),
+            'status' => 'Sedang Ditanam',
+        ]);
+
+        // Default emoji for 'test' is 🌱
+        $this->assertEquals('🌱', $crop->emoji);
+
+        // Update with custom emoji 🍅
+        $response = $this->put("/kalender-hst/tanaman/{$crop->id}", [
+            'nama_tanaman' => 'test',
+            'emoji' => '🍅',
+            'tanggal_tanam' => Carbon::today()->toDateString(),
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertEquals('🍅', $crop->fresh()->emoji);
+    }
 }

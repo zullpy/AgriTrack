@@ -12,6 +12,7 @@ class Crop extends Model
     protected $fillable = [
         'nama_tanaman',
         'varietas',
+        'emoji',
         'populasi',
         'tanggal_tanam',
         'status',
@@ -314,6 +315,10 @@ class Crop extends Model
      */
     public function getEmojiAttribute(): string
     {
+        if (! empty($this->attributes['emoji'])) {
+            return $this->attributes['emoji'];
+        }
+
         return self::getEmojiForName($this->nama_tanaman ?? '', $this->varietas ?? null);
     }
 

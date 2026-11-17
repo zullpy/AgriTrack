@@ -181,7 +181,7 @@
                         @endif
                     </span>
                     <button type="button"
-                            onclick="openEditCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ addslashes($crop->varietas ?? '') }}', '{{ addslashes($crop->populasi ?? '') }}', '{{ $crop->tanggal_tanam->toDateString() }}', `{{ addslashes($crop->catatan ?? '') }}`)"
+                            onclick="openEditCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ addslashes($crop->varietas ?? '') }}', '{{ addslashes($crop->populasi ?? '') }}', '{{ $crop->tanggal_tanam->toDateString() }}', `{{ addslashes($crop->catatan ?? '') }}`, '{{ addslashes($crop->emoji) }}')"
                             class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-semibold text-text-secondary hover:text-text transition-all shadow-xs">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
@@ -1661,11 +1661,11 @@
 {{-- MODAL: EDIT DATA TANAMAN (TERMASUK POPULASI & VARIETAS)      --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="modal-edit-crop" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100 max-h-[92vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100">
             <div>
                 <h3 class="text-base font-bold text-gray-900">Edit Profil {{ $crop->is_hss ? 'Tanaman Semai' : 'Tanaman' }}</h3>
-                <p class="text-xs text-text-muted mt-0.5">Perbarui benih, populasi, dan {{ strtolower($labelTanggal) }}</p>
+                <p class="text-xs text-text-muted mt-0.5">Perbarui icon, benih, populasi, dan {{ strtolower($labelTanggal) }}</p>
             </div>
             <button type="button" onclick="closeModal('modal-edit-crop')" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1678,6 +1678,34 @@
             @csrf
             @method('PUT')
             <input type="hidden" name="tipe" value="{{ $crop->tipe ?? 'hst' }}">
+
+            {{-- Icon / Emoji Tanaman Picker --}}
+            <div>
+                <label class="block text-xs font-semibold text-gray-900 mb-1.5">Icon / Emoji Tanaman</label>
+                <div class="flex items-center gap-3">
+                    <div id="edit-crop-emoji-preview" class="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-2xl shadow-inner shrink-0 select-none">
+                        {{ $crop->emoji }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <input type="text" id="edit-crop-emoji" name="emoji" value="{{ $crop->emoji }}"
+                               oninput="updateEmojiPreview('edit-crop-emoji', 'edit-crop-emoji-preview')"
+                               placeholder="e.g. 🍅, 🌶️, 🥒, 🌱"
+                               class="field-input w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:border-primary">
+                        <p class="text-[11px] text-text-muted mt-1">Pilih dari tombol di bawah atau ketik emoji pilihan Anda.</p>
+                    </div>
+                </div>
+
+                {{-- Quick Emoji Palettes --}}
+                <div class="mt-2.5 flex flex-wrap gap-1.5 p-2 bg-gray-50 rounded-xl border border-gray-200 max-h-24 overflow-y-auto">
+                    @foreach(['🌱', '🌿', '🌾', '🌽', '🌶️', '🍅', '🥒', '🍆', '🍉', '🍈', '🥕', '🥔', '🧅', '🥬', '🫑', '🥦', '🍓', '🍇', '🥜', '🪴', '🌻', '🫘', '🌴', '☕'] as $emo)
+                        <button type="button"
+                                onclick="selectEmojiForInput('{{ $emo }}', 'edit-crop-emoji', 'edit-crop-emoji-preview')"
+                                class="w-8 h-8 rounded-lg bg-white hover:bg-emerald-100 hover:scale-110 active:scale-95 border border-gray-200 text-lg flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                            {{ $emo }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
 
             <div>
                 <label for="edit-crop-nama" class="block text-xs font-semibold text-gray-900 mb-1">
@@ -4058,12 +4086,35 @@
         openModal('modal-end-crop');
     }
 
-    function openEditCropModal(cropId, nama, varietas, populasi, tanggalTanam, catatan) {
+    // Emoji helpers
+    function updateEmojiPreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        if (input && preview) {
+            preview.innerText = input.value.trim() || '🌱';
+        }
+    }
+
+    function selectEmojiForInput(emoji, inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        if (input) input.value = emoji;
+        if (preview) preview.innerText = emoji;
+    }
+
+    function openEditCropModal(cropId, nama, varietas, populasi, tanggalTanam, catatan, emoji) {
         document.getElementById('edit-crop-nama').value = nama;
         document.getElementById('edit-crop-varietas').value = varietas || '';
         document.getElementById('edit-crop-populasi').value = populasi || '';
         document.getElementById('edit-crop-tanggal').value = tanggalTanam;
         document.getElementById('edit-crop-catatan').value = catatan || '';
+
+        const emojiVal = emoji || '🌱';
+        const emojiInput = document.getElementById('edit-crop-emoji');
+        if (emojiInput) emojiInput.value = emojiVal;
+        const previewEl = document.getElementById('edit-crop-emoji-preview');
+        if (previewEl) previewEl.innerText = emojiVal;
+
         openModal('modal-edit-crop');
     }
 
