@@ -47,15 +47,6 @@
         }
         .animate-slide-up { animation: slideUp 0.35s ease both; }
 
-        /* Bottom nav indicator */
-        .bottom-nav-item.active .bottom-nav-dot {
-            opacity: 1; transform: scaleX(1);
-        }
-        .bottom-nav-dot {
-            opacity: 0; transform: scaleX(0.3);
-            transition: all 0.2s ease;
-        }
-
         /* SweetAlert2 AgriTrack Design System */
         /* Modal Backdrop ONLY (never for toasts) */
         body:not(.swal2-toast-shown) .swal2-container.swal2-backdrop-show {
@@ -507,7 +498,7 @@
                     @endif
                 </a>
 
-                {{-- 4. Tanaman Aktif & Schedule (with submenus) --}}
+                {{-- 5. Tanaman Aktif & Schedule (with submenus) --}}
                 @php
                     $isTanamanAktifPage = request()->is('tanaman-aktif*');
                     $isKalenderHss = request()->is('kalender-hss*');
@@ -556,7 +547,7 @@
                     </div>
                 </div>
 
-                {{-- 5. Keuangan (with submenus) --}}
+                {{-- 6. Keuangan (with submenus) --}}
                 @php
                     $isKeuanganActive = request()->is('keuangan*');
                     $activeKeuanganTab = request()->query('tab', 'riwayat');
@@ -649,7 +640,113 @@
     </div>
 
     {{-- ── Mobile bottom navigation ── --}}
-    <x-bottom-nav />
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 w-full z-30 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]" style="width: 100%; left: 0; right: 0;">
+        <div class="flex items-center justify-around w-full px-1 pt-1.5 pb-2" style="width: 100%; display: flex;">
+            {{-- 1. Dashboard --}}
+            @php $isDashboard = request()->is('dashboard*') || request()->is('/') || request()->is('tanaman-katalog*'); @endphp
+            <a href="/dashboard"
+               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isDashboard ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDashboard ? '2' : '1.8' }}">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0c0-3.866 3.134-7 7-7-1.5 4-4 7-7 7zm0 0c0-3.866-3.134-7-7-7 1.5 4 4 7 7 7z"/>
+                    </svg>
+                </div>
+                <div class="h-[22px] flex items-center justify-center text-center">
+                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isDashboard ? 'font-semibold' : '' }}"
+                          style="{{ $isDashboard ? 'color: #16a34a;' : 'color: #6b7280;' }}">Dashboard</span>
+                </div>
+            </a>
+
+            {{-- 2. Data Obat / Stok --}}
+            @php $isDataObat = request()->is('data-obat*') || request()->is('stok-obat*'); @endphp
+            <a href="/data-obat"
+               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isDataObat ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDataObat ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
+                    </svg>
+                </div>
+                <div class="h-[22px] flex items-center justify-center text-center">
+                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isDataObat ? 'font-semibold' : '' }}"
+                          style="{{ $isDataObat ? 'color: #16a34a;' : 'color: #6b7280;' }}">Obat</span>
+                </div>
+            </a>
+
+            {{-- 3. Tahapan --}}
+            @php
+                $isCatatanNav = request()->is('steps/catatan*');
+                $isTahapan = request()->is('steps*') && !$isCatatanNav;
+            @endphp
+            <a href="/steps"
+               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isTahapan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isTahapan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
+                    </svg>
+                </div>
+                <div class="h-[22px] flex items-center justify-center text-center">
+                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isTahapan ? 'font-semibold' : '' }}"
+                          style="{{ $isTahapan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tahapan</span>
+                </div>
+            </a>
+
+            {{-- 4. Informasi Penting --}}
+            <a href="/steps/catatan"
+               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isCatatanNav ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isCatatanNav ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.53-4h7.5m-7.5-4h3.75m-6.75-6.75H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                </div>
+                <div class="h-[22px] flex items-center justify-center text-center">
+                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isCatatanNav ? 'font-semibold' : '' }}"
+                          style="{{ $isCatatanNav ? 'color: #16a34a;' : 'color: #6b7280;' }}">Informasi Penting</span>
+                </div>
+            </a>
+
+            {{-- 5. Tanaman Aktif & Schedule --}}
+            @php $isKalenderNav = request()->is('kalender*') || request()->is('kalender-hst*') || request()->is('kalender-hss*') || request()->is('tanaman-aktif*'); @endphp
+            <a href="{{ request()->is('kalender-hss*') ? '/kalender-hss' : (request()->is('kalender-hst*') ? '/kalender-hst' : '/tanaman-aktif') }}"
+               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isKalenderNav ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKalenderNav ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                </div>
+                <div class="h-[22px] flex items-center justify-center text-center">
+                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isKalenderNav ? 'font-semibold' : '' }}"
+                          style="{{ $isKalenderNav ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tanaman Aktif & Schedule</span>
+                </div>
+            </a>
+
+            {{-- 6. Keuangan --}}
+            @php $isKeuangan = request()->is('keuangan*'); @endphp
+            <a href="/keuangan"
+               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
+               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                     style="{{ $isKeuangan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKeuangan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="h-[22px] flex items-center justify-center text-center">
+                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isKeuangan ? 'font-semibold' : '' }}"
+                          style="{{ $isKeuangan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Keuangan</span>
+                </div>
+            </a>
+        </div>
+    </nav>
 
     {{-- SweetAlert2 CDN Library --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
