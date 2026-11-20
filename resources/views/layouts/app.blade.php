@@ -639,12 +639,41 @@
         </div>
     </div>
 
+    {{-- Backdrop Overlay when any mobile bottom sub-menu is open --}}
+    <div id="mobile-submenu-backdrop"
+         onclick="closeAllMobileSubmenus()"
+         class="hidden fixed inset-0 bg-black/25 backdrop-blur-xs transition-opacity duration-200"
+         style="z-index: 99980;"
+         aria-hidden="true"></div>
+
+    {{-- Variables for Mobile Navigation & Submenus --}}
+    @php
+        $isDashboard = request()->is('dashboard*') || request()->is('/') || request()->is('tanaman-katalog*');
+        $isDataObat = request()->is('data-obat*') || request()->is('stok-obat*');
+        $isDataObatPage = request()->is('data-obat*') && !request()->is('stok-obat*');
+        $isStokObatPage = request()->is('stok-obat*');
+        $isCatatanNav = request()->is('steps/catatan*');
+        $isTahapan = request()->is('steps*') && !$isCatatanNav;
+        $isFermentasiPupuk = request()->is('steps/fermentasi-pupuk*');
+        $isPengolahanTanah = request()->is('steps/pengolahan-tanah*');
+        $isPenanamanBibit = request()->is('steps/penanaman-bibit*');
+        $isKalenderNav = request()->is('kalender*') || request()->is('kalender-hst*') || request()->is('kalender-hss*') || request()->is('tanaman-aktif*');
+        $isTanamanAktifPage = request()->is('tanaman-aktif*');
+        $isKalenderHss = request()->is('kalender-hss*');
+        $isKalenderHst = request()->is('kalender-hst*') || (request()->is('kalender*') && !$isKalenderHss && !$isTanamanAktifPage);
+        $isKeuangan = request()->is('keuangan*');
+        $activeKeuanganTab = request()->query('tab', 'riwayat');
+        $isKeuanganLaporan = $isKeuangan && $activeKeuanganTab === 'laporan';
+        $isKeuanganStatistik = $isKeuangan && $activeKeuanganTab === 'statistik';
+        $isKeuanganRiwayat = $isKeuangan && $activeKeuanganTab !== 'statistik' && $activeKeuanganTab !== 'laporan';
+    @endphp
+
     {{-- ── Mobile bottom navigation ── --}}
-    <nav class="lg:hidden fixed bottom-0 inset-x-0 w-full z-30 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]" style="width: 100%; left: 0; right: 0;">
-        <div class="flex items-center justify-around w-full px-1 pt-1.5 pb-2" style="width: 100%; display: flex;">
-            {{-- 1. Dashboard --}}
-            @php $isDashboard = request()->is('dashboard*') || request()->is('/') || request()->is('tanaman-katalog*'); @endphp
+    <nav id="mobile-bottom-nav" class="lg:hidden fixed bottom-0 inset-x-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]" style="width: 100%; left: 0; right: 0; z-index: 99985;">
+        <div class="flex items-center justify-around w-full px-1 pt-1.5 pb-2 relative" style="width: 100%; display: flex;">
+            {{-- 1. Dashboard (No submenu) --}}
             <a href="/dashboard"
+               onclick="closeAllMobileSubmenus()"
                class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
                style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                 <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
@@ -659,45 +688,55 @@
                 </div>
             </a>
 
-            {{-- 2. Data Obat / Stok --}}
-            @php $isDataObat = request()->is('data-obat*') || request()->is('stok-obat*'); @endphp
-            <a href="/data-obat"
-               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isDataObat ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDataObat ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
-                    </svg>
-                </div>
-                <div class="h-[22px] flex items-center justify-center text-center">
-                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isDataObat ? 'font-semibold' : '' }}"
-                          style="{{ $isDataObat ? 'color: #16a34a;' : 'color: #6b7280;' }}">Obat</span>
-                </div>
-            </a>
+            {{-- 2. Data Obat / Stok (Has Submenu) --}}
+            <div class="flex-1 min-w-0 flex flex-col items-center justify-center" style="flex: 1;">
+                <button type="button"
+                        id="mobile-btn-obat"
+                        onclick="toggleMobileSubmenu('obat', event)"
+                        class="w-full flex flex-col items-center justify-center py-1 transition-all focus:outline-none"
+                        aria-label="Menu Obat Tanaman">
+                    <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                         style="{{ $isDataObat ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDataObat ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
+                        </svg>
+                    </div>
+                    <div class="h-[22px] flex items-center justify-center text-center gap-0.5">
+                        <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isDataObat ? 'font-semibold' : '' }}"
+                              style="{{ $isDataObat ? 'color: #16a34a;' : 'color: #6b7280;' }}">Obat</span>
+                        <svg id="mobile-chevron-obat" class="w-2.5 h-2.5 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                        </svg>
+                    </div>
+                </button>
+            </div>
 
-            {{-- 3. Tahapan --}}
-            @php
-                $isCatatanNav = request()->is('steps/catatan*');
-                $isTahapan = request()->is('steps*') && !$isCatatanNav;
-            @endphp
-            <a href="/steps"
-               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isTahapan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isTahapan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
-                    </svg>
-                </div>
-                <div class="h-[22px] flex items-center justify-center text-center">
-                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isTahapan ? 'font-semibold' : '' }}"
-                          style="{{ $isTahapan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tahapan</span>
-                </div>
-            </a>
+            {{-- 3. Tahapan (Has Submenu) --}}
+            <div class="flex-1 min-w-0 flex flex-col items-center justify-center" style="flex: 1;">
+                <button type="button"
+                        id="mobile-btn-tahapan"
+                        onclick="toggleMobileSubmenu('tahapan', event)"
+                        class="w-full flex flex-col items-center justify-center py-1 transition-all focus:outline-none"
+                        aria-label="Menu Tahapan">
+                    <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                         style="{{ $isTahapan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isTahapan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
+                        </svg>
+                    </div>
+                    <div class="h-[22px] flex items-center justify-center text-center gap-0.5">
+                        <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isTahapan ? 'font-semibold' : '' }}"
+                              style="{{ $isTahapan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tahapan</span>
+                        <svg id="mobile-chevron-tahapan" class="w-2.5 h-2.5 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                        </svg>
+                    </div>
+                </button>
+            </div>
 
-            {{-- 4. Informasi Penting --}}
+            {{-- 4. Informasi Penting (No submenu) --}}
             <a href="/steps/catatan"
+               onclick="closeAllMobileSubmenus()"
                class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
                style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                 <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
@@ -712,41 +751,272 @@
                 </div>
             </a>
 
-            {{-- 5. Tanaman Aktif & Schedule --}}
-            @php $isKalenderNav = request()->is('kalender*') || request()->is('kalender-hst*') || request()->is('kalender-hss*') || request()->is('tanaman-aktif*'); @endphp
-            <a href="{{ request()->is('kalender-hss*') ? '/kalender-hss' : (request()->is('kalender-hst*') ? '/kalender-hst' : '/tanaman-aktif') }}"
-               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isKalenderNav ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKalenderNav ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                    </svg>
-                </div>
-                <div class="h-[22px] flex items-center justify-center text-center">
-                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isKalenderNav ? 'font-semibold' : '' }}"
-                          style="{{ $isKalenderNav ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tanaman Aktif & Schedule</span>
-                </div>
-            </a>
+            {{-- 5. Tanaman Aktif & Schedule (Has Submenu) --}}
+            <div class="flex-1 min-w-0 flex flex-col items-center justify-center" style="flex: 1;">
+                <button type="button"
+                        id="mobile-btn-kalender"
+                        onclick="toggleMobileSubmenu('kalender', event)"
+                        class="w-full flex flex-col items-center justify-center py-1 transition-all focus:outline-none"
+                        aria-label="Menu Tanaman Aktif & Schedule">
+                    <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                         style="{{ $isKalenderNav ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKalenderNav ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                        </svg>
+                    </div>
+                    <div class="h-[22px] flex items-center justify-center text-center gap-0.5">
+                        <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isKalenderNav ? 'font-semibold' : '' }}"
+                              style="{{ $isKalenderNav ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tanaman</span>
+                        <svg id="mobile-chevron-kalender" class="w-2.5 h-2.5 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                        </svg>
+                    </div>
+                </button>
+            </div>
 
-            {{-- 6. Keuangan --}}
-            @php $isKeuangan = request()->is('keuangan*'); @endphp
-            <a href="/keuangan"
-               class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isKeuangan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKeuangan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div class="h-[22px] flex items-center justify-center text-center">
-                    <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isKeuangan ? 'font-semibold' : '' }}"
-                          style="{{ $isKeuangan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Keuangan</span>
-                </div>
-            </a>
+            {{-- 6. Keuangan (Has Submenu) --}}
+            <div class="flex-1 min-w-0 flex flex-col items-center justify-center" style="flex: 1;">
+                <button type="button"
+                        id="mobile-btn-keuangan"
+                        onclick="toggleMobileSubmenu('keuangan', event)"
+                        class="w-full flex flex-col items-center justify-center py-1 transition-all focus:outline-none"
+                        aria-label="Menu Keuangan">
+                    <div class="px-2.5 py-1 rounded-full flex items-center justify-center transition-all"
+                         style="{{ $isKeuangan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKeuangan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="h-[22px] flex items-center justify-center text-center gap-0.5">
+                        <span class="text-[9px] sm:text-[10px] font-medium leading-tight {{ $isKeuangan ? 'font-semibold' : '' }}"
+                              style="{{ $isKeuangan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Keuangan</span>
+                        <svg id="mobile-chevron-keuangan" class="w-2.5 h-2.5 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                        </svg>
+                    </div>
+                </button>
+            </div>
         </div>
     </nav>
+
+    {{-- ── Mobile Floating Submenus (Anchored dynamically to bottom navbar buttons) ── --}}
+    <div id="mobile-submenus-portal" class="lg:hidden" style="position: relative; z-index: 99990;">
+        {{-- Popover Submenu Obat --}}
+        <div id="mobile-submenu-obat"
+             onclick="event.stopPropagation()"
+             class="hidden fixed bg-white/95 backdrop-blur-xl border border-gray-200/90 shadow-2xl rounded-2xl p-1.5 text-left transition-all"
+             style="z-index: 99990; width: 220px; max-width: calc(100vw - 16px);"
+             role="menu"
+             aria-label="Sub-menu Obat">
+            <div id="mobile-arrow-obat"
+                 class="absolute w-3 h-3 bg-white border-b border-r border-gray-200/90 pointer-events-none transition-all"
+                 style="bottom: -6px; width: 12px; height: 12px; transform: rotate(45deg); z-index: 99991;"></div>
+            <div class="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1 flex items-center justify-between">
+                <span>Menu Obat</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </div>
+            <div class="space-y-0.5">
+                <a href="/data-obat"
+                   onclick="closeAllMobileSubmenus()"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isDataObatPage ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isDataObatPage ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Data Obat</span>
+                    @if($isDataObatPage)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+                <a href="/stok-obat"
+                   onclick="closeAllMobileSubmenus()"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isStokObatPage ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isStokObatPage ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Stok Obat</span>
+                    @if($isStokObatPage)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+            </div>
+        </div>
+
+        {{-- Popover Submenu Tahapan --}}
+        <div id="mobile-submenu-tahapan"
+             onclick="event.stopPropagation()"
+             class="hidden fixed bg-white/95 backdrop-blur-xl border border-gray-200/90 shadow-2xl rounded-2xl p-1.5 text-left transition-all"
+             style="z-index: 99990; width: 220px; max-width: calc(100vw - 16px);"
+             role="menu"
+             aria-label="Sub-menu Tahapan Budidaya">
+            <div id="mobile-arrow-tahapan"
+                 class="absolute w-3 h-3 bg-white border-b border-r border-gray-200/90 pointer-events-none transition-all"
+                 style="bottom: -6px; width: 12px; height: 12px; transform: rotate(45deg); z-index: 99991;"></div>
+            <div class="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1 flex items-center justify-between">
+                <span>Tahapan Budidaya</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </div>
+            <div class="space-y-0.5">
+                <a href="/steps/fermentasi-pupuk"
+                   onclick="closeAllMobileSubmenus()"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isFermentasiPupuk ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isFermentasiPupuk ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Fermentasi Pupuk</span>
+                    @if($isFermentasiPupuk)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+                <a href="/steps/pengolahan-tanah"
+                   onclick="closeAllMobileSubmenus()"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isPengolahanTanah ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isPengolahanTanah ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21V3m0 0a9 9 0 018.716 6.747M12 3a9 9 0 00-8.716 6.747" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Pengolahan Tanah</span>
+                    @if($isPengolahanTanah)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+                <a href="/steps/penanaman-bibit"
+                   onclick="closeAllMobileSubmenus()"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isPenanamanBibit ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isPenanamanBibit ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Penanaman Bibit</span>
+                    @if($isPenanamanBibit)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+            </div>
+        </div>
+
+        {{-- Popover Submenu Tanaman Aktif & Schedule --}}
+        <div id="mobile-submenu-kalender"
+             onclick="event.stopPropagation()"
+             class="hidden fixed bg-white/95 backdrop-blur-xl border border-gray-200/90 shadow-2xl rounded-2xl p-1.5 text-left transition-all"
+             style="z-index: 99990; width: 220px; max-width: calc(100vw - 16px);"
+             role="menu"
+             aria-label="Sub-menu Tanaman & Schedule">
+            <div id="mobile-arrow-kalender"
+                 class="absolute w-3 h-3 bg-white border-b border-r border-gray-200/90 pointer-events-none transition-all"
+                 style="bottom: -6px; width: 12px; height: 12px; transform: rotate(45deg); z-index: 99991;"></div>
+            <div class="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1 flex items-center justify-between">
+                <span>Tanaman &amp; Schedule</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </div>
+            <div class="space-y-0.5">
+                <a href="/tanaman-aktif"
+                   onclick="closeAllMobileSubmenus()"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isTanamanAktifPage ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isTanamanAktifPage ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0c0-3.866 3.134-7 7-7-1.5 4-4 7-7 7zm0 0c0-3.866-3.134-7-7-7 1.5 4 4 7 7 7z" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Tanaman Aktif</span>
+                    @if($isTanamanAktifPage)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+                <a href="/kalender-hst"
+                   onclick="closeAllMobileSubmenus()"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isKalenderHst ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isKalenderHst ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                        </svg>
+                    </div>
+                    <span class="truncate">HST (Setelah Tanam)</span>
+                    @if($isKalenderHst)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+                <a href="/kalender-hss"
+                   onclick="closeAllMobileSubmenus()"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isKalenderHss ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isKalenderHss ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <span class="truncate">HSS (Setelah Semai)</span>
+                    @if($isKalenderHss)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+            </div>
+        </div>
+
+        {{-- Popover Submenu Keuangan --}}
+        <div id="mobile-submenu-keuangan"
+             onclick="event.stopPropagation()"
+             class="hidden fixed bg-white/95 backdrop-blur-xl border border-gray-200/90 shadow-2xl rounded-2xl p-1.5 text-left transition-all"
+             style="z-index: 99990; width: 220px; max-width: calc(100vw - 16px);"
+             role="menu"
+             aria-label="Sub-menu Keuangan">
+            <div id="mobile-arrow-keuangan"
+                 class="absolute w-3 h-3 bg-white border-b border-r border-gray-200/90 pointer-events-none transition-all"
+                 style="bottom: -6px; width: 12px; height: 12px; transform: rotate(45deg); z-index: 99991;"></div>
+            <div class="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1 flex items-center justify-between">
+                <span>Menu Keuangan</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </div>
+            <div class="space-y-0.5">
+                <a href="/keuangan?tab=riwayat"
+                   onclick="closeAllMobileSubmenus(); if (window.location.pathname === '/keuangan' && typeof setKeuanganSubmenu === 'function') { setKeuanganSubmenu('riwayat'); return false; }"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isKeuanganRiwayat ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isKeuanganRiwayat ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Riwayat Transaksi</span>
+                    @if($isKeuanganRiwayat)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+                <a href="/keuangan?tab=statistik"
+                   onclick="closeAllMobileSubmenus(); if (window.location.pathname === '/keuangan' && typeof setKeuanganSubmenu === 'function') { setKeuanganSubmenu('statistik'); return false; }"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isKeuanganStatistik ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isKeuanganStatistik ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Statistik Keuangan</span>
+                    @if($isKeuanganStatistik)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+                <a href="/keuangan?tab=laporan"
+                   onclick="closeAllMobileSubmenus(); if (window.location.pathname === '/keuangan' && typeof setKeuanganSubmenu === 'function') { setKeuanganSubmenu('laporan'); return false; }"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all {{ $isKeuanganLaporan ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-100' }}">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 {{ $isKeuanganLaporan ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                        </svg>
+                    </div>
+                    <span class="truncate">Laporan Keuangan</span>
+                    @if($isKeuanganLaporan)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    @endif
+                </a>
+            </div>
+        </div>
+    </div>
 
     {{-- SweetAlert2 CDN Library --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -1046,6 +1316,110 @@
                 }
             }
         };
+
+        // Mobile Bottom Navigation Submenus (Popover dynamically anchored to bottom nav buttons)
+        const mobileSubmenuKeys = ['obat', 'tahapan', 'kalender', 'keuangan'];
+
+        window.closeAllMobileSubmenus = function() {
+            const backdrop = document.getElementById('mobile-submenu-backdrop');
+            if (backdrop) backdrop.classList.add('hidden');
+
+            mobileSubmenuKeys.forEach(key => {
+                const submenu = document.getElementById(`mobile-submenu-${key}`);
+                const chevron = document.getElementById(`mobile-chevron-${key}`);
+                if (submenu) submenu.classList.add('hidden');
+                if (chevron) {
+                    chevron.classList.remove('rotate-180', 'text-emerald-600');
+                    chevron.classList.add('text-gray-400');
+                }
+            });
+        };
+
+        window.positionMobileSubmenu = function(menuKey) {
+            const popover = document.getElementById(`mobile-submenu-${menuKey}`);
+            const button = document.getElementById(`mobile-btn-${menuKey}`);
+            const arrow = document.getElementById(`mobile-arrow-${menuKey}`);
+            const nav = document.getElementById('mobile-bottom-nav');
+            if (!popover || !button) return;
+
+            const btnRect = button.getBoundingClientRect();
+            const buttonCenter = btnRect.left + (btnRect.width / 2);
+            const viewportWidth = window.innerWidth;
+            const popoverWidth = popover.offsetWidth || 220;
+
+            // Clamped horizontal position with 8px edge safety margin
+            const margin = 8;
+            const idealLeft = buttonCenter - (popoverWidth / 2);
+            const clampedLeft = Math.max(margin, Math.min(idealLeft, viewportWidth - popoverWidth - margin));
+
+            popover.style.left = `${clampedLeft}px`;
+            popover.style.right = 'auto';
+
+            // Vertical position: reliably 8px above bottom navbar
+            const navHeight = nav ? (nav.offsetHeight || Math.round(nav.getBoundingClientRect().height)) : 60;
+            popover.style.bottom = `${navHeight + 8}px`;
+
+            // Position pointer arrow directly aiming at button center
+            if (arrow) {
+                const arrowCenterInPopover = buttonCenter - clampedLeft;
+                // Arrow diamond is 12px wide (w-3 h-3 rotated 45deg). Half width is 6px.
+                // Keep clamped inside popover rounded border radius
+                const arrowLeft = Math.max(16, Math.min(arrowCenterInPopover - 6, popoverWidth - 22));
+                arrow.style.left = `${arrowLeft}px`;
+                arrow.style.right = 'auto';
+            }
+        };
+
+        window.toggleMobileSubmenu = function(menuKey, event) {
+            const ev = event || window.event;
+            if (ev && typeof ev.stopPropagation === 'function') {
+                ev.stopPropagation();
+            }
+            const targetSubmenu = document.getElementById(`mobile-submenu-${menuKey}`);
+            const targetChevron = document.getElementById(`mobile-chevron-${menuKey}`);
+            if (!targetSubmenu) return;
+
+            const isCurrentlyOpen = !targetSubmenu.classList.contains('hidden');
+
+            // Close all first
+            closeAllMobileSubmenus();
+
+            // If it was closed, open it now and calculate its dynamic position
+            if (!isCurrentlyOpen) {
+                targetSubmenu.classList.remove('hidden');
+                window.positionMobileSubmenu(menuKey);
+                if (targetChevron) {
+                    targetChevron.classList.add('rotate-180', 'text-emerald-600');
+                    targetChevron.classList.remove('text-gray-400');
+                }
+                const backdrop = document.getElementById('mobile-submenu-backdrop');
+                if (backdrop) backdrop.classList.remove('hidden');
+            }
+        };
+
+        // Reposition currently open submenu on window resize or orientation change
+        window.addEventListener('resize', function() {
+            mobileSubmenuKeys.forEach(function(key) {
+                const popover = document.getElementById(`mobile-submenu-${key}`);
+                if (popover && !popover.classList.contains('hidden')) {
+                    window.positionMobileSubmenu(key);
+                }
+            });
+        });
+
+        // Close mobile submenus on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAllMobileSubmenus();
+            }
+        });
+
+        // Close when clicking outside of nav and submenus
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#mobile-submenus-portal') && !e.target.closest('#mobile-bottom-nav')) {
+                closeAllMobileSubmenus();
+            }
+        });
     </script>
 
     @stack('scripts')

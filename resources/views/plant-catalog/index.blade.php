@@ -112,14 +112,14 @@
                     $t = $themeMap[$catalog->theme] ?? $themeMap['emerald'];
                 @endphp
 
-                <div class="plant-card group relative bg-surface {{ $t['hover_bg'] }} border-2 {{ $t['border'] }} {{ $t['hover_border'] }} rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer select-none"
+                <div class="plant-card group relative bg-surface {{ $t['hover_bg'] }} border-2 {{ $t['border'] }} {{ $t['hover_border'] }} rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer select-none"
                      data-name="{{ strtolower($catalog->name) }}"
                      data-keywords="{{ strtolower(($catalog->name ?? '') . ' ' . ($catalog->varietas ?? '') . ' ' . ($catalog->keywords ?? '') . ' ' . ($catalog->deskripsi ?? '')) }}"
                      onclick="openCatalogPlantMenuModal({{ $catalog->id }})">
 
                     <div class="relative z-10">
                         <div class="flex items-center justify-between gap-1">
-                            <h3 class="text-sm sm:text-xl font-bold text-gray-900 leading-tight {{ $t['heading_hover'] }} transition-colors">
+                            <h3 class="text-xs sm:text-xl font-bold text-gray-900 leading-tight {{ $t['heading_hover'] }} transition-colors truncate">
                                 {{ $catalog->name }}
                             </h3>
                             <span class="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-medium bg-gray-100 text-gray-500 flex-shrink-0 whitespace-nowrap">
@@ -128,16 +128,16 @@
                         </div>
                     </div>
 
-                    <div class="my-3 sm:my-6 flex items-center justify-center relative py-2 sm:py-4">
-                        <div class="absolute w-24 h-24 sm:w-40 sm:h-40 rounded-full {{ $t['glow'] }} blur-xl sm:blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
-                        <span class="relative text-[3.8rem] sm:text-[7rem] leading-none select-none drop-shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 plant-sway"
+                    <div class="my-2.5 sm:my-6 flex items-center justify-center relative py-1.5 sm:py-4">
+                        <div class="absolute w-20 h-20 sm:w-40 sm:h-40 rounded-full {{ $t['glow'] }} blur-xl sm:blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
+                        <span class="relative text-[3.2rem] sm:text-[7rem] leading-none select-none drop-shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 plant-sway"
                               style="filter: drop-shadow(0 8px 24px {{ $t['shadow_color'] }});">{{ $catalog->emoji }}</span>
                     </div>
 
-                    <div class="pt-3 sm:pt-4 border-t {{ $t['footer_border'] }} relative z-10">
-                        <div class="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl {{ $t['btn'] }} text-white text-[11px] sm:text-xs font-bold flex items-center justify-between transition-colors shadow-sm">
-                            <span class="truncate">Menu & Panduan</span>
-                            <span class="transition-transform group-hover:translate-x-1">→</span>
+                    <div class="pt-2.5 sm:pt-4 border-t {{ $t['footer_border'] }} relative z-10">
+                        <div class="w-full py-1.5 sm:py-2.5 px-2.5 sm:px-4 rounded-xl {{ $t['btn'] }} text-white text-[10px] sm:text-xs font-bold flex items-center justify-between transition-colors shadow-sm">
+                            <span class="truncate">Menu &amp; Panduan</span>
+                            <span class="transition-transform group-hover:translate-x-1 shrink-0 ml-1">→</span>
                         </div>
                     </div>
                 </div>
@@ -231,15 +231,15 @@
                     <p id="modalSemaiDesc" class="text-xs text-gray-600 mt-1 leading-relaxed">
                         Panduan persemaian bibit, perlakuan benih, dan perawatan sebelum pindah tanam.
                     </p>
-                    <div class="mt-2 flex items-center justify-between text-xs font-semibold text-emerald-700">
-                        <span class="flex items-center">
+                    <div class="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-xs font-semibold text-emerald-700">
+                        <span class="flex items-center text-[11px] sm:text-xs">
                             <span>Buka Panduan Semai</span>
                             <span class="ml-1 transition-transform group-hover:translate-x-1">→</span>
                         </span>
                         <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
                             <button type="button"
                                     onclick="openStageViewer('semai', true)"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-emerald-800 bg-emerald-100/90 hover:bg-emerald-200 transition-colors shadow-2xs cursor-pointer"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold text-emerald-800 bg-emerald-100/90 hover:bg-emerald-200 transition-colors shadow-2xs cursor-pointer"
                                     title="Edit isi panduan semai tanaman ini">
                                 <svg class="w-3 h-3 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
@@ -275,15 +275,15 @@
                     <p id="modalPenanamanDesc" class="text-xs text-gray-600 mt-1 leading-relaxed">
                         SOP persiapan lahan tanah gembur, pemupukan dasar organik, mulsa, dan penanaman.
                     </p>
-                    <div class="mt-2 flex items-center justify-between text-xs font-semibold text-amber-800">
-                        <span class="flex items-center">
+                    <div class="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-xs font-semibold text-amber-800">
+                        <span class="flex items-center text-[11px] sm:text-xs">
                             <span>Buka Panduan Penanaman</span>
                             <span class="ml-1 transition-transform group-hover:translate-x-1">→</span>
                         </span>
                         <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
                             <button type="button"
                                     onclick="openStageViewer('penanaman', true)"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-amber-800 bg-amber-100/90 hover:bg-amber-200 transition-colors shadow-2xs cursor-pointer"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold text-amber-800 bg-amber-100/90 hover:bg-amber-200 transition-colors shadow-2xs cursor-pointer"
                                     title="Edit isi panduan penanaman tanaman ini">
                                 <svg class="w-3 h-3 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
@@ -318,15 +318,15 @@
                     <p id="modalPemeliharaanDesc" class="text-xs text-gray-600 mt-1 leading-relaxed">
                         Panduan perawatan harian, pemasangan ajir, pemangkasan tunas air, penyiraman, dan pemupukan.
                     </p>
-                    <div class="mt-2 flex items-center justify-between text-xs font-semibold text-teal-700">
-                        <span class="flex items-center">
+                    <div class="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-xs font-semibold text-teal-700">
+                        <span class="flex items-center text-[11px] sm:text-xs">
                             <span>Buka Panduan Pemeliharaan</span>
                             <span class="ml-1 transition-transform group-hover:translate-x-1">→</span>
                         </span>
                         <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
                             <button type="button"
                                     onclick="openStageViewer('pemeliharaan', true)"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-teal-800 bg-teal-100/90 hover:bg-teal-200 transition-colors shadow-2xs cursor-pointer"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold text-teal-800 bg-teal-100/90 hover:bg-emerald-200 transition-colors shadow-2xs cursor-pointer"
                                     title="Edit isi panduan pemeliharaan tanaman ini">
                                 <svg class="w-3 h-3 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
@@ -361,15 +361,15 @@
                     <p id="modalTipsDesc" class="text-xs text-gray-600 mt-1 leading-relaxed">
                         Instruksi pencegahan penyakit, kehati-hatian, pantangan pemupukan, dan tips sukses panen.
                     </p>
-                    <div class="mt-2 flex items-center justify-between text-xs font-semibold text-indigo-700">
-                        <span class="flex items-center">
+                    <div class="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-xs font-semibold text-indigo-700">
+                        <span class="flex items-center text-[11px] sm:text-xs">
                             <span>Buka Tips Penting</span>
                             <span class="ml-1 transition-transform group-hover:translate-x-1">→</span>
                         </span>
                         <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
                             <button type="button"
                                     onclick="openStageViewer('tips', true)"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-indigo-800 bg-indigo-100/90 hover:bg-indigo-200 transition-colors shadow-2xs cursor-pointer"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold text-indigo-800 bg-indigo-100/90 hover:bg-indigo-200 transition-colors shadow-2xs cursor-pointer"
                                     title="Edit isi tips penting tanaman ini">
                                 <svg class="w-3 h-3 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
@@ -404,15 +404,15 @@
                     <p id="modalHamaDesc" class="text-xs text-gray-600 mt-1 leading-relaxed">
                         Identifikasi gejala hama, jamur/penyakit, serta solusi pengendalian dan bahan aktif obat.
                     </p>
-                    <div class="mt-2 flex items-center justify-between text-xs font-semibold text-rose-700">
-                        <span class="flex items-center">
+                    <div class="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-xs font-semibold text-rose-700">
+                        <span class="flex items-center text-[11px] sm:text-xs">
                             <span>Buka Solusi Hama</span>
                             <span class="ml-1 transition-transform group-hover:translate-x-1">→</span>
                         </span>
                         <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
                             <button type="button"
                                     onclick="openStageViewer('hama', true)"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-800 bg-rose-100/90 hover:bg-rose-200 transition-colors shadow-2xs cursor-pointer"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold text-rose-800 bg-rose-100/90 hover:bg-rose-200 transition-colors shadow-2xs cursor-pointer"
                                     title="Edit isi problem & solusi hama tanaman ini">
                                 <svg class="w-3 h-3 text-rose-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
@@ -427,19 +427,20 @@
         </div>
 
         {{-- Direct Catalog Link --}}
-        <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+        <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
             <a id="modalLinkFullGuide"
                href="#"
-               class="text-xs font-bold text-emerald-700 hover:underline inline-flex items-center gap-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+               class="text-xs font-bold text-emerald-700 hover:underline inline-flex items-center gap-1.5 truncate">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                 </svg>
-                <span>Buka Semua Panduan di Halaman Penuh</span>
+                <span class="hidden sm:inline">Buka Semua Panduan di Halaman Penuh</span>
+                <span class="sm:hidden">Panduan Lengkap</span>
                 <span class="ml-0.5">→</span>
             </a>
             <a id="modalLinkEdit"
                href="#"
-               class="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-800">
+               class="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-800 shrink-0">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
                 </svg>
@@ -461,22 +462,23 @@
          class="bg-white w-full max-w-2xl max-h-[92vh] flex flex-col rounded-t-[28px] sm:rounded-3xl shadow-2xl border border-gray-100 p-4 sm:p-6 transform translate-y-8 sm:translate-y-0 sm:scale-95 transition-all duration-200 relative overflow-hidden">
 
         {{-- Header --}}
-        <div class="flex items-center justify-between pb-3 border-b border-gray-100 flex-shrink-0">
+        <div class="flex items-center justify-between gap-2 pb-3 border-b border-gray-100 flex-shrink-0">
             <button type="button"
                     onclick="backToCatalogMenuModal()"
-                    class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-emerald-700 transition-colors">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    class="inline-flex items-center gap-1 text-xs font-bold text-gray-600 hover:text-emerald-700 transition-colors shrink-0">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
                 </svg>
-                <span>Kembali ke Pilihan Menu</span>
+                <span class="hidden sm:inline">Kembali ke Pilihan Menu</span>
+                <span class="sm:hidden">Pilihan</span>
             </button>
-            <div class="flex items-center gap-2">
-                <span id="stageViewerPlantIcon" class="text-xl">🌱</span>
-                <span id="stageViewerPlantTitle" class="font-bold text-sm sm:text-base text-gray-900">Nama Tanaman</span>
+            <div class="flex items-center gap-1.5 min-w-0">
+                <span id="stageViewerPlantIcon" class="text-lg sm:text-xl shrink-0">🌱</span>
+                <span id="stageViewerPlantTitle" class="font-bold text-xs sm:text-base text-gray-900 truncate">Nama Tanaman</span>
             </div>
             <button type="button"
                     onclick="closeStageContentModal()"
-                    class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition-colors">
+                    class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition-colors shrink-0">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -484,11 +486,11 @@
         </div>
 
         {{-- 4 Quick Switch Tabs --}}
-        <div class="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl my-3 overflow-x-auto no-scrollbar flex-shrink-0">
+        <div class="flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 bg-gray-100 rounded-2xl my-2.5 sm:my-3 overflow-x-auto no-scrollbar flex-shrink-0">
             <button type="button"
                     onclick="switchStageViewer('semai')"
                     id="tabViewerSemai"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
+                    class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                 </svg>
@@ -497,7 +499,7 @@
             <button type="button"
                     onclick="switchStageViewer('penanaman')"
                     id="tabViewerPenanaman"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
+                    class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21V3m0 0a9 9 0 018.716 6.747M12 3a9 9 0 00-8.716 6.747" />
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18" />
@@ -507,7 +509,7 @@
             <button type="button"
                     onclick="switchStageViewer('pemeliharaan')"
                     id="tabViewerPemeliharaan"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
+                    class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
                 </svg>
@@ -516,7 +518,7 @@
             <button type="button"
                     onclick="switchStageViewer('tips')"
                     id="tabViewerTips"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
+                    class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.439a1.5 1.5 0 01-3 0m4.5-9.75a4.5 4.5 0 10-9 0c0 1.632.88 3.06 2.193 3.844.204.122.307.367.307.606V16.5a1.5 1.5 0 001.5 1.5h3a1.5 1.5 0 001.5-1.5v-1.55c0-.239.103-.484.307-.606A4.5 4.5 0 0016.5 9z"/>
                 </svg>
@@ -525,7 +527,7 @@
             <button type="button"
                     onclick="switchStageViewer('hama')"
                     id="tabViewerHama"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
+                    class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.002A11.959 11.959 0 0112 2.714zm0 13.036h.008v.008H12v-.008z"/>
                 </svg>
@@ -538,19 +540,19 @@
             {{-- VIEW MODE --}}
             <div id="stageViewMode" class="flex-1 flex flex-col">
                 <div class="mb-3 flex items-center justify-between gap-2 flex-wrap">
-                    <span id="stageViewerPillBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span id="stageViewerPillBadge" class="px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 truncate max-w-[200px] sm:max-w-none">
                         Tahap Semai &amp; Pembibitan
                     </span>
-                    <div class="flex items-center gap-2">
-                        <span id="stageViewerPlantSpecificTag" class="text-xs font-bold text-gray-400">
+                    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                        <span id="stageViewerPlantSpecificTag" class="hidden sm:inline text-xs font-bold text-gray-400">
                             Khusus Tanaman Ini
                         </span>
                         <button type="button"
                                 id="btnStageEditToggle"
                                 onclick="toggleStageViewerEdit(true)"
-                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 transition-all cursor-pointer shadow-2xs">
+                                class="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 transition-all cursor-pointer shadow-2xs">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 015.25 6H10" />
                             </svg>
                             <span>Edit Isi</span>
                         </button>
@@ -1041,20 +1043,20 @@
                         : `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.439a1.5 1.5 0 01-3 0m4.5-9.75a4.5 4.5 0 10-9 0c0 1.632.88 3.06 2.193 3.844.204.122.307.367.307.606V16.5a1.5 1.5 0 001.5 1.5h3a1.5 1.5 0 001.5-1.5v-1.55c0-.239.103-.484.307-.606A4.5 4.5 0 0016.5 9z"/></svg>`;
 
                     html += `
-                        <div class="note-card bg-surface rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-xs ${hoverBorder} hover:shadow-md transition-all flex flex-col justify-between group"
+                        <div class="note-card bg-surface rounded-2xl border border-gray-200 p-3.5 sm:p-5 shadow-xs ${hoverBorder} hover:shadow-md transition-all flex flex-col justify-between group"
                              data-title="${escapeHtml(card.title)}"
                              data-content="${escapeHtml(card.content)}">
                             <div>
-                                <div class="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
-                                    <div class="flex items-start gap-3 min-w-0">
-                                        <span class="w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center shrink-0 border mt-0.5">
+                                <div class="flex items-start justify-between gap-2.5 pb-2.5 sm:pb-3 border-b border-gray-100">
+                                    <div class="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${iconBg} flex items-center justify-center shrink-0 border mt-0.5">
                                             ${iconSvg}
                                         </span>
                                         <div class="min-w-0">
-                                            <h3 class="text-sm sm:text-base font-bold text-gray-900 ${hoverTitle} transition-colors leading-snug">
+                                            <h3 class="text-xs sm:text-base font-bold text-gray-900 ${hoverTitle} transition-colors leading-snug">
                                                 ${escapeHtml(card.title)}
                                             </h3>
-                                            <span class="text-[10px] text-gray-400 mt-0.5 block">
+                                            <span class="text-[10px] text-gray-400 mt-0.5 block truncate">
                                                 ${escapeHtml(card.subtitle)}
                                             </span>
                                         </div>
@@ -1066,14 +1068,11 @@
                                         let solusi = '';
                                         const mGejala = (card.content || '').match(/Gejala\s*:\s*([^]+?)(?=(?:Solusi\s*:|$))/i);
                                         const mSolusi = (card.content || '').match(/Solusi\s*:\s*([^]+)$/i);
-                                        if (mGejala) gejala = mGejala[1].trim();
-                                        if (mSolusi) solusi = mSolusi[1].trim();
-
                                         if (gejala || solusi) {
                                             return `
                                                 ${gejala ? `
-                                                    <div class="mt-3 rounded-xl p-3 bg-amber-50/70 border border-amber-200/80 text-amber-950">
-                                                        <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900 mb-1">
+                                                    <div class="mt-2.5 sm:mt-3 rounded-xl p-2.5 sm:p-3 bg-amber-50/70 border border-amber-200/80 text-amber-950">
+                                                        <div class="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-amber-900 mb-1">
                                                             <svg class="w-3.5 h-3.5 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
                                                             </svg>
@@ -1083,8 +1082,8 @@
                                                     </div>
                                                 ` : ''}
                                                 ${solusi ? `
-                                                    <div class="mt-2 rounded-xl p-3 bg-emerald-50/70 border border-emerald-200/80 text-emerald-950">
-                                                        <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-1">
+                                                    <div class="mt-2 rounded-xl p-2.5 sm:p-3 bg-emerald-50/70 border border-emerald-200/80 text-emerald-950">
+                                                        <div class="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-emerald-900 mb-1">
                                                             <svg class="w-3.5 h-3.5 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                             </svg>
@@ -1096,17 +1095,18 @@
                                             `;
                                         }
                                     }
-                                    return `<div class="text-xs sm:text-sm text-gray-700 mt-3 leading-relaxed whitespace-pre-line">${escapeHtml(card.content)}</div>`;
+                                    return `<div class="text-xs sm:text-sm text-gray-700 mt-2.5 sm:mt-3 leading-relaxed whitespace-pre-line">${escapeHtml(card.content)}</div>`;
                                 })()}
                             </div>
-                            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                                <span class="flex items-center gap-1 ${badgeColor} font-medium">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <div class="mt-3.5 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-400">
+                                <span class="flex items-center gap-1 ${badgeColor} font-medium truncate">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>${badgeText}</span>
+                                    <span class="truncate">${badgeText}</span>
                                 </span>
-                                <span>Tersimpan di Sistem</span>
+                                <span class="hidden sm:inline shrink-0">Tersimpan di Sistem</span>
+                                <span class="sm:hidden shrink-0">Sistem</span>
                             </div>
                         </div>
                     `;
@@ -1148,16 +1148,16 @@
                 let html = '';
                 stepList.forEach(step => {
                     html += `
-                        <div class="note-card bg-surface rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-xs ${t.hoverBorder} hover:shadow-sm transition-all group"
+                        <div class="note-card bg-surface rounded-2xl border border-gray-200 p-3.5 sm:p-5 shadow-xs ${t.hoverBorder} hover:shadow-sm transition-all group"
                              data-title="${escapeHtml(step.judul)}"
                              data-content="${escapeHtml(step.deskripsi)}">
-                            <div class="flex items-start gap-3.5 sm:gap-4">
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${t.numBg} flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border shadow-2xs">
+                            <div class="flex items-start gap-2.5 sm:gap-4">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl ${t.numBg} flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border shadow-2xs">
                                     ${escapeHtml(step.nomor)}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-2">
-                                        <h3 class="text-sm sm:text-base font-bold text-gray-900 ${t.hoverTitle} transition-colors leading-snug">
+                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2">
+                                        <h3 class="text-xs sm:text-base font-bold text-gray-900 ${t.hoverTitle} transition-colors leading-snug">
                                             ${escapeHtml(step.judul)}
                                         </h3>
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold ${t.badgeBg} w-fit shrink-0">
@@ -1171,17 +1171,18 @@
                                             </span>
                                         </div>
                                     ` : ''}
-                                    <div class="text-xs sm:text-sm text-gray-600 mt-2.5 leading-relaxed whitespace-pre-line">
+                                    <div class="text-xs sm:text-sm text-gray-600 mt-2 sm:mt-2.5 leading-relaxed whitespace-pre-line">
                                         ${escapeHtml(step.deskripsi)}
                                     </div>
-                                    <div class="mt-3.5 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                                        <span class="flex items-center gap-1 text-emerald-700 font-medium">
-                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <div class="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-400">
+                                        <span class="flex items-center gap-1 text-emerald-700 font-medium truncate">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            <span>${t.sopBadge}</span>
+                                            <span class="truncate">${t.sopBadge}</span>
                                         </span>
-                                        <span>Standar Operasional Lapangan</span>
+                                        <span class="hidden sm:inline shrink-0">Standar Operasional Lapangan</span>
+                                        <span class="sm:hidden shrink-0">SOP</span>
                                     </div>
                                 </div>
                             </div>

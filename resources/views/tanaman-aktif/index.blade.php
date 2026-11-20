@@ -1637,20 +1637,20 @@
                         : `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.439a1.5 1.5 0 01-3 0m4.5-9.75a4.5 4.5 0 10-9 0c0 1.632.88 3.06 2.193 3.844.204.122.307.367.307.606V16.5a1.5 1.5 0 001.5 1.5h3a1.5 1.5 0 001.5-1.5v-1.55c0-.239.103-.484.307-.606A4.5 4.5 0 0016.5 9z"/></svg>`;
 
                     html += `
-                        <div class="dash-stage-card bg-surface rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-xs ${hoverBorder} hover:shadow-md transition-all flex flex-col justify-between group"
+                        <div class="dash-stage-card bg-surface rounded-2xl border border-gray-200 p-3.5 sm:p-5 shadow-xs ${hoverBorder} hover:shadow-md transition-all flex flex-col justify-between group"
                              data-title="${escapeHtml(card.title)}"
                              data-content="${escapeHtml(card.content)}">
                             <div>
-                                <div class="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
-                                    <div class="flex items-start gap-3 min-w-0">
-                                        <span class="w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center shrink-0 border mt-0.5">
+                                <div class="flex items-start justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-gray-100">
+                                    <div class="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${iconBg} flex items-center justify-center shrink-0 border mt-0.5">
                                             ${iconSvg}
                                         </span>
                                         <div class="min-w-0">
-                                            <h3 class="text-sm sm:text-base font-bold text-gray-900 ${hoverTitle} transition-colors leading-snug">
+                                            <h3 class="text-xs sm:text-base font-bold text-gray-900 ${hoverTitle} transition-colors leading-snug">
                                                 ${escapeHtml(card.title)}
                                             </h3>
-                                            <span class="text-[10px] text-gray-400 mt-0.5 block">
+                                            <span class="text-[9px] sm:text-[10px] text-gray-400 mt-0.5 block truncate">
                                                 ${escapeHtml(card.subtitle)}
                                             </span>
                                         </div>
@@ -1668,7 +1668,7 @@
                                         if (gejala || solusi) {
                                             return `
                                                 ${gejala ? `
-                                                    <div class="mt-3 rounded-xl p-3 bg-amber-50/70 border border-amber-200/80 text-amber-950">
+                                                    <div class="mt-2.5 sm:mt-3 rounded-xl p-2.5 sm:p-3 bg-amber-50/70 border border-amber-200/80 text-amber-950">
                                                         <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900 mb-1">
                                                             <svg class="w-3.5 h-3.5 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
@@ -1679,7 +1679,7 @@
                                                     </div>
                                                 ` : ''}
                                                 ${solusi ? `
-                                                    <div class="mt-2 rounded-xl p-3 bg-emerald-50/70 border border-emerald-200/80 text-emerald-950">
+                                                    <div class="mt-2 rounded-xl p-2.5 sm:p-3 bg-emerald-50/70 border border-emerald-200/80 text-emerald-950">
                                                         <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-1">
                                                             <svg class="w-3.5 h-3.5 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -1692,17 +1692,18 @@
                                             `;
                                         }
                                     }
-                                    return `<div class="text-xs sm:text-sm text-gray-700 mt-3 leading-relaxed whitespace-pre-line">${escapeHtml(card.content)}</div>`;
+                                    return `<div class="text-xs sm:text-sm text-gray-700 mt-2.5 sm:mt-3 leading-relaxed whitespace-pre-line">${escapeHtml(card.content)}</div>`;
                                 })()}
                             </div>
-                            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                                <span class="flex items-center gap-1 ${badgeColor} font-medium">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <div class="mt-3.5 pt-2.5 sm:mt-4 sm:pt-3 border-t border-gray-100 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-400">
+                                <span class="flex items-center gap-1 ${badgeColor} font-medium truncate">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>${badgeBadge}</span>
+                                    <span class="truncate">${badgeBadge}</span>
                                 </span>
-                                <span>Tersimpan di Sistem</span>
+                                <span class="hidden sm:inline shrink-0">Tersimpan di Sistem</span>
+                                <span class="sm:hidden shrink-0">Sistem</span>
                             </div>
                         </div>
                     `;
@@ -1710,7 +1711,7 @@
                 if (cardsGrid) cardsGrid.innerHTML = html;
             } else {
                 // Tampilan mirip Menu Tahapan (semai, penanaman, pemeliharaan)
-                if (cardsGrid) cardsGrid.className = 'flex flex-col space-y-3.5 overflow-y-auto pr-1';
+                if (cardsGrid) cardsGrid.className = 'flex flex-col space-y-3 sm:space-y-3.5 overflow-y-auto pr-1';
                 if (searchInput) searchInput.placeholder = 'Cari langkah / instruksi tahapan...';
 
                 const stepList = parseRawTextToSteps(content, type, plant.name);
@@ -1744,40 +1745,41 @@
                 let html = '';
                 stepList.forEach(step => {
                     html += `
-                        <div class="dash-stage-card bg-surface rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-xs ${t.hoverBorder} hover:shadow-sm transition-all group"
+                        <div class="dash-stage-card bg-surface rounded-2xl border border-gray-200 p-3.5 sm:p-5 shadow-xs ${t.hoverBorder} hover:shadow-sm transition-all group"
                              data-title="${escapeHtml(step.judul)}"
                              data-content="${escapeHtml(step.deskripsi)}">
-                            <div class="flex items-start gap-3.5 sm:gap-4">
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${t.numBg} flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border shadow-2xs">
+                            <div class="flex items-start gap-3 sm:gap-4">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl ${t.numBg} flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border shadow-2xs">
                                     ${escapeHtml(step.nomor)}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-2">
-                                        <h3 class="text-sm sm:text-base font-bold text-gray-900 ${t.hoverTitle} transition-colors leading-snug">
+                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2">
+                                        <h3 class="text-xs sm:text-base font-bold text-gray-900 ${t.hoverTitle} transition-colors leading-snug">
                                             ${escapeHtml(step.judul)}
                                         </h3>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold ${t.badgeBg} w-fit shrink-0">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] sm:text-[11px] font-semibold ${t.badgeBg} w-fit shrink-0">
                                             ${escapeHtml(step.badge)}
                                         </span>
                                     </div>
                                     ${step.waktu ? `
                                         <div class="mt-1">
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700">
                                                 Waktu: ${escapeHtml(step.waktu)}
                                             </span>
                                         </div>
                                     ` : ''}
-                                    <div class="text-xs sm:text-sm text-gray-600 mt-2.5 leading-relaxed whitespace-pre-line">
+                                    <div class="text-xs sm:text-sm text-gray-600 mt-2 sm:mt-2.5 leading-relaxed whitespace-pre-line">
                                         ${escapeHtml(step.deskripsi)}
                                     </div>
-                                    <div class="mt-3.5 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                                    <div class="mt-3 pt-2 sm:mt-3.5 sm:pt-2.5 border-t border-gray-100 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-400">
                                         <span class="flex items-center gap-1 text-emerald-700 font-medium">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                             <span>${t.sopBadge}</span>
                                         </span>
-                                        <span>Standar Operasional Lapangan</span>
+                                        <span class="hidden sm:inline">Standar Operasional Lapangan</span>
+                                        <span class="sm:hidden">SOP Kebun</span>
                                     </div>
                                 </div>
                             </div>

@@ -107,25 +107,25 @@
 
         {{-- 1. TAHAP SEMAI --}}
         <div id="section-semai" class="stage-section bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden">
-            <div class="bg-emerald-50/70 border-b border-emerald-100 px-5 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-xs">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="bg-emerald-50/70 border-b border-emerald-100 px-3.5 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm sm:text-base shrink-0 shadow-xs">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                         </svg>
                     </div>
-                    <div>
-                        <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Pilar 1</span>
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 leading-tight">Tahap Semai &amp; Pembibitan {{ $catalog->name }}</h2>
+                    <div class="min-w-0">
+                        <span class="text-[9px] sm:text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Pilar 1</span>
+                        <h2 class="text-sm sm:text-lg font-bold text-gray-900 leading-tight truncate sm:whitespace-normal">Tahap Semai &amp; Pembibitan {{ $catalog->name }}</h2>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-emerald-200 text-emerald-800">
+                <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
+                    <span class="hidden md:inline-flex text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-emerald-200 text-emerald-800">
                         Khusus {{ $catalog->name }}
                     </span>
                     <button type="button"
                             onclick="openAddStep('semai')"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-2xs cursor-pointer"
+                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-2xs cursor-pointer w-full sm:w-auto justify-center"
                             title="Tambah nomor / langkah semai baru">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -135,22 +135,22 @@
                 </div>
             </div>
 
-            <div class="p-5 sm:p-6 space-y-4" id="steps-container-semai">
+            <div class="p-3.5 sm:p-6 space-y-3 sm:space-y-4" id="steps-container-semai">
                 @if(count($catalog->structured_semai) > 0)
                     @foreach($catalog->structured_semai as $step)
-                        <div class="bg-surface rounded-2xl border border-gray-200/90 p-4 sm:p-5 shadow-xs hover:border-emerald-300 transition-all group">
-                            <div class="flex items-start gap-3.5 sm:gap-4">
+                        <div class="bg-surface rounded-2xl border border-gray-200/90 p-3.5 sm:p-5 shadow-xs hover:border-emerald-300 transition-all group">
+                            <div class="flex items-start gap-3 sm:gap-4">
                                 {{-- Badge Nomor Langkah --}}
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border border-emerald-200 shadow-2xs">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border border-emerald-200 shadow-2xs">
                                     {{ $step['nomor'] }}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-2">
-                                        <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-emerald-900 transition-colors">
+                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2">
+                                        <h3 class="text-xs sm:text-base font-bold text-gray-900 group-hover:text-emerald-900 transition-colors">
                                             {{ $step['judul'] }}
                                         </h3>
                                         <div class="flex items-center gap-1.5 shrink-0">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60 w-fit shrink-0">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] sm:text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60 w-fit shrink-0">
                                                 {{ $step['badge'] }}
                                             </span>
                                             <button type="button"
@@ -174,12 +174,12 @@
                                     </div>
                                     @if(!empty($step['waktu']))
                                         <div class="mt-1">
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700">
                                                 Waktu: {{ $step['waktu'] }}
                                             </span>
                                         </div>
                                     @endif
-                                    <div class="text-xs sm:text-sm text-gray-600 mt-2.5 leading-relaxed whitespace-pre-line">
+                                    <div class="text-xs sm:text-sm text-gray-600 mt-2 sm:mt-2.5 leading-relaxed whitespace-pre-line">
                                         {!! nl2br(e($step['deskripsi'])) !!}
                                     </div>
                                 </div>
@@ -199,26 +199,26 @@
 
         {{-- 2. TAHAP PENANAMAN --}}
         <div id="section-penanaman" class="stage-section bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden">
-            <div class="bg-amber-50/70 border-b border-amber-100 px-5 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold text-base shadow-xs">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="bg-amber-50/70 border-b border-amber-100 px-3.5 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold text-sm sm:text-base shrink-0 shadow-xs">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21V3m0 0a9 9 0 018.716 6.747M12 3a9 9 0 00-8.716 6.747" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18" />
                         </svg>
                     </div>
-                    <div>
-                        <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Pilar 2</span>
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 leading-tight">Tahap Penanaman & Jarak Tanam {{ $catalog->name }}</h2>
+                    <div class="min-w-0">
+                        <span class="text-[9px] sm:text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Pilar 2</span>
+                        <h2 class="text-sm sm:text-lg font-bold text-gray-900 leading-tight truncate sm:whitespace-normal">Tahap Penanaman &amp; Jarak Tanam {{ $catalog->name }}</h2>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-amber-200 text-amber-800">
+                <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
+                    <span class="hidden md:inline-flex text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-amber-200 text-amber-800">
                         Khusus {{ $catalog->name }}
                     </span>
                     <button type="button"
                             onclick="openAddStep('penanaman')"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors shadow-2xs cursor-pointer"
+                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors shadow-2xs cursor-pointer w-full sm:w-auto justify-center"
                             title="Tambah nomor / langkah penanaman baru">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -228,22 +228,22 @@
                 </div>
             </div>
 
-            <div class="p-5 sm:p-6 space-y-4" id="steps-container-penanaman">
+            <div class="p-3.5 sm:p-6 space-y-3 sm:space-y-4" id="steps-container-penanaman">
                 @if(count($catalog->structured_penanaman) > 0)
                     @foreach($catalog->structured_penanaman as $step)
-                        <div class="bg-surface rounded-2xl border border-gray-200/90 p-4 sm:p-5 shadow-xs hover:border-amber-300 transition-all group">
-                            <div class="flex items-start gap-3.5 sm:gap-4">
+                        <div class="bg-surface rounded-2xl border border-gray-200/90 p-3.5 sm:p-5 shadow-xs hover:border-amber-300 transition-all group">
+                            <div class="flex items-start gap-3 sm:gap-4">
                                 {{-- Badge Nomor Langkah --}}
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border border-amber-200 shadow-2xs">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border border-amber-200 shadow-2xs">
                                     {{ $step['nomor'] }}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-2">
-                                        <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-amber-900 transition-colors">
+                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2">
+                                        <h3 class="text-xs sm:text-base font-bold text-gray-900 group-hover:text-amber-900 transition-colors">
                                             {{ $step['judul'] }}
                                         </h3>
                                         <div class="flex items-center gap-1.5 shrink-0">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60 w-fit shrink-0">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] sm:text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60 w-fit shrink-0">
                                                 {{ $step['badge'] }}
                                             </span>
                                             <button type="button"
@@ -267,12 +267,12 @@
                                     </div>
                                     @if(!empty($step['waktu']))
                                         <div class="mt-1">
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700">
                                                 Waktu: {{ $step['waktu'] }}
                                             </span>
                                         </div>
                                     @endif
-                                    <div class="text-xs sm:text-sm text-gray-600 mt-2.5 leading-relaxed whitespace-pre-line">
+                                    <div class="text-xs sm:text-sm text-gray-600 mt-2 sm:mt-2.5 leading-relaxed whitespace-pre-line">
                                         {!! nl2br(e($step['deskripsi'])) !!}
                                     </div>
                                 </div>
@@ -292,25 +292,25 @@
 
         {{-- 3. TAHAP PEMELIHARAAN --}}
         <div id="section-pemeliharaan" class="stage-section bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden">
-            <div class="bg-sky-50/70 border-b border-sky-100 px-5 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-base shadow-xs">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="bg-sky-50/70 border-b border-sky-100 px-3.5 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-sm sm:text-base shrink-0 shadow-xs">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
                         </svg>
                     </div>
-                    <div>
-                        <span class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">Pilar 3</span>
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 leading-tight">Tahap Pemeliharaan, Pemangkasan & Nutrisi {{ $catalog->name }}</h2>
+                    <div class="min-w-0">
+                        <span class="text-[9px] sm:text-[10px] font-bold text-sky-800 uppercase tracking-wider block">Pilar 3</span>
+                        <h2 class="text-sm sm:text-lg font-bold text-gray-900 leading-tight truncate sm:whitespace-normal">Tahap Pemeliharaan, Pemangkasan &amp; Nutrisi {{ $catalog->name }}</h2>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-sky-200 text-sky-800">
+                <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
+                    <span class="hidden md:inline-flex text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-sky-200 text-sky-800">
                         Khusus {{ $catalog->name }}
                     </span>
                     <button type="button"
                             onclick="openAddStep('pemeliharaan')"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white transition-colors shadow-2xs cursor-pointer"
+                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white transition-colors shadow-2xs cursor-pointer w-full sm:w-auto justify-center"
                             title="Tambah nomor / langkah pemeliharaan baru">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -320,22 +320,22 @@
                 </div>
             </div>
 
-            <div class="p-5 sm:p-6 space-y-4" id="steps-container-pemeliharaan">
+            <div class="p-3.5 sm:p-6 space-y-3 sm:space-y-4" id="steps-container-pemeliharaan">
                 @if(count($catalog->structured_pemeliharaan) > 0)
                     @foreach($catalog->structured_pemeliharaan as $step)
-                        <div class="bg-surface rounded-2xl border border-gray-200/90 p-4 sm:p-5 shadow-xs hover:border-sky-300 transition-all group">
-                            <div class="flex items-start gap-3.5 sm:gap-4">
+                        <div class="bg-surface rounded-2xl border border-gray-200/90 p-3.5 sm:p-5 shadow-xs hover:border-sky-300 transition-all group">
+                            <div class="flex items-start gap-3 sm:gap-4">
                                 {{-- Badge Nomor Langkah --}}
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border border-sky-200 shadow-2xs">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black text-xs sm:text-sm shrink-0 border border-sky-200 shadow-2xs">
                                     {{ $step['nomor'] }}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-2">
-                                        <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-sky-900 transition-colors">
+                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2">
+                                        <h3 class="text-xs sm:text-base font-bold text-gray-900 group-hover:text-sky-900 transition-colors">
                                             {{ $step['judul'] }}
                                         </h3>
                                         <div class="flex items-center gap-1.5 shrink-0">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-sky-50 text-sky-800 border border-sky-200/60 w-fit shrink-0">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] sm:text-[11px] font-semibold bg-sky-50 text-sky-800 border border-sky-200/60 w-fit shrink-0">
                                                 {{ $step['badge'] }}
                                             </span>
                                             <button type="button"
@@ -359,12 +359,12 @@
                                     </div>
                                     @if(!empty($step['waktu']))
                                         <div class="mt-1">
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] sm:text-[11px] font-semibold bg-gray-100 text-gray-700">
                                                 Waktu: {{ $step['waktu'] }}
                                             </span>
                                         </div>
                                     @endif
-                                    <div class="text-xs sm:text-sm text-gray-600 mt-2.5 leading-relaxed whitespace-pre-line">
+                                    <div class="text-xs sm:text-sm text-gray-600 mt-2 sm:mt-2.5 leading-relaxed whitespace-pre-line">
                                         {!! nl2br(e($step['deskripsi'])) !!}
                                     </div>
                                 </div>
@@ -384,25 +384,25 @@
 
         {{-- 4. TIPS PENTING --}}
         <div id="section-tips" class="stage-section bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden">
-            <div class="bg-amber-50/80 border-b border-amber-200/80 px-5 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-base shadow-xs">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="bg-amber-50/80 border-b border-amber-200/80 px-3.5 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm sm:text-base shrink-0 shadow-xs">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.439a1.5 1.5 0 01-3 0m4.5-9.75a4.5 4.5 0 10-9 0c0 1.632.88 3.06 2.193 3.844.204.122.307.367.307.606V16.5a1.5 1.5 0 001.5 1.5h3a1.5 1.5 0 001.5-1.5v-1.55c0-.239.103-.484.307-.606A4.5 4.5 0 0016.5 9z"/>
                         </svg>
                     </div>
-                    <div>
-                        <span class="text-[10px] font-bold text-amber-900 uppercase tracking-wider">Pilar 4</span>
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 leading-tight">Tips Penting & Pantangan {{ $catalog->name }}</h2>
+                    <div class="min-w-0">
+                        <span class="text-[9px] sm:text-[10px] font-bold text-amber-900 uppercase tracking-wider block">Pilar 4</span>
+                        <h2 class="text-sm sm:text-lg font-bold text-gray-900 leading-tight truncate sm:whitespace-normal">Tips Penting &amp; Pantangan {{ $catalog->name }}</h2>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900">
+                <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
+                    <span class="hidden md:inline-flex text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900">
                         Wajib Diperhatikan
                     </span>
                     <button type="button"
                             onclick="openAddTip()"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors shadow-2xs cursor-pointer"
+                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors shadow-2xs cursor-pointer w-full sm:w-auto justify-center"
                             title="Tambah tips penting baru">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -412,9 +412,9 @@
                 </div>
             </div>
 
-            <div class="p-5 sm:p-6" id="tipsCardsContainer">
+            <div class="p-3.5 sm:p-6" id="tipsCardsContainer">
                 @if(!empty(trim($catalog->tips_penting ?? '')) && count($catalog->structured_tips) > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         @foreach($catalog->structured_tips as $tipCard)
                             @php
                                 $cleanTip = [
@@ -423,20 +423,20 @@
                                     'content' => $tipCard['content'] ?? '',
                                 ];
                             @endphp
-                            <div class="note-card bg-surface rounded-2xl border border-gray-200 p-5 shadow-xs hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between group">
+                            <div class="note-card bg-surface rounded-2xl border border-gray-200 p-3.5 sm:p-5 shadow-xs hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between group">
                                 <div>
-                                    <div class="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
-                                        <div class="flex items-start gap-3 min-w-0">
-                                            <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200 mt-0.5">
+                                    <div class="flex items-start justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-gray-100">
+                                        <div class="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                                            <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200 mt-0.5">
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.439a1.5 1.5 0 01-3 0m4.5-9.75a4.5 4.5 0 10-9 0c0 1.632.88 3.06 2.193 3.844.204.122.307.367.307.606V16.5a1.5 1.5 0 001.5 1.5h3a1.5 1.5 0 001.5-1.5v-1.55c0-.239.103-.484.307-.606A4.5 4.5 0 0016.5 9z"/>
                                                 </svg>
                                             </span>
                                             <div class="min-w-0">
-                                                <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-amber-900 transition-colors leading-snug">
+                                                <h3 class="text-xs sm:text-base font-bold text-gray-900 group-hover:text-amber-900 transition-colors leading-snug">
                                                     {{ $tipCard['title'] }}
                                                 </h3>
-                                                <span class="text-[10px] text-gray-400 mt-0.5 block">
+                                                <span class="text-[9px] sm:text-[10px] text-gray-400 mt-0.5 block truncate">
                                                     {{ $tipCard['subtitle'] }}
                                                 </span>
                                             </div>
@@ -446,29 +446,29 @@
                                             <button type="button"
                                                     data-tip="{{ json_encode($cleanTip, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}"
                                                     onclick="openEditTipFromBtn(this, {{ $loop->index }})"
-                                                    class="p-1.5 rounded-lg text-gray-400 hover:text-amber-800 hover:bg-amber-50 transition-colors cursor-pointer"
+                                                    class="p-1 sm:p-1.5 rounded-lg text-gray-400 hover:text-amber-800 hover:bg-amber-50 transition-colors cursor-pointer"
                                                     title="Edit Tips Ini">
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
                                                 </svg>
                                             </button>
                                             <button type="button"
                                                     onclick="confirmDeleteTip({{ $loop->index }}, '{{ addslashes($tipCard['title']) }}')"
-                                                    class="p-1.5 rounded-lg text-gray-400 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                                                    class="p-1 sm:p-1.5 rounded-lg text-gray-400 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
                                                     title="Hapus Tips Ini">
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
                                                 </svg>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div class="text-xs sm:text-sm text-gray-700 mt-3.5 leading-relaxed whitespace-pre-line">
+                                    <div class="text-xs sm:text-sm text-gray-700 mt-2.5 sm:mt-3.5 leading-relaxed whitespace-pre-line">
                                         {{ $tipCard['content'] }}
                                     </div>
                                 </div>
 
-                                <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                                <div class="mt-3.5 pt-2.5 sm:mt-4 sm:pt-3 border-t border-gray-100 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-400">
                                     <span class="flex items-center gap-1 text-emerald-700 font-medium">
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -493,22 +493,22 @@
 
         {{-- 5. PROBLEM & SOLUSI HAMA --}}
         <div id="section-hama" class="stage-section bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden">
-            <div class="bg-rose-50/80 border-b border-rose-200/80 px-5 py-4 flex items-center justify-between flex-wrap gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-base shadow-xs">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="bg-rose-50/80 border-b border-rose-200/80 px-3.5 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base shrink-0 shadow-xs">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
                         </svg>
                     </div>
-                    <div>
-                        <span class="text-[10px] font-bold text-rose-900 uppercase tracking-wider">Pilar 5</span>
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 leading-tight">Problem &amp; Solusi Hama {{ $catalog->name }}</h2>
+                    <div class="min-w-0">
+                        <span class="text-[9px] sm:text-[10px] font-bold text-rose-900 uppercase tracking-wider block">Pilar 5</span>
+                        <h2 class="text-sm sm:text-lg font-bold text-gray-900 leading-tight truncate sm:whitespace-normal">Problem &amp; Solusi Hama {{ $catalog->name }}</h2>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
                     <button type="button"
                             onclick="openModalAddHama()"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-xs cursor-pointer">
+                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-xs cursor-pointer w-full sm:w-auto justify-center">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                         </svg>
@@ -517,9 +517,9 @@
                 </div>
             </div>
 
-            <div class="p-5 sm:p-6" id="hamaCardsContainer">
+            <div class="p-3.5 sm:p-6" id="hamaCardsContainer">
                 @if(count($catalog->structured_hama) > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         @foreach($catalog->structured_hama as $hamaCard)
                             @php
                                 $gejalaVal = $hamaCard['gejala'] ?? null;
@@ -542,21 +542,21 @@
                                     'foto_urls' => $hamaCard['foto_urls'] ?? [],
                                 ];
                             @endphp
-                            <div class="note-card bg-surface rounded-2xl border border-gray-200 p-5 shadow-xs hover:border-rose-400 hover:shadow-md transition-all flex flex-col justify-between group">
+                            <div class="note-card bg-surface rounded-2xl border border-gray-200 p-3.5 sm:p-5 shadow-xs hover:border-rose-400 hover:shadow-md transition-all flex flex-col justify-between group">
                                 <div>
                                     {{-- Card Header --}}
-                                    <div class="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
-                                        <div class="flex items-start gap-3 min-w-0">
-                                            <span class="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0 border border-rose-200 mt-0.5">
+                                    <div class="flex items-start justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-gray-100">
+                                        <div class="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                                            <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0 border border-rose-200 mt-0.5">
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
                                                 </svg>
                                             </span>
                                             <div class="min-w-0">
-                                                <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-rose-900 transition-colors leading-snug">
+                                                <h3 class="text-xs sm:text-base font-bold text-gray-900 group-hover:text-rose-900 transition-colors leading-snug">
                                                     {{ $hamaCard['judul'] ?: $hamaCard['title'] }}
                                                 </h3>
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-800 border border-rose-200/60 mt-1">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-semibold bg-rose-50 text-rose-800 border border-rose-200/60 mt-1">
                                                     {{ $hamaCard['kategori'] ?? 'Hama & Penyakit' }}
                                                 </span>
                                             </div>
@@ -566,7 +566,7 @@
                                         <div class="flex items-center gap-1 shrink-0">
                                             <button type="button"
                                                     onclick="openQuickPhotoHama({{ $hamaCard['id'] ?? 'null' }}, '{{ addslashes($hamaCard['judul'] ?: $hamaCard['title']) }}', '{{ addslashes($cleanHama['gejala']) }}', '{{ addslashes($cleanHama['solusi']) }}', '{{ addslashes($cleanHama['kategori']) }}')"
-                                                    class="p-1.5 rounded-lg text-rose-700 hover:text-rose-900 hover:bg-rose-50 transition-colors cursor-pointer"
+                                                    class="p-1 sm:p-1.5 rounded-lg text-rose-700 hover:text-rose-900 hover:bg-rose-50 transition-colors cursor-pointer"
                                                     title="Upload Foto Gejala / Hama">
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
