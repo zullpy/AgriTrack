@@ -1,23 +1,32 @@
-const CACHE_NAME = 'agritrack-v13';
+const CACHE_NAME = 'agritrack-v16';
 const PRECACHE_ASSETS = [
     '/',
     '/dashboard',
+    '/tanaman-aktif',
     '/kalender-hst',
-    '/steps',
-    '/steps/pengolahan-tanah',
-    '/steps/penanaman-bibit',
+    '/kalender-hss',
+    '/tanaman-katalog',
     '/data-obat',
     '/data-obat/tambah',
+    '/stok-obat',
+    '/steps',
+    '/steps/fermentasi-pupuk',
+    '/steps/pengolahan-tanah',
+    '/steps/penanaman-bibit',
+    '/steps/catatan',
     '/keuangan',
     '/config-fonnte',
     '/images/icon.png',
-    '/manifest.json'
+    '/manifest.json',
+    'https://cdn.jsdelivr.net/npm/dexie@4.0.11/dist/dexie.min.js',
+    'https://cdn.jsdelivr.net/npm/sweetalert2@11'
 ];
 
-// Install: precache essential shell assets
+// Install: precache essential shell assets and Vite bundle assets
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(async (cache) => {
+            // 1. Precache main navigation pages & libraries
             await Promise.allSettled(
                 PRECACHE_ASSETS.map(async (url) => {
                     try {
@@ -30,6 +39,40 @@ self.addEventListener('install', (event) => {
                     }
                 })
             );
+
+            // 2. Precache compiled Vite assets directly from manifest
+            try {
+                const manifestRes = await fetch('/build/manifest.json');
+                if (manifestRes.ok) {
+                    await cache.put('/build/manifest.json', manifestRes.clone());
+                    const manifest = await manifestRes.json();
+                    const viteAssetUrls = [];
+                    for (const key in manifest) {
+                        if (manifest[key].file) {
+                            viteAssetUrls.push('/build/' + manifest[key].file);
+                        }
+                        if (Array.isArray(manifest[key].css)) {
+                            manifest[key].css.forEach(cssFile => {
+                                viteAssetUrls.push('/build/' + cssFile);
+                            });
+                        }
+                    }
+                    await Promise.allSettled(
+                        viteAssetUrls.map(async (assetUrl) => {
+                            try {
+                                const aRes = await fetch(assetUrl);
+                                if (aRes.ok) {
+                                    await cache.put(assetUrl, aRes);
+                                }
+                            } catch (e) {
+                                console.warn('Failed to precache Vite asset:', assetUrl, e);
+                            }
+                        })
+                    );
+                }
+            } catch (mErr) {
+                console.warn('Could not precache Vite manifest assets:', mErr);
+            }
         }).then(() => self.skipWaiting())
     );
 });
@@ -99,10 +142,31 @@ self.addEventListener('fetch', (event) => {
                         if (dashMatch) return dashMatch;
                     }
 
-                    // 4. Fallback ke shell yang tersedia jika URL belum pernah di-cache
+                    // 4. Jika sub-halaman kalender, katalog, obat, atau steps
+                    if (reqUrl.pathname.startsWith('/kalender-hst')) {
+                        const hstMatch = await caches.match('/kalender-hst');
+                        if (hstMatch) return hstMatch;
+                    }
+                    if (reqUrl.pathname.startsWith('/kalender-hss')) {
+                        const hssMatch = await caches.match('/kalender-hss');
+                        if (hssMatch) return hssMatch;
+                    }
+                    if (reqUrl.pathname.startsWith('/tanaman-katalog')) {
+                        const katMatch = await caches.match('/tanaman-katalog');
+                        if (katMatch) return katMatch;
+                    }
+                    if (reqUrl.pathname.startsWith('/data-obat') || reqUrl.pathname.startsWith('/stok-obat')) {
+                        const obatMatch = await caches.match('/data-obat');
+                        if (obatMatch) return obatMatch;
+                    }
+                    if (reqUrl.pathname.startsWith('/steps')) {
+                        const stepMatch = await caches.match('/steps');
+                        if (stepMatch) return stepMatch;
+                    }
+
+                    // 5. Fallback ke shell yang tersedia jika URL belum pernah di-cache
                     return (await caches.match('/dashboard'))
-                        || (await caches.match('/steps/pengolahan-tanah'))
-                        || (await caches.match('/steps/penanaman-bibit'))
+                        || (await caches.match('/tanaman-aktif'))
                         || (await caches.match('/kalender-hst'))
                         || (await caches.match('/data-obat'))
                         || (await caches.match('/keuangan'));

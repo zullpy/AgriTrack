@@ -17,7 +17,7 @@ class FonnteService
     public function __construct(
         protected MedicineStockService $stockService
     ) {
-        $this->storagePath = app()->environment('testing')
+        $this->storagePath = (app()->runningUnitTests() || app()->environment('testing'))
             ? storage_path('app/fonnte_testing.json')
             : storage_path('app/fonnte.json');
     }
@@ -59,9 +59,10 @@ class FonnteService
             }
         }
 
-        $envToken = ! app()->environment('testing') ? env('FONNTE_TOKEN') : null;
-        $envPhone = ! app()->environment('testing') ? env('FONNTE_TARGET_PHONE') : null;
-        $envEnabled = ! app()->environment('testing') ? env('FONNTE_ENABLED') : null;
+        $isTesting = app()->runningUnitTests() || app()->environment('testing');
+        $envToken = ! $isTesting ? env('FONNTE_TOKEN') : null;
+        $envPhone = ! $isTesting ? env('FONNTE_TARGET_PHONE') : null;
+        $envEnabled = ! $isTesting ? env('FONNTE_ENABLED') : null;
 
         $token = ! empty($envToken) ? $envToken : ($saved['token'] ?? config('services.fonnte.token') ?? '');
         $phone = ! empty($envPhone) ? $envPhone : ($saved['target_phone'] ?? config('services.fonnte.target_phone') ?? '');
@@ -116,7 +117,7 @@ class FonnteService
      */
     public function writeToEnv(array $values): bool
     {
-        if (app()->environment('testing')) {
+        if (app()->runningUnitTests() || app()->environment('testing')) {
             return true;
         }
 

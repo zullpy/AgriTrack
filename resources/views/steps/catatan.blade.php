@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Catatan Penting Budidaya')
+@section('title', 'Informasi Penting Pertanian')
 
 @section('content')
 <div class="w-full max-w-full min-w-0 overflow-x-hidden space-y-6">
@@ -9,15 +9,12 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-gray-200">
         <div>
             <nav class="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                <a href="/steps" class="hover:text-emerald-700 transition-colors font-medium">Tahapan</a>
+                <a href="/dashboard" class="hover:text-emerald-700 transition-colors font-medium">Dashboard</a>
                 <span>/</span>
-                <span class="text-emerald-700 font-semibold">Catatan Penting</span>
+                <span class="text-emerald-700 font-semibold">Informasi Penting Pertanian</span>
             </nav>
             <div class="flex items-center gap-2.5 flex-wrap">
-                <h1 class="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">Catatan Penting Budidaya</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    Fase 3: Aturan Lapangan
-                </span>
+                <h1 class="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">Informasi Penting Pertanian</h1>
                 <span id="notes-counter" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
                     {{ count($notes) }} Catatan Tersimpan
                 </span>
@@ -35,22 +32,6 @@
                 <span>Tambah Catatan</span>
             </button>
         </div>
-    </div>
-
-    {{-- ── Quick Navigation Tabs ── --}}
-    <div class="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit max-w-full overflow-x-auto no-scrollbar">
-        <a href="/steps/pengolahan-tanah"
-           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
-            1. Pengolahan Tanah
-        </a>
-        <a href="/steps/penanaman-bibit"
-           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
-            2. Penanaman Bibit
-        </a>
-        <a href="/steps/catatan"
-           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-emerald-800 shadow-xs whitespace-nowrap transition-all">
-            3. Catatan Penting
-        </a>
     </div>
 
     {{-- ── Filter / Search Bar ── --}}
@@ -149,7 +130,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.53-4h7.5m-7.5-4h3.75m-6.75-6.75H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                     </svg>
                 </div>
-                <h3 class="text-sm sm:text-base font-bold text-gray-900">Belum Ada Catatan Penting</h3>
+                <h3 class="text-sm sm:text-base font-bold text-gray-900">Belum Ada Informasi Penting</h3>
                 <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto">Tambahkan instruksi teknis, aturan semprot, atau panduan khusus untuk membantu budidaya tanaman Anda.</p>
                 <button type="button"
                         onclick="openAddNoteModal()"
@@ -171,14 +152,14 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- MODAL 1: TAMBAH CATATAN PENTING                              --}}
+{{-- MODAL 1: TAMBAH INFORMASI PENTING                            --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="modal-add-note" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-200 max-h-[92vh] flex flex-col overflow-hidden">
         {{-- Header Modal (Fixed / Diam tidak ikut ter-scroll) --}}
         <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 bg-white shrink-0">
             <div>
-                <h3 class="text-base font-bold text-gray-900">Tambah Catatan Penting</h3>
+                <h3 class="text-base font-bold text-gray-900">Tambah Informasi Penting</h3>
                 <p class="text-xs text-gray-500 mt-0.5">Simpan panduan, aturan semprot, atau anjuran budidaya</p>
             </div>
             <button type="button"
@@ -192,7 +173,7 @@
         </div>
 
         {{-- Form & Body --}}
-        <form action="{{ route('steps.catatan.store') }}" method="POST" class="flex-1 flex flex-col min-h-0">
+        <form id="form-add-note" action="{{ route('steps.catatan.store') }}" method="POST" class="flex-1 flex flex-col min-h-0">
             @csrf
 
             <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-4">
@@ -240,14 +221,14 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- MODAL 2: EDIT CATATAN PENTING                                --}}
+{{-- MODAL 2: EDIT INFORMASI PENTING                              --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="modal-edit-note" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-200 max-h-[92vh] flex flex-col overflow-hidden">
         {{-- Header Modal (Fixed / Diam tidak ikut ter-scroll) --}}
         <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 bg-white shrink-0">
             <div>
-                <h3 class="text-base font-bold text-gray-900">Edit Catatan Penting</h3>
+                <h3 class="text-base font-bold text-gray-900">Edit Informasi Penting</h3>
                 <p class="text-xs text-gray-500 mt-0.5">Perbarui informasi atau instruksi budidaya</p>
             </div>
             <button type="button"
@@ -362,19 +343,303 @@
 
         form.action = `/steps/catatan/${id}`;
 
+        const handleDeleteConfirmed = async () => {
+            const card = document.getElementById('note-card-' + id);
+            if (card) {
+                card.style.transition = 'all 0.3s ease';
+                card.style.opacity = '0.4';
+                card.style.pointerEvents = 'none';
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            try {
+                const fd = new FormData();
+                fd.append('_token', csrfToken);
+                fd.append('_method', 'DELETE');
+
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-HTTP-Method-Override': 'DELETE'
+                    },
+                    body: fd
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result && result.success !== false) {
+                    if (card) {
+                        card.style.transform = 'scale(0.95)';
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.remove();
+                            const totalCards = document.querySelectorAll('.note-card').length;
+                            const counter = document.getElementById('visible-notes-count');
+                            if (counter) counter.textContent = totalCards;
+                            const notesCounter = document.getElementById('notes-counter');
+                            if (notesCounter) notesCounter.textContent = totalCards + ' Catatan Tersimpan';
+
+                            if (totalCards === 0) {
+                                const grid = document.getElementById('notes-grid');
+                                if (grid) {
+                                    grid.innerHTML = `
+                                        <div id="empty-notes-placeholder" class="col-span-full py-12 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.53-4h7.5m-7.5-4h3.75m-6.75-6.75H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                                </svg>
+                                            </div>
+                                            <h3 class="text-sm sm:text-base font-bold text-gray-900">Belum Ada Informasi Penting</h3>
+                                            <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto">Tambahkan instruksi teknis, aturan semprot, atau panduan khusus untuk membantu budidaya tanaman Anda.</p>
+                                            <button type="button"
+                                                    onclick="openAddNoteModal()"
+                                                    class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer">
+                                                + Buat Catatan Pertama
+                                            </button>
+                                        </div>
+                                    `;
+                                }
+                            }
+                        }, 300);
+                    }
+                    if (window.AgriSwal) {
+                        AgriSwal.toastSuccess(result.message || 'Catatan berhasil dihapus.');
+                    }
+                } else {
+                    if (card) {
+                        card.style.opacity = '1';
+                        card.style.pointerEvents = 'auto';
+                    }
+                    if (window.AgriSwal) {
+                        AgriSwal.toastError(result?.message || 'Gagal menghapus catatan.');
+                    }
+                }
+            } catch (err) {
+                console.warn('Network error during delete note:', err);
+                if (card) {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                }
+                if (window.AgriSwal) {
+                    AgriSwal.toastError('Gagal menghapus catatan. Periksa koneksi.');
+                }
+            }
+        };
+
         if (window.AgriSwal && typeof window.AgriSwal.confirmDelete === 'function') {
             window.AgriSwal.confirmDelete(
                 'Hapus Catatan Ini?',
                 title,
-                () => form.submit()
+                handleDeleteConfirmed
             );
             return;
         }
 
-        if (confirm(`Hapus catatan "${title}"?`)) {
-            form.submit();
+        handleDeleteConfirmed();
+    }
+
+    function createNoteCardElement(note) {
+        const safeJudul = escapeHtml(note.judul);
+        const safeCatatan = escapeHtml(note.catatan).replace(/\n/g, '<br>');
+        const noteJson = JSON.stringify(note).replace(/"/g, '&quot;');
+        const safeJudulJs = (note.judul || '').replace(/'/g, "\\'");
+
+        const div = document.createElement('div');
+        div.className = 'note-card bg-surface rounded-2xl border border-gray-200 p-5 shadow-xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between group';
+        div.id = `note-card-${note.id}`;
+        div.setAttribute('data-title', (note.judul || '').toLowerCase());
+        div.setAttribute('data-content', (note.catatan || '').toLowerCase());
+
+        div.innerHTML = `
+            <div>
+                <div class="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
+                    <div class="flex items-start gap-3 min-w-0">
+                        <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                            </svg>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 class="note-title text-sm sm:text-base font-bold text-gray-900 group-hover:text-emerald-900 transition-colors leading-snug">
+                                ${safeJudul}
+                            </h3>
+                            <span class="text-[10px] text-gray-400 mt-0.5 block">
+                                Baru saja
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button type="button"
+                                onclick="openEditNoteModal(${noteJson})"
+                                title="Edit Catatan"
+                                class="btn-edit-note p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                            </svg>
+                        </button>
+
+                        <button type="button"
+                                onclick="confirmDeleteNote(${note.id}, '${safeJudulJs}')"
+                                title="Hapus Catatan"
+                                class="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="note-body text-xs sm:text-sm text-gray-700 mt-3.5 leading-relaxed whitespace-pre-line">
+                    ${safeCatatan}
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                <span class="flex items-center gap-1 text-emerald-700 font-medium">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>SOP Terverifikasi</span>
+                </span>
+                <span>Tersimpan di Sistem</span>
+            </div>
+        `;
+        return div;
+    }
+
+    function updateNoteCardElement(note) {
+        const card = document.getElementById(`note-card-${note.id}`);
+        if (!card) return;
+        card.setAttribute('data-title', (note.judul || '').toLowerCase());
+        card.setAttribute('data-content', (note.catatan || '').toLowerCase());
+
+        const titleEl = card.querySelector('.note-title') || card.querySelector('h3');
+        if (titleEl) titleEl.textContent = note.judul;
+
+        const bodyEl = card.querySelector('.note-body') || card.querySelector('.whitespace-pre-line');
+        if (bodyEl) bodyEl.innerHTML = escapeHtml(note.catatan).replace(/\n/g, '<br>');
+
+        const editBtn = card.querySelector('.btn-edit-note') || card.querySelector('button[title="Edit Catatan"]');
+        if (editBtn) {
+            editBtn.setAttribute('onclick', `openEditNoteModal(${JSON.stringify(note).replace(/"/g, '&quot;')})`);
         }
     }
+
+    // ── AJAX Form Submission (Zero Full Page Refresh, Inline Errors) ──
+    document.addEventListener('DOMContentLoaded', () => {
+        const formAddNote = document.getElementById('form-add-note');
+        if (formAddNote) {
+            formAddNote.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                AgriFormHelper.clearErrors(formAddNote);
+
+                const submitBtn = formAddNote.querySelector('button[type="submit"]');
+                AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
+                const fd = new FormData(formAddNote);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                try {
+                    const response = await fetch(formAddNote.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: fd
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.status === 422 && result && result.errors) {
+                        AgriFormHelper.showErrors(formAddNote, result.errors);
+                        AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                    } else if (response.ok && result && result.success !== false) {
+                        closeModal('modal-add-note');
+                        formAddNote.reset();
+
+                        if (result.note) {
+                            const placeholder = document.getElementById('empty-notes-placeholder');
+                            if (placeholder) placeholder.remove();
+
+                            const grid = document.getElementById('notes-grid');
+                            if (grid) {
+                                const newCard = createNoteCardElement(result.note);
+                                grid.prepend(newCard);
+                            }
+                            const totalCards = document.querySelectorAll('.note-card').length;
+                            const counter = document.getElementById('visible-notes-count');
+                            if (counter) counter.textContent = totalCards;
+                            const notesCounter = document.getElementById('notes-counter');
+                            if (notesCounter) notesCounter.textContent = totalCards + ' Catatan Tersimpan';
+                        }
+
+                        AgriSwal.toastSuccess(result.message || 'Catatan berhasil ditambahkan!');
+                    } else {
+                        AgriSwal.toastError(result?.message || 'Gagal menyimpan catatan.');
+                    }
+                } catch (err) {
+                    console.warn('Network error on add note:', err);
+                    AgriSwal.toastError('Gagal menyimpan. Periksa koneksi Anda.');
+                } finally {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
+            });
+        }
+
+        const formEditNote = document.getElementById('form-edit-note');
+        if (formEditNote) {
+            formEditNote.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                AgriFormHelper.clearErrors(formEditNote);
+
+                const submitBtn = formEditNote.querySelector('button[type="submit"]');
+                AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
+                const fd = new FormData(formEditNote);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                try {
+                    const response = await fetch(formEditNote.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: fd
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.status === 422 && result && result.errors) {
+                        AgriFormHelper.showErrors(formEditNote, result.errors);
+                        AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                    } else if (response.ok && result && result.success !== false) {
+                        closeModal('modal-edit-note');
+
+                        if (result.note) {
+                            updateNoteCardElement(result.note);
+                        }
+
+                        AgriSwal.toastSuccess(result.message || 'Catatan berhasil diperbarui!');
+                    } else {
+                        AgriSwal.toastError(result?.message || 'Gagal memperbarui catatan.');
+                    }
+                } catch (err) {
+                    console.warn('Network error on edit note:', err);
+                    AgriSwal.toastError('Gagal memperbarui. Periksa koneksi Anda.');
+                } finally {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
+            });
+        }
+    });
 
     function filterNotesList(query) {
         const q = (query || '').toLowerCase().trim();

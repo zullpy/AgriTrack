@@ -15,7 +15,7 @@ class StepNoteTest extends TestCase
         $response = $this->get('/steps/catatan');
 
         $response->assertStatus(200);
-        $response->assertSee('Catatan Penting Budidaya');
+        $response->assertSee('Informasi Penting Pertanian');
     }
 
     public function test_can_store_new_catatan(): void

@@ -306,22 +306,20 @@
     @else
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             @foreach ($activeCrops as $crop)
-                <div class="bg-surface rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col justify-between">
+                <div id="crop-card-{{ $crop->id }}" class="bg-surface rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col justify-between">
                     <div>
                         {{-- Card Header --}}
                         <div class="flex items-start justify-between gap-4 pb-4 border-b border-gray-100">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-emerald-50/80 border border-emerald-100/80 text-xl flex items-center justify-center shrink-0 select-none">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50/80 border border-emerald-100/80 text-xl flex items-center justify-center shrink-0 select-none" data-crop-emoji-id="{{ $crop->id }}">
                                     {{ $crop->emoji }}
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2">
-                                        <h3 class="text-lg font-bold text-text">{{ $crop->nama_tanaman }}</h3>
-                                        @if ($crop->varietas)
-                                            <span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-text-secondary">
-                                                {{ $crop->varietas }}
-                                            </span>
-                                        @endif
+                                        <h3 class="text-lg font-bold text-text" data-crop-name-id="{{ $crop->id }}">{{ $crop->nama_tanaman }}</h3>
+                                        <span id="crop-varietas-{{ $crop->id }}" class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-text-secondary {{ $crop->varietas ? '' : 'hidden' }}">
+                                            {{ $crop->varietas ?? '' }}
+                                        </span>
                                     </div>
                                     <p class="text-xs text-text-secondary mt-1 flex items-center gap-1.5">
                                         <svg class="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -416,6 +414,7 @@
 
                                 <div class="flex items-center gap-1 shrink-0">
                                     <button type="button"
+                                            id="btn-edit-crop-{{ $crop->id }}"
                                             onclick="openEditCropModal({{ $crop->id }}, '{{ addslashes($crop->nama_tanaman) }}', '{{ addslashes($crop->varietas ?? '') }}', '{{ addslashes($crop->populasi ?? '') }}', '{{ $crop->tanggal_tanam->toDateString() }}', `{{ addslashes($crop->catatan ?? '') }}`, '{{ $crop->tipe ?? ($isHss ? "hss" : "hst") }}', '{{ addslashes($crop->emoji) }}')"
                                             title="Edit data tanaman"
                                             class="p-2 rounded-xl border border-gray-200 text-text-secondary hover:text-text hover:bg-gray-50 transition-all shadow-xs">
@@ -619,7 +618,7 @@
                     $doneActivities = $crop->activities->where('status', 'Selesai')->count();
                     $totalActivities = $crop->activities->count();
                 @endphp
-                <div class="bg-surface rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col justify-between">
+                <div id="harvested-crop-card-{{ $crop->id }}" class="bg-surface rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col justify-between">
                     <div>
                         {{-- Card Header --}}
                         <div class="flex items-start justify-between gap-4 pb-4 border-b border-gray-100">
@@ -1026,7 +1025,7 @@
             </button>
         </div>
 
-        <form method="POST" action="/kalender-hst/tanaman" class="space-y-4">
+        <form id="form-tambah-tanaman" method="POST" action="/kalender-hst/tanaman" class="space-y-4">
             @csrf
             <input type="hidden" name="tipe" value="{{ $isHss ? 'hss' : 'hst' }}">
 
@@ -1789,11 +1788,11 @@
                     window.AgriSwal.toastSuccess(data.message || 'Pengaturan berhasil disimpan');
                 } else if (window.Swal) {
                     Swal.fire({ icon: 'success', title: 'Berhasil', text: data.message });
-                } else {
-                    alert(data.message);
                 }
             } else {
-                alert(data.message || 'Gagal menyimpan pengaturan');
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastError(data.message || 'Gagal menyimpan pengaturan');
+                }
             }
         })
         .catch(err => {
@@ -1801,7 +1800,9 @@
                 btn.disabled = false;
                 btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan Pengaturan`;
             }
-            alert('Terjadi kesalahan saat menyimpan pengaturan.');
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError('Terjadi kesalahan saat menyimpan pengaturan.');
+            }
         });
     }
 
@@ -1812,8 +1813,6 @@
         navigator.clipboard.writeText(input.value).then(() => {
             if (window.AgriSwal) {
                 window.AgriSwal.toastSuccess('Webhook URL berhasil disalin!');
-            } else {
-                alert('Webhook URL berhasil disalin!');
             }
         });
     }
@@ -1845,12 +1844,12 @@
             }
             if (data.success) {
                 if (window.AgriSwal) {
-                    window.AgriSwal.toastSuccess(data.message);
-                } else {
-                    alert(data.message);
+                    window.AgriSwal.toastSuccess(data.message || 'Pesan tes berhasil dikirim!');
                 }
             } else {
-                alert(data.message || 'Gagal mengirim pesan tes');
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastError(data.message || 'Gagal mengirim pesan tes');
+                }
             }
         })
         .catch(() => {
@@ -1858,7 +1857,9 @@
                 btn.disabled = false;
                 btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Kirim Pesan Tes`;
             }
-            alert('Terjadi kesalahan pada server saat mengirim pesan tes.');
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError('Terjadi kesalahan pada server saat mengirim pesan tes.');
+            }
         });
     }
 
@@ -1891,12 +1892,13 @@
             }
             if (data.success) {
                 if (window.AgriSwal) {
-                    window.AgriSwal.toastSuccess(data.message);
-                } else {
-                    alert(data.message);
+                    window.AgriSwal.toastSuccess(data.message || 'Pengingat berhasil dikirim!');
                 }
             } else {
-                alert(data.message || 'Pemberitahuan: ' + (data.result?.message || 'Tidak ada kegiatan atau pesan gagal'));
+                const warnMsg = data.message || 'Pemberitahuan: ' + (data.result?.message || 'Tidak ada kegiatan atau pesan gagal');
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastInfo(warnMsg);
+                }
             }
         })
         .catch(() => {
@@ -1904,8 +1906,365 @@
                 btn.disabled = false;
                 btn.innerHTML = origText;
             }
-            alert('Terjadi kesalahan pada server.');
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError('Terjadi kesalahan pada server.');
+            }
         });
     }
+
+    // ── AJAX CRUD Tanaman (Zero Full Page Refresh, Inline Errors, Offline/Dexie) ──
+    document.addEventListener('DOMContentLoaded', () => {
+        const formAddTanaman = document.getElementById('form-tambah-tanaman');
+        if (formAddTanaman) {
+            formAddTanaman.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                AgriFormHelper.clearErrors(formAddTanaman);
+
+                const submitBtn = formAddTanaman.querySelector('button[type="submit"]');
+                AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
+                const fd = new FormData(formAddTanaman);
+                const dataObj = {
+                    nama_tanaman: (fd.get('nama_tanaman') || '').toString().trim(),
+                    varietas: fd.get('varietas') || '',
+                    populasi: fd.get('populasi') || '',
+                    tanggal_tanam: fd.get('tanggal_tanam') || '',
+                    tipe: fd.get('tipe') || '{{ $isHss ? "hss" : "hst" }}',
+                    emoji: fd.get('emoji') || '🌱'
+                };
+
+                if (!navigator.onLine) {
+                    try {
+                        const localId = await AgriSyncManager.save('crops', dataObj, {
+                            sync_status: 'pending',
+                            sync_action: 'CREATE'
+                        });
+                        closeModal('modal-tambah-tanaman');
+                        formAddTanaman.reset();
+                        AgriSwal.toastSuccess(`Tanaman "${dataObj.nama_tanaman}" disimpan di HP (Mode Offline).`);
+                    } catch (err) {
+                        AgriSwal.toastError('Gagal menyimpan offline: ' + err.message);
+                    } finally {
+                        AgriFormHelper.setLoading(submitBtn, false);
+                    }
+                    return;
+                }
+
+                try {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                    const response = await fetch(formAddTanaman.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: fd
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.status === 422 && result && result.errors) {
+                        AgriFormHelper.showErrors(formAddTanaman, result.errors);
+                        AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                    } else if (response.ok && result && result.success !== false) {
+                        closeModal('modal-tambah-tanaman');
+                        formAddTanaman.reset();
+                        AgriSwal.toastSuccess(result.message || 'Tanaman berhasil ditambahkan!');
+                        const crop = result.crop || {};
+                        if (crop.id) {
+                            await AgriSyncManager.save('crops', crop, { sync_status: 'synced' }).catch(() => {});
+                            setTimeout(() => {
+                                const targetUrl = (crop.tipe === 'hss' || crop.is_hss) ? `/kalender-hss/tanaman/${crop.id}` : `/kalender-hst/tanaman/${crop.id}`;
+                                window.location.href = targetUrl;
+                            }, 500);
+                        }
+                    } else {
+                        AgriSwal.toastError(result?.message || 'Gagal menyimpan tanaman.');
+                    }
+                } catch (err) {
+                    console.warn('Network error, fallback to offline:', err);
+                    await AgriSyncManager.save('crops', dataObj, { sync_status: 'pending', sync_action: 'CREATE' }).catch(() => {});
+                    closeModal('modal-tambah-tanaman');
+                    formAddTanaman.reset();
+                    AgriSwal.toastInfo(`Koneksi terganggu. Tanaman "${dataObj.nama_tanaman}" disimpan di HP.`);
+                } finally {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
+            });
+        }
+
+        const formEditTanaman = document.getElementById('form-edit-tanaman');
+        if (formEditTanaman) {
+            formEditTanaman.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                AgriFormHelper.clearErrors(formEditTanaman);
+
+                const submitBtn = formEditTanaman.querySelector('button[type="submit"]');
+                AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
+                const fd = new FormData(formEditTanaman);
+                const actionUrl = formEditTanaman.getAttribute('action');
+
+                try {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                    const response = await fetch(actionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: fd
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.status === 422 && result && result.errors) {
+                        AgriFormHelper.showErrors(formEditTanaman, result.errors);
+                        AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                    } else if (response.ok && result && result.success !== false) {
+                        closeModal('modal-edit-tanaman');
+                        AgriSwal.toastSuccess(result.message || 'Data tanaman berhasil diperbarui!');
+                        const crop = result.crop || {};
+                        if (crop.id) {
+                            await AgriSyncManager.save('crops', crop, { sync_status: 'synced' }).catch(() => {});
+                            // Update UI elements in page
+                            const nameEl = document.querySelector(`[data-crop-name-id="${crop.id}"]`);
+                            if (nameEl) nameEl.textContent = crop.nama_tanaman;
+                            const varietasEl = document.getElementById(`crop-varietas-${crop.id}`);
+                            if (varietasEl) {
+                                varietasEl.textContent = crop.varietas || '';
+                                if (crop.varietas) varietasEl.classList.remove('hidden');
+                                else varietasEl.classList.add('hidden');
+                            }
+                            const emojiEl = document.querySelector(`[data-crop-emoji-id="${crop.id}"]`);
+                            if (emojiEl && crop.emoji) emojiEl.textContent = crop.emoji;
+                            const editBtn = document.getElementById(`btn-edit-crop-${crop.id}`);
+                            if (editBtn) {
+                                const safeName = (crop.nama_tanaman || '').replace(/'/g, "\\'");
+                                const safeVar = (crop.varietas || '').replace(/'/g, "\\'");
+                                const safePop = (crop.populasi || '').replace(/'/g, "\\'");
+                                const safeDate = crop.tanggal_tanam ? String(crop.tanggal_tanam).substring(0, 10) : '';
+                                const safeCat = (crop.catatan || '').replace(/`/g, "\\`");
+                                const safeType = crop.tipe || 'hst';
+                                const safeEmoji = (crop.emoji || '').replace(/'/g, "\\'");
+                                editBtn.setAttribute('onclick', `openEditCropModal(${crop.id}, '${safeName}', '${safeVar}', '${safePop}', '${safeDate}', \`${safeCat}\`, '${safeType}', '${safeEmoji}')`);
+                            }
+                        }
+                    } else {
+                        AgriSwal.toastError(result?.message || 'Gagal memperbarui tanaman.');
+                    }
+                } catch (err) {
+                    console.warn('Network error on edit tanaman:', err);
+                    AgriSwal.toastError('Gagal memperbarui tanaman. Periksa koneksi Anda.');
+                } finally {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
+            });
+        }
+
+        // Form Tambah Kegiatan Modal
+        const formTambahKegiatan = document.getElementById('form-tambah-kegiatan');
+        if (formTambahKegiatan) {
+            formTambahKegiatan.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = formTambahKegiatan.querySelector('button[type="submit"]');
+                AgriFormHelper.clearErrors(formTambahKegiatan);
+                AgriFormHelper.setLoading(submitBtn, true, 'Menjadwalkan...');
+
+                const fd = new FormData(formTambahKegiatan);
+                const actionUrl = formTambahKegiatan.getAttribute('action');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                try {
+                    const response = await fetch(actionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: fd
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.status === 422 && result && result.errors) {
+                        AgriFormHelper.showErrors(formTambahKegiatan, result.errors);
+                        AgriSwal.toastError('Mohon periksa data kegiatan.');
+                    } else if (response.ok && result && result.success !== false) {
+                        closeModal('modal-tambah-kegiatan');
+                        formTambahKegiatan.reset();
+                        AgriSwal.toastSuccess(result.message || 'Kegiatan berhasil dijadwalkan!');
+                    } else {
+                        AgriSwal.toastError(result?.message || 'Gagal menjadwalkan kegiatan.');
+                    }
+                } catch (err) {
+                    console.warn('Network error on schedule activity:', err);
+                    AgriSwal.toastError('Gagal menjadwalkan kegiatan. Periksa koneksi Anda.');
+                } finally {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
+            });
+        }
+
+        // Form Panen Modal
+        const formPanen = document.getElementById('form-panen');
+        if (formPanen) {
+            formPanen.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = formPanen.querySelector('button[type="submit"]');
+                AgriFormHelper.clearErrors(formPanen);
+                AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
+                const fd = new FormData(formPanen);
+                const actionUrl = formPanen.getAttribute('action');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                try {
+                    const response = await fetch(actionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: fd
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.status === 422 && result && result.errors) {
+                        AgriFormHelper.showErrors(formPanen, result.errors);
+                        AgriSwal.toastError('Mohon periksa data panen.');
+                    } else if (response.ok && result && result.success !== false) {
+                        closeModal('modal-panen');
+                        formPanen.reset();
+                        AgriSwal.toastSuccess(result.message || 'Panen berhasil dicatat!');
+                    } else {
+                        AgriSwal.toastError(result?.message || 'Gagal mencatat panen.');
+                    }
+                } catch (err) {
+                    console.warn('Network error on panen:', err);
+                    AgriSwal.toastError('Gagal mencatat panen. Periksa koneksi Anda.');
+                } finally {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
+            });
+        }
+
+        // Form Akhiri Tanaman Modal
+        const formEndCrop = document.getElementById('form-end-crop');
+        if (formEndCrop) {
+            formEndCrop.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = formEndCrop.querySelector('button[type="submit"]');
+                AgriFormHelper.clearErrors(formEndCrop);
+                AgriFormHelper.setLoading(submitBtn, true, 'Mengakhiri...');
+
+                const fd = new FormData(formEndCrop);
+                const actionUrl = formEndCrop.getAttribute('action');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                try {
+                    const response = await fetch(actionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: fd
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.status === 422 && result && result.errors) {
+                        AgriFormHelper.showErrors(formEndCrop, result.errors);
+                        AgriSwal.toastError('Mohon periksa formulir.');
+                    } else if (response.ok && result && result.success !== false) {
+                        closeModal('modal-end-crop');
+                        formEndCrop.reset();
+                        AgriSwal.toastSuccess(result.message || 'Tanaman berhasil diakhiri.');
+
+                        const cropId = actionUrl.split('/')[3] || (result.crop && result.crop.id);
+                        if (cropId) {
+                            const card = document.getElementById(`crop-card-${cropId}`);
+                            if (card) {
+                                card.style.transition = 'all 0.3s ease-out';
+                                card.style.opacity = '0';
+                                card.style.transform = 'scale(0.95)';
+                                setTimeout(() => card.remove(), 300);
+                            }
+                        }
+                    } else {
+                        AgriSwal.toastError(result?.message || 'Gagal mengakhiri tanaman.');
+                    }
+                } catch (err) {
+                    console.warn('Network error on end crop:', err);
+                    AgriSwal.toastError('Gagal mengakhiri tanaman. Periksa koneksi Anda.');
+                } finally {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
+            });
+        }
+
+        // Form Pindah Tanam Modal
+        const formPindahTanam = document.getElementById('form-pindah-tanam');
+        if (formPindahTanam) {
+            formPindahTanam.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = formPindahTanam.querySelector('button[type="submit"]');
+                AgriFormHelper.clearErrors(formPindahTanam);
+                AgriFormHelper.setLoading(submitBtn, true, 'Memproses...');
+
+                const fd = new FormData(formPindahTanam);
+                const actionUrl = formPindahTanam.getAttribute('action');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                try {
+                    const response = await fetch(actionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: fd
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.status === 422 && result && result.errors) {
+                        AgriFormHelper.showErrors(formPindahTanam, result.errors);
+                        AgriSwal.toastError('Mohon periksa data pindah tanam.');
+                    } else if (response.ok && result && result.success !== false) {
+                        closeModal('modal-pindah-tanam');
+                        formPindahTanam.reset();
+                        AgriSwal.toastSuccess(result.message || 'Bibit semai berhasil dipindahkan ke Kalender HST!');
+
+                        const cropId = actionUrl.split('/')[3] || (result.crop && result.crop.id);
+                        if (cropId) {
+                            const card = document.getElementById(`crop-card-${cropId}`);
+                            if (card) {
+                                card.style.transition = 'all 0.3s ease-out';
+                                card.style.opacity = '0';
+                                card.style.transform = 'scale(0.95)';
+                                setTimeout(() => card.remove(), 300);
+                            }
+                        }
+                    } else {
+                        AgriSwal.toastError(result?.message || 'Gagal memproses pindah tanam.');
+                    }
+                } catch (err) {
+                    console.warn('Network error on pindah tanam:', err);
+                    AgriSwal.toastError('Gagal memproses pindah tanam. Periksa koneksi Anda.');
+                } finally {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
+            });
+        }
+    });
 </script>
 @endpush

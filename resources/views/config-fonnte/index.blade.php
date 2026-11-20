@@ -170,8 +170,8 @@
                     showConfirmButton: false,
                     timer: 2500
                 });
-            } else {
-                alert('URL Webhook berhasil disalin!');
+            } else if (window.AgriSwal) {
+                window.AgriSwal.toastSuccess('URL Webhook berhasil disalin!');
             }
         });
     }
@@ -186,8 +186,6 @@
         if (!token) {
             if (window.AgriSwal && typeof window.AgriSwal.toastError === 'function') {
                 window.AgriSwal.toastError('Token Fonnte tidak boleh kosong.');
-            } else {
-                alert('Token Fonnte tidak boleh kosong.');
             }
             return;
         }
@@ -195,8 +193,6 @@
         if (!target_phone) {
             if (window.AgriSwal && typeof window.AgriSwal.toastError === 'function') {
                 window.AgriSwal.toastError('Nomor WhatsApp tujuan tidak boleh kosong.');
-            } else {
-                alert('Nomor WhatsApp tujuan tidak boleh kosong.');
             }
             return;
         }
@@ -228,11 +224,11 @@
                     window.AgriSwal.toastSuccess(data.message || 'Konfigurasi berhasil disimpan!');
                 } else if (window.Swal) {
                     Swal.fire({ icon: 'success', title: 'Berhasil', text: data.message });
-                } else {
-                    alert(data.message);
                 }
             } else {
-                alert(data.message || 'Gagal menyimpan konfigurasi.');
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastError(data.message || 'Gagal menyimpan konfigurasi.');
+                }
             }
         })
         .catch(err => {
@@ -240,7 +236,9 @@
                 btn.disabled = false;
                 btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> <span>Simpan Konfigurasi</span>`;
             }
-            alert('Terjadi kesalahan saat menyimpan konfigurasi.');
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError('Terjadi kesalahan saat menyimpan konfigurasi.');
+            }
         });
     }
 </script>

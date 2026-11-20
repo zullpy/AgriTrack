@@ -19,6 +19,13 @@ class DatabaseSeeder extends Seeder
             MedicineSeeder::class,
             FinancialCategorySeeder::class,
             StepNoteSeeder::class,
+            PlantCatalogSeeder::class,
+            CropSeeder::class,
+            LandPreparationStepSeeder::class,
+            PlantingSeedSeeder::class,
+            PlantingStepSeeder::class,
+            FertilizerFermentationStepSeeder::class,
+            FinancialTransactionSeeder::class,
         ]);
     }
 }

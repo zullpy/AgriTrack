@@ -200,7 +200,7 @@ class KalenderHstController extends Controller
         ));
     }
 
-    public function storeCrop(Request $request): RedirectResponse
+    public function storeCrop(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'nama_tanaman' => 'required|string|max:255',
@@ -216,7 +216,15 @@ class KalenderHstController extends Controller
         $validated['tipe'] = $isHss ? 'hss' : 'hst';
         $validated['status'] = $isHss ? 'Sedang Disemai' : 'Sedang Ditanam';
 
-        Crop::create($validated);
+        $createdCrop = Crop::create($validated);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $isHss ? 'Data tanaman semai baru berhasil ditambahkan.' : 'Data tanaman baru berhasil ditambahkan.',
+                'crop' => $createdCrop,
+            ], 201);
+        }
 
         if ($isHss) {
             return redirect('/kalender-hss?tab=aktif')->with('success', 'Data tanaman semai baru berhasil ditambahkan.');
@@ -225,7 +233,7 @@ class KalenderHstController extends Controller
         return redirect('/kalender-hst?tab=aktif')->with('success', 'Data tanaman baru berhasil ditambahkan.');
     }
 
-    public function updateCrop(Request $request, Crop $crop): RedirectResponse
+    public function updateCrop(Request $request, Crop $crop): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'nama_tanaman' => 'required|string|max:255',
@@ -241,11 +249,20 @@ class KalenderHstController extends Controller
 
         $label = $crop->is_hss ? 'tanaman semai' : 'tanaman';
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Informasi {$label} berhasil diperbarui.",
+                'crop' => $crop->fresh(),
+            ]);
+        }
+
         return redirect()->back()->with('success', "Informasi {$label} berhasil diperbarui.");
     }
 
-    public function destroyCrop(Request $request, Crop $crop): RedirectResponse
+    public function destroyCrop(Request $request, Crop $crop): RedirectResponse|JsonResponse
     {
+        $id = $crop->id;
         $nama = $crop->nama_tanaman;
         $status = $crop->status;
         $isHss = $crop->is_hss;
@@ -270,13 +287,21 @@ class KalenderHstController extends Controller
             }
         }
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Tanaman {$nama} berhasil dihapus.",
+                'id' => $id,
+            ]);
+        }
+
         $tab = $request->input('redirect_tab') ?? $request->input('tab') ?? (in_array($status, ['Sudah Dipanen', 'Diakhiri', 'Sudah Pindah Tanam']) ? 'riwayat' : 'aktif');
         $base = $isHss ? '/kalender-hss' : '/kalender-hst';
 
         return redirect("{$base}?tab={$tab}")->with('success', "Tanaman {$nama} berhasil dihapus.");
     }
 
-    public function markAsHarvested(Request $request, Crop $crop): RedirectResponse
+    public function markAsHarvested(Request $request, Crop $crop): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'tanggal_panen' => 'required|date|after_or_equal:'.$crop->tanggal_tanam->toDateString(),
@@ -345,6 +370,14 @@ class KalenderHstController extends Controller
             ? "Pencatatan panen bibit / semai untuk tanaman {$crop->nama_tanaman} berhasil dicatat ({$labelHst})."
             : "Panen ke-{$panenKe} untuk tanaman {$crop->nama_tanaman} berhasil dicatat ({$labelHst}).";
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $successMsg,
+                'crop' => $crop->fresh(),
+            ]);
+        }
+
         if ($request->header('referer') && (str_contains($request->header('referer'), '/kalender-hst/tanaman/') || str_contains($request->header('referer'), '/kalender-hss/tanaman/'))) {
             return redirect()->back()->with('success', $successMsg);
         }
@@ -354,7 +387,7 @@ class KalenderHstController extends Controller
         return redirect("{$base}?tab=panen")->with('success', $successMsg.' Data telah dimasukkan ke Riwayat Panen.');
     }
 
-    public function endCrop(Request $request, Crop $crop): RedirectResponse
+    public function endCrop(Request $request, Crop $crop): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'tanggal_akhir' => 'required|date|after_or_equal:'.$crop->tanggal_tanam->toDateString(),
@@ -391,10 +424,18 @@ class KalenderHstController extends Controller
         $labelRiwayat = $crop->is_hss ? 'Riwayat Semai' : 'Riwayat Tanaman';
         $base = $crop->is_hss ? '/kalender-hss' : '/kalender-hst';
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Tanaman {$crop->nama_tanaman} telah diakhiri pada {$labelHari} dan masuk ke {$labelRiwayat}. Seluruh kalender dan log perawatannya tetap tersimpan.",
+                'crop' => $crop->fresh(),
+            ]);
+        }
+
         return redirect("{$base}?tab=riwayat")->with('success', "Tanaman {$crop->nama_tanaman} telah diakhiri pada {$labelHari} dan masuk ke {$labelRiwayat}. Seluruh kalender dan log perawatannya tetap tersimpan.");
     }
 
-    public function pindahTanam(Request $request, Crop $crop): RedirectResponse
+    public function pindahTanam(Request $request, Crop $crop): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'tanggal_tanam' => 'required|date',
@@ -423,6 +464,15 @@ class KalenderHstController extends Controller
             'tipe' => 'hst',
             'catatan' => "Berasal dari bibit semai {$crop->nama_tanaman} (Selesai pada HSS {$totalHss}). ".($validated['catatan'] ?? ''),
         ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Tanaman semai {$crop->nama_tanaman} berhasil dipindahkan ke Riwayat Semai dan kini mulai ditanam di Kalender HST (0 HST)!",
+                'redirect_url' => "/kalender-hst/tanaman/{$newCrop->id}",
+                'new_crop' => $newCrop,
+            ]);
+        }
 
         return redirect("/kalender-hst/tanaman/{$newCrop->id}")
             ->with('success', "Tanaman semai {$crop->nama_tanaman} berhasil dipindahkan ke Riwayat Semai dan kini mulai ditanam di Kalender HST (0 HST)!");
@@ -550,7 +600,7 @@ class KalenderHstController extends Controller
         ));
     }
 
-    public function storeActivity(Request $request, Crop $crop): RedirectResponse
+    public function storeActivity(Request $request, Crop $crop): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
@@ -719,6 +769,14 @@ class KalenderHstController extends Controller
             $msg .= ' • Peringatan: Stok obat berikut melebihi persediaan gudang dan kini tersisa 0: '.implode(', ', array_unique($stockShortages)).'.';
         }
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'activity' => $createdActivity->fresh(),
+            ], 201);
+        }
+
         if ($request->input('redirect_to') === 'show') {
             $basePath = $crop->is_hss ? '/kalender-hss/tanaman/' : '/kalender-hst/tanaman/';
 
@@ -730,7 +788,7 @@ class KalenderHstController extends Controller
         return redirect()->back(fallback: $fallback)->with('success', $msg);
     }
 
-    public function updateActivity(Request $request, CropActivity $activity): RedirectResponse
+    public function updateActivity(Request $request, CropActivity $activity): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
@@ -855,6 +913,14 @@ class KalenderHstController extends Controller
             $msg .= ' • Peringatan: Stok obat berikut melebihi persediaan gudang dan kini tersisa 0: '.implode(', ', array_unique($stockShortages)).'.';
         }
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'activity' => $activity->fresh(),
+            ]);
+        }
+
         return redirect()->back()->with('success', $msg);
     }
 
@@ -938,8 +1004,9 @@ class KalenderHstController extends Controller
             : 'Status kegiatan diubah ke Belum! Stok obat/perlengkapan telah dikembalikan.');
     }
 
-    public function destroyActivity(CropActivity $activity): RedirectResponse
+    public function destroyActivity(Request $request, CropActivity $activity): RedirectResponse|JsonResponse
     {
+        $id = $activity->id;
         if ($activity->stok_dipotong) {
             $this->stockService->restoreForActivity($activity);
         }
@@ -950,6 +1017,14 @@ class KalenderHstController extends Controller
         }
 
         $activity->delete();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Kegiatan perawatan berhasil dihapus dan stok yang pernah dipotong telah dikembalikan.',
+                'id' => $id,
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Kegiatan perawatan berhasil dihapus dan stok yang pernah dipotong telah dikembalikan.');
     }

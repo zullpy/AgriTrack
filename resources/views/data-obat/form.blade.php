@@ -1177,90 +1177,80 @@ window.removeExistingFoto = async function(btn, path, medicineId) {
     }
 
     // Konfirmasi penghapusan permanen file foto
-    let confirmed = false;
-    if (window.Swal) {
-        const result = await Swal.fire({
-            title: 'Hapus foto ini?',
-            text: 'File foto dan data tersimpan akan langsung dihapus dari server.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Ya, Hapus File!',
-            cancelButtonText: 'Batal',
-            reverseButtons: true,
-        });
-        confirmed = result.isConfirmed;
-    } else {
-        confirmed = confirm('Yakin ingin menghapus file foto ini dari server?');
-    }
+    const executeDelete = async () => {
+        btn.disabled = true;
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<svg class="w-4 h-4 animate-spin text-red-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>';
 
-    if (!confirmed) return;
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                || document.querySelector('input[name="_token"]')?.value;
 
-    btn.disabled = true;
-    const origHtml = btn.innerHTML;
-    btn.innerHTML = '<svg class="w-4 h-4 animate-spin text-red-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>';
+            const response = await fetch(`/data-obat/${medicineId}/foto`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ path: path }),
+            });
 
-    try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') 
-            || document.querySelector('input[name="_token"]')?.value;
+            const res = await response.json();
+            if (res.success) {
+                const card = btn.closest('.existing-photo-card');
+                if (card) {
+                    card.style.transition = 'all 0.25s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        card.remove();
+                        const hasExisting = document.querySelectorAll('.existing-photo-card').length > 0;
+                        const previewSection = document.getElementById('foto-preview-section');
+                        if (selectedCompressedFiles.length === 0 && !hasExisting && previewSection) {
+                            previewSection.classList.add('hidden');
+                        }
+                        updatePhotoCountBadge();
+                    }, 250);
+                }
 
-        const response = await fetch(`/data-obat/${medicineId}/foto`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ path: path }),
-        });
-
-        const res = await response.json();
-        if (res.success) {
-            const card = btn.closest('.existing-photo-card');
-            if (card) {
-                card.style.transition = 'all 0.25s ease';
-                card.style.opacity = '0';
-                card.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    card.remove();
-                    const hasExisting = document.querySelectorAll('.existing-photo-card').length > 0;
-                    const previewSection = document.getElementById('foto-preview-section');
-                    if (selectedCompressedFiles.length === 0 && !hasExisting && previewSection) {
-                        previewSection.classList.add('hidden');
-                    }
-                    updatePhotoCountBadge();
-                }, 250);
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastSuccess('File foto berhasil dihapus');
+                } else if (window.Swal) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'File foto berhasil dihapus',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                }
+            } else {
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastError(res.message || 'Gagal menghapus file foto.');
+                } else if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'Perhatian', text: res.message || 'Gagal menghapus file foto.' });
+                }
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
             }
-
-            if (window.Swal) {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: 'File foto berhasil dihapus',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
-            }
-        } else {
+        } catch (err) {
+            console.error('Error menghapus foto:', err);
             if (window.AgriSwal) {
-                window.AgriSwal.toastError(res.message || 'Gagal menghapus file foto.');
+                window.AgriSwal.toastError('Terjadi kesalahan saat menghapus file foto dari server.');
             } else if (window.Swal) {
-                Swal.fire({ icon: 'error', title: 'Perhatian', text: res.message || 'Gagal menghapus file foto.' });
+                Swal.fire({ icon: 'error', title: 'Perhatian', text: 'Terjadi kesalahan saat menghapus file foto dari server.' });
             }
             btn.disabled = false;
             btn.innerHTML = origHtml;
         }
-    } catch (err) {
-        console.error('Error menghapus foto:', err);
-        if (window.AgriSwal) {
-            window.AgriSwal.toastError('Terjadi kesalahan saat menghapus file foto dari server.');
-        } else if (window.Swal) {
-            Swal.fire({ icon: 'error', title: 'Perhatian', text: 'Terjadi kesalahan saat menghapus file foto dari server.' });
-        }
-        btn.disabled = false;
-        btn.innerHTML = origHtml;
+    };
+
+    if (window.AgriSwal && typeof window.AgriSwal.confirmDelete === 'function') {
+        window.AgriSwal.confirmDelete('Hapus Foto Ini?', 'File foto dan data tersimpan akan langsung dihapus dari server.', executeDelete);
+    } else {
+        executeDelete();
     }
 };
 
@@ -2007,8 +1997,6 @@ async function handleQuickAddCategorySubmit(event) {
             const errMsg = json.message || (json.errors ? Object.values(json.errors).flat().join(', ') : 'Gagal menambahkan kategori.');
             if (window.AgriSwal) {
                 window.AgriSwal.toastError(errMsg);
-            } else {
-                alert(errMsg);
             }
         }
     } catch (err) {

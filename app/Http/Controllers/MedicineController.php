@@ -330,6 +330,14 @@ class MedicineController extends Controller
             }
             $msgDetail = ! empty($msgParts) ? ' ('.implode(', ', $msgParts).')' : '';
 
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Obat '{$existing->nama}' berhasil diperbarui{$msgDetail}.",
+                    'medicine' => $existing->fresh(['purchases']),
+                ]);
+            }
+
             return redirect('/data-obat')->with('success', "Obat '{$existing->nama}' berhasil diperbarui{$msgDetail}.");
         }
 
@@ -408,6 +416,14 @@ class MedicineController extends Controller
             }
             $medicine->purchases()->create($p);
             $this->recordPurchaseExpense($medicine, $p);
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Data obat '{$medicine->nama}' berhasil ditambahkan.",
+                'medicine' => $medicine->fresh(['purchases']),
+            ], 201);
         }
 
         return redirect('/data-obat')->with('success', "Data obat '{$medicine->nama}' berhasil ditambahkan.");
@@ -657,13 +673,21 @@ class MedicineController extends Controller
             }
         }
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Data obat berhasil diperbarui.',
+                'medicine' => $medicine->fresh(['purchases']),
+            ]);
+        }
+
         return redirect('/data-obat')->with('success', 'Data obat berhasil diperbarui.');
     }
 
     /**
      * Catat pembelian baru untuk obat yang sudah ada (tambah stok & update harga).
      */
-    public function storePurchase(Request $request, Medicine $medicine): RedirectResponse
+    public function storePurchase(Request $request, Medicine $medicine): RedirectResponse|JsonResponse
     {
         if ($request->has('harga')) {
             $raw = $request->input('harga');
@@ -820,6 +844,14 @@ class MedicineController extends Controller
             ? "Pembelian obat '{$medicine->nama}' berhasil dicatat! Harga diperbarui menjadi Rp ".number_format($cleanHarga, 0, ',', '.')." (tanggal beli: {$tglFormatted}, stok +{$jumlahBeli}, total: {$medicine->stok})."
             : "Pembelian obat '{$medicine->nama}' berhasil dicatat! Harga tetap Rp ".number_format((int) $oldHarga, 0, ',', '.').", tanggal beli diperbarui ke {$tglFormatted} (stok +{$jumlahBeli}, total: {$medicine->stok}).";
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'medicine' => $medicine->fresh(['purchases']),
+            ]);
+        }
+
         return redirect()->back()->with('success', $msg);
     }
 
@@ -837,7 +869,17 @@ class MedicineController extends Controller
             }
         }
 
+        $id = $medicine->id;
+        $nama = $medicine->nama;
         $medicine->delete();
+
+        if (request()->expectsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Obat '{$nama}' berhasil dihapus.",
+                'id' => $id,
+            ]);
+        }
 
         return redirect('/data-obat')->with('success', 'Data obat berhasil dihapus.');
     }
@@ -1375,7 +1417,7 @@ class MedicineController extends Controller
     /**
      * Catat Pembelian Obat Umum (Update stok jika ada, buat baru jika belum)
      */
-    public function storeGeneralPurchase(Request $request): RedirectResponse
+    public function storeGeneralPurchase(Request $request): RedirectResponse|JsonResponse
     {
         if ($request->has('harga')) {
             $raw = $request->input('harga');
@@ -1527,6 +1569,14 @@ class MedicineController extends Controller
                 ? "Pembelian '{$medicine->nama}' berhasil dicatat! Harga diperbarui menjadi Rp ".number_format($cleanHarga, 0, ',', '.')." (tanggal beli: {$tglFormatted}, stok +{$jumlahBeli}, total: {$medicine->stok_label})."
                 : "Pembelian '{$medicine->nama}' berhasil dicatat! Harga tetap Rp ".number_format((int) $oldHarga, 0, ',', '.').", tanggal beli diperbarui ke {$tglFormatted} (stok +{$jumlahBeli}, total: {$medicine->stok_label}).";
 
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $successMsg,
+                    'medicine' => $medicine->fresh(['purchases']),
+                ]);
+            }
+
             return redirect()->back()->with('success', $successMsg);
         }
 
@@ -1584,6 +1634,16 @@ class MedicineController extends Controller
             'foto_nota' => $fotoNotaPath,
         ]);
 
-        return redirect()->back()->with('success', "Obat baru '{$newMedicine->nama}' berhasil disimpan ke Data Obat & stok awal tersimpan ({$newMedicine->stok_label}, Rp ".number_format($cleanHarga, 0, ',', '.').').');
+        $newMsg = "Obat baru '{$newMedicine->nama}' berhasil disimpan ke Data Obat & stok awal tersimpan ({$newMedicine->stok_label}, Rp ".number_format($cleanHarga, 0, ',', '.').').';
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $newMsg,
+                'medicine' => $newMedicine->fresh(['purchases']),
+            ], 201);
+        }
+
+        return redirect()->back()->with('success', $newMsg);
     }
 }

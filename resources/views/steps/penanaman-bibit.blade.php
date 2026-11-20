@@ -29,17 +29,17 @@
 
     {{-- ── Quick Navigation Tabs ── --}}
     <div class="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit max-w-full overflow-x-auto no-scrollbar">
+        <a href="/steps/fermentasi-pupuk"
+           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
+            1. Fermentasi Pupuk
+        </a>
         <a href="/steps/pengolahan-tanah"
            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
-            1. Pengolahan Tanah
+            2. Pengolahan Tanah
         </a>
         <a href="/steps/penanaman-bibit"
            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-emerald-800 shadow-xs whitespace-nowrap transition-all">
-            2. Penanaman Bibit
-        </a>
-        <a href="/steps/catatan"
-           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
-            3. Catatan Penting
+            3. Penanaman Bibit
         </a>
     </div>
 
@@ -226,7 +226,7 @@
                                                 Varietas: {{ $seed->varietas }}
                                             </span>
                                         @endif
-                                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                                        <span id="seed-steps-counter-{{ $seed->id }}" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
                                             {{ $seed->steps->count() }} Langkah SOP
                                         </span>
                                     </div>
@@ -269,9 +269,9 @@
                     </div>
 
                     {{-- Daftar Langkah Di Bawah Bibit Ini --}}
-                    <div class="p-5 sm:p-6 space-y-4">
+                    <div class="p-5 sm:p-6 space-y-4" id="seed-steps-list-{{ $seed->id }}">
                         @forelse($seed->steps as $step)
-                            <div class="p-4 sm:p-5 rounded-2xl border border-gray-200/90 bg-white hover:border-emerald-300 hover:shadow-xs transition-all space-y-3">
+                            <div class="p-4 sm:p-5 rounded-2xl border border-gray-200/90 bg-white hover:border-emerald-300 hover:shadow-xs transition-all space-y-3" id="step-card-{{ $step->id }}">
                                 {{-- Header Langkah --}}
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="flex items-start gap-3">
@@ -1083,7 +1083,43 @@
                     AgriSwal.toastSuccess(`Komoditas bibit "${seedName}" berhasil dihapus secara offline.`);
                 }
                 await renderPlantingDataFromStore();
-            } else {
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            try {
+                const fd = new FormData();
+                fd.append('_token', csrfToken);
+                fd.append('_method', 'DELETE');
+
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-HTTP-Method-Override': 'DELETE'
+                    },
+                    body: fd
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result && result.success !== false) {
+                    if (window.AgriOfflineStore) {
+                        try { await AgriOfflineStore.removeServerSeed(seedId); } catch(e){}
+                    }
+                    if (window.AgriSwal) {
+                        AgriSwal.toastSuccess(result.message || `Komoditas bibit "${seedName}" berhasil dihapus.`);
+                    }
+                    await renderPlantingDataFromStore();
+                } else {
+                    if (window.AgriSwal) {
+                        AgriSwal.toastError(result?.message || 'Gagal menghapus komoditas bibit.');
+                    }
+                }
+            } catch (err) {
+                console.warn('Network error during delete seed:', err);
                 form.submit();
             }
         };
@@ -1097,27 +1133,7 @@
             return;
         }
 
-        if (window.Swal) {
-            Swal.fire({
-                title: 'Hapus Kartu Bibit Ini?',
-                html: `Apakah Anda yakin ingin menghapus <strong>"${seedName}"</strong> beserta seluruh tahapan dan foto dokumentasinya?<br><span class="text-xs text-gray-500">File foto fisik akan dihapus permanen dari server.</span>`,
-                icon: 'warning',
-                iconColor: '#E4574C',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal',
-                reverseButtons: true,
-                confirmButtonColor: '#E4574C',
-                cancelButtonColor: '#6B7280'
-            }).then((res) => {
-                if (res.isConfirmed) handleDeleteSeedConfirmed();
-            });
-            return;
-        }
-
-        if (confirm('Hapus bibit ini beserta seluruh langkah dan foto dokumentasinya?')) {
-            handleDeleteSeedConfirmed();
-        }
+        handleDeleteSeedConfirmed();
     }
 
     // ── Modal Langkah (Step) ──
@@ -1253,7 +1269,54 @@
                     AgriSwal.toastSuccess(`Langkah nomor ${nomor} ("${judul}") berhasil dihapus secara offline.`);
                 }
                 await renderPlantingDataFromStore();
-            } else {
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            try {
+                const fd = new FormData();
+                fd.append('_token', csrfToken);
+                fd.append('_method', 'DELETE');
+
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-HTTP-Method-Override': 'DELETE'
+                    },
+                    body: fd
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result && result.success !== false) {
+                    if (window.AgriOfflineStore) {
+                        try { await AgriOfflineStore.removeServerPlantingStep(stepId); } catch(e){}
+                    }
+                    const card = document.getElementById('step-card-' + stepId);
+                    if (card) {
+                        const list = card.closest('[id^="seed-steps-list-"]');
+                        card.remove();
+                        if (list) {
+                            const seedId = list.id.replace('seed-steps-list-', '');
+                            const counter = document.getElementById('seed-steps-counter-' + seedId);
+                            const remaining = list.querySelectorAll('[id^="step-card-"]').length;
+                            if (counter) counter.textContent = remaining + ' Langkah SOP';
+                        }
+                    }
+                    if (window.AgriSwal) {
+                        AgriSwal.toastSuccess(result.message || 'Langkah berhasil dihapus.');
+                    }
+                    await renderPlantingDataFromStore();
+                } else {
+                    if (window.AgriSwal) {
+                        AgriSwal.toastError(result?.message || 'Gagal menghapus langkah.');
+                    }
+                }
+            } catch (err) {
+                console.warn('Network error during delete step:', err);
                 form.submit();
             }
         };
@@ -1267,27 +1330,7 @@
             return;
         }
 
-        if (window.Swal) {
-            Swal.fire({
-                title: 'Hapus Tahapan Ini?',
-                html: `Apakah Anda yakin ingin menghapus <strong>Langkah ${nomor}: "${judul}"</strong> beserta seluruh foto dokumentasinya?<br><span class="text-xs text-gray-500">File foto fisik akan dihapus permanen dari server.</span>`,
-                icon: 'warning',
-                iconColor: '#E4574C',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal',
-                reverseButtons: true,
-                confirmButtonColor: '#E4574C',
-                cancelButtonColor: '#6B7280'
-            }).then((res) => {
-                if (res.isConfirmed) handleDeleteStepConfirmed();
-            });
-            return;
-        }
-
-        if (confirm(`Hapus langkah nomor ${nomor} ("${judul}")?`)) {
-            handleDeleteStepConfirmed();
-        }
+        handleDeleteStepConfirmed();
     }
 
     // ── Modal Tambah Foto Cepat ──
@@ -1373,6 +1416,84 @@
         openModal('modal-view-step-photos');
     }
 
+    function executeDeleteStepPhoto(form, btn) {
+        const itemEl = btn.closest('.group\\/photo') || btn.closest('.relative');
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+
+        const formData = new FormData(form);
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(async (res) => {
+            if (!res.ok) {
+                let msg = 'Gagal menghapus foto.';
+                try {
+                    const d = await res.json();
+                    if (d && d.message) msg = d.message;
+                } catch(e) {}
+                throw new Error(msg);
+            }
+            return res.json();
+        })
+        .then((data) => {
+            if (data && data.step && window.AgriOfflineStore) {
+                AgriOfflineStore.cachePlantingData([{
+                    id: data.step.planting_seed_id,
+                    steps: [data.step]
+                }]);
+            }
+            if (typeof renderPlantingDataFromStore === 'function') {
+                renderPlantingDataFromStore();
+            }
+            if (itemEl) {
+                itemEl.style.transition = 'all 0.25s ease';
+                itemEl.style.opacity = '0';
+                itemEl.style.transform = 'scale(0.85)';
+                setTimeout(() => {
+                    itemEl.remove();
+                    const grid = document.getElementById('view-photos-grid');
+                    const remaining = grid ? grid.querySelectorAll('img').length : 0;
+                    const subtitle = document.getElementById('view-photos-subtitle');
+                    if (subtitle) {
+                        subtitle.textContent = remaining + ' foto dokumentasi tersimpan';
+                    }
+                    if (remaining === 0 && grid) {
+                        grid.innerHTML = `
+                            <div class="col-span-full py-10 text-center text-gray-400">
+                                <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                                </svg>
+                                <p class="text-xs font-semibold text-gray-600">Belum ada foto dokumentasi untuk tahapan ini</p>
+                            </div>
+                        `;
+                    }
+                }, 250);
+            }
+            if (window.AgriSwal) {
+                AgriSwal.toastSuccess('Foto berhasil dihapus');
+            } else if (window.Swal) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Foto berhasil dihapus',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        })
+        .catch((err) => {
+            console.error('AJAX delete failed, fallback to form.submit():', err);
+            form.submit();
+        });
+    }
+
     function confirmDeleteStepPhoto(btn) {
         const form = btn.closest('form');
         if (!form) return;
@@ -1392,7 +1513,7 @@
                 closeModal('modal-view-step-photos');
                 await renderPlantingDataFromStore();
             } else {
-                form.submit();
+                executeDeleteStepPhoto(form, btn);
             }
         };
 
@@ -1405,27 +1526,7 @@
             return;
         }
 
-        if (window.Swal) {
-            Swal.fire({
-                title: 'Hapus Foto Dokumentasi?',
-                html: 'Apakah Anda yakin ingin menghapus foto dokumentasi ini?<br><span class="text-xs text-gray-500">File fisik foto akan dihapus permanen dari server penyimpanan.</span>',
-                icon: 'warning',
-                iconColor: '#E4574C',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal',
-                reverseButtons: true,
-                confirmButtonColor: '#E4574C',
-                cancelButtonColor: '#6B7280'
-            }).then((result) => {
-                if (result.isConfirmed) doDeletePhoto();
-            });
-            return;
-        }
-
-        if (confirm('Hapus foto ini dari dokumentasi tahapan?')) {
-            doDeletePhoto();
-        }
+        doDeletePhoto();
     }
 
     // ── Lightbox ──
@@ -1570,7 +1671,9 @@
     function validateQuickPhotoSubmit() {
         const items = window.previewStore ? (window.previewStore['quick-photo-preview'] || []) : [];
         if (items.length === 0) {
-            if (window.Swal) {
+            if (window.AgriSwal) {
+                AgriSwal.alert('Foto Belum Dipilih', 'Silakan pilih dari galeri atau jepret foto dokumentasi terlebih dahulu.', 'warning');
+            } else if (window.Swal) {
                 Swal.fire({
                     icon: 'warning',
                     iconColor: '#D97706',
@@ -1579,8 +1682,6 @@
                     confirmButtonText: 'Mengerti',
                     confirmButtonColor: '#059669'
                 });
-            } else {
-                alert('Silakan pilih atau jepret foto dokumentasi terlebih dahulu.');
             }
             return false;
         }
@@ -1607,7 +1708,23 @@
     async function renderPlantingDataFromStore() {
         if (!window.AgriOfflineStore) return;
         const seeds = await AgriOfflineStore.getAllPlantingSeedsWithSteps();
-        if (!seeds || seeds.length === 0) return;
+        if (!seeds || seeds.length === 0) {
+            const counter = document.getElementById('seeds-counter');
+            if (counter) counter.textContent = '0 Komoditas Bibit';
+            const grid = document.getElementById('seeds-grid');
+            if (grid) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-surface rounded-2xl border border-gray-200 p-12 text-center text-gray-500 shadow-xs">
+                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                        </svg>
+                        <h3 class="text-base font-bold text-gray-800">Belum Ada Komoditas Bibit</h3>
+                        <p class="text-xs text-gray-500 mt-1 max-w-md mx-auto">Klik tombol "+ Tambah Bibit Baru" di atas untuk menambahkan panduan SOP pembibitan pertama Anda.</p>
+                    </div>
+                `;
+            }
+            return;
+        }
 
         // 1. Update counter
         const counter = document.getElementById('seeds-counter');
@@ -1926,23 +2043,74 @@
     const addSeedForm = document.getElementById('form-add-seed');
     if (addSeedForm) {
         addSeedForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            AgriFormHelper.clearErrors(addSeedForm);
+            const submitBtn = addSeedForm.querySelector('button[type="submit"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
+            const formData = new FormData(addSeedForm);
+            const data = {
+                nama_bibit: formData.get('nama_bibit') || 'Bibit Baru',
+                varietas: formData.get('varietas') || '',
+                deskripsi: formData.get('deskripsi') || ''
+            };
+
             if (!navigator.onLine) {
-                e.preventDefault();
-                const formData = new FormData(addSeedForm);
-                const data = {
-                    nama_bibit: formData.get('nama_bibit') || 'Bibit Baru',
-                    varietas: formData.get('varietas') || '',
-                    deskripsi: formData.get('deskripsi') || ''
-                };
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.addPlantingSeedOffline(data);
                 }
                 closeModal('modal-add-seed');
                 addSeedForm.reset();
+                AgriFormHelper.setLoading(submitBtn, false);
                 if (window.AgriSwal) {
                     AgriSwal.toastSuccess(`Komoditas bibit "${data.nama_bibit}" berhasil disimpan di HP (Mode Offline).`);
                 }
                 await renderPlantingDataFromStore();
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch(addSeedForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.status === 422 && result && result.errors) {
+                    AgriFormHelper.showErrors(addSeedForm, result.errors);
+                    AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                } else if (response.ok && result && result.success !== false) {
+                    if (window.AgriOfflineStore && result.seed) {
+                        await AgriOfflineStore.putServerSeed(result.seed);
+                    }
+                    closeModal('modal-add-seed');
+                    addSeedForm.reset();
+                    AgriSwal.toastSuccess(result.message || 'Komoditas bibit berhasil ditambahkan!');
+                    await renderPlantingDataFromStore();
+                    if (result.seed && result.seed.id) {
+                        openSeedDetail(result.seed.id);
+                    }
+                } else {
+                    AgriSwal.toastError(result?.message || 'Gagal menyimpan komoditas bibit.');
+                }
+            } catch (err) {
+                console.warn('Network error, fallback to offline:', err);
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.addPlantingSeedOffline(data);
+                }
+                closeModal('modal-add-seed');
+                addSeedForm.reset();
+                AgriSwal.toastInfo(`Koneksi terganggu. Bibit "${data.nama_bibit}" disimpan di HP.`);
+                await renderPlantingDataFromStore();
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }
@@ -1951,27 +2119,75 @@
     const editSeedForm = document.getElementById('form-edit-seed');
     if (editSeedForm) {
         editSeedForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            AgriFormHelper.clearErrors(editSeedForm);
+            const submitBtn = editSeedForm.querySelector('button[type="submit"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
             const actionUrl = editSeedForm.getAttribute('action') || '';
             const parts = actionUrl.split('/');
             const seedId = parts[parts.length - 1];
 
+            const formData = new FormData(editSeedForm);
+            const data = {
+                nama_bibit: formData.get('nama_bibit') || '',
+                varietas: formData.get('varietas') || '',
+                deskripsi: formData.get('deskripsi') || ''
+            };
+
             if (!navigator.onLine || String(seedId).startsWith('offline_')) {
-                e.preventDefault();
-                const formData = new FormData(editSeedForm);
-                const data = {
-                    nama_bibit: formData.get('nama_bibit') || '',
-                    varietas: formData.get('varietas') || '',
-                    deskripsi: formData.get('deskripsi') || ''
-                };
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.updatePlantingSeedOffline(seedId, data);
                 }
                 closeModal('modal-edit-seed');
                 editSeedForm.reset();
+                AgriFormHelper.setLoading(submitBtn, false);
                 if (window.AgriSwal) {
                     AgriSwal.toastSuccess(`Perubahan komoditas bibit "${data.nama_bibit}" berhasil disimpan di HP (Mode Offline).`);
                 }
                 await renderPlantingDataFromStore();
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.status === 422 && result && result.errors) {
+                    AgriFormHelper.showErrors(editSeedForm, result.errors);
+                    AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                } else if (response.ok && result && result.success !== false) {
+                    if (window.AgriOfflineStore && result.seed) {
+                        await AgriOfflineStore.putServerSeed(result.seed);
+                    }
+                    closeModal('modal-edit-seed');
+                    editSeedForm.reset();
+                    AgriSwal.toastSuccess(result.message || 'Komoditas bibit berhasil diperbarui!');
+                    await renderPlantingDataFromStore();
+                } else {
+                    AgriSwal.toastError(result?.message || 'Gagal memperbarui komoditas bibit.');
+                }
+            } catch (err) {
+                console.warn('Network error on edit seed:', err);
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.updatePlantingSeedOffline(seedId, data);
+                }
+                closeModal('modal-edit-seed');
+                editSeedForm.reset();
+                AgriSwal.toastInfo(`Koneksi terganggu. Perubahan bibit "${data.nama_bibit}" disimpan di HP.`);
+                await renderPlantingDataFromStore();
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }
@@ -1980,41 +2196,90 @@
     const addPlantingStepForm = document.getElementById('form-add-step');
     if (addPlantingStepForm) {
         addPlantingStepForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            AgriFormHelper.clearErrors(addPlantingStepForm);
+            const submitBtn = addPlantingStepForm.querySelector('button[type="submit"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
             const actionUrl = addPlantingStepForm.getAttribute('action') || '';
             const parts = actionUrl.split('/');
-            // /steps/penanaman-bibit/seeds/{seed}/steps -> seedId is parts[parts.length - 2]
             const seedId = parts[parts.length - 2];
 
+            const formData = new FormData(addPlantingStepForm);
+            const photosBase64 = [];
+            const items = window.previewStore ? (window.previewStore['add-step-preview'] || []) : [];
+            items.forEach(item => {
+                if (item.url) photosBase64.push(item.url);
+            });
+
+            const data = {
+                planting_seed_id: seedId,
+                nomor: formData.get('nomor') || '1',
+                judul: formData.get('judul') || 'Langkah Baru',
+                waktu: formData.get('waktu') || null,
+                deskripsi: formData.get('deskripsi') || '-',
+                tips: formData.get('tips') || null,
+                photos_base64: photosBase64
+            };
+
             if (!navigator.onLine || String(seedId).startsWith('offline_')) {
-                e.preventDefault();
-                const formData = new FormData(addPlantingStepForm);
-                const photosBase64 = [];
-                const items = window.previewStore ? (window.previewStore['add-step-preview'] || []) : [];
-                items.forEach(item => {
-                    if (item.url) photosBase64.push(item.url);
-                });
-
-                const data = {
-                    planting_seed_id: seedId,
-                    nomor: formData.get('nomor') || '1',
-                    judul: formData.get('judul') || 'Langkah Baru',
-                    waktu: formData.get('waktu') || null,
-                    deskripsi: formData.get('deskripsi') || '-',
-                    tips: formData.get('tips') || null,
-                    photos_base64: photosBase64
-                };
-
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.addPlantingStepOffline(seedId, data);
                 }
                 closeModal('modal-add-step');
                 addPlantingStepForm.reset();
                 clearAllPreviewFiles('add-step-preview');
+                AgriFormHelper.setLoading(submitBtn, false);
                 if (window.AgriSwal) {
                     AgriSwal.toastSuccess(`Langkah nomor ${data.nomor} ("${data.judul}") berhasil disimpan di HP (Mode Offline).`);
                 }
                 await renderPlantingDataFromStore();
                 openSeedDetail(seedId);
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.status === 422 && result && result.errors) {
+                    AgriFormHelper.showErrors(addPlantingStepForm, result.errors);
+                    AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                } else if (response.ok && result && result.success !== false) {
+                    if (window.AgriOfflineStore && result.step) {
+                        await AgriOfflineStore.putServerPlantingStep(result.step);
+                    }
+                    closeModal('modal-add-step');
+                    addPlantingStepForm.reset();
+                    clearAllPreviewFiles('add-step-preview');
+                    AgriSwal.toastSuccess(result.message || 'Langkah berhasil ditambahkan!');
+                    await renderPlantingDataFromStore();
+                    openSeedDetail(seedId);
+                } else {
+                    AgriSwal.toastError(result?.message || 'Gagal menyimpan langkah.');
+                }
+            } catch (err) {
+                console.warn('Network error, fallback to offline:', err);
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.addPlantingStepOffline(seedId, data);
+                }
+                closeModal('modal-add-step');
+                addPlantingStepForm.reset();
+                clearAllPreviewFiles('add-step-preview');
+                AgriSwal.toastInfo(`Koneksi terganggu. Langkah nomor ${data.nomor} disimpan di HP.`);
+                await renderPlantingDataFromStore();
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }
@@ -2023,44 +2288,93 @@
     const editPlantingStepForm = document.getElementById('form-edit-step');
     if (editPlantingStepForm) {
         editPlantingStepForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            AgriFormHelper.clearErrors(editPlantingStepForm);
+            const submitBtn = editPlantingStepForm.querySelector('button[type="submit"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
             const actionUrl = editPlantingStepForm.getAttribute('action') || '';
             const parts = actionUrl.split('/');
             const stepId = parts[parts.length - 1];
 
+            const formData = new FormData(editPlantingStepForm);
+            const photosBase64 = [];
+            const items = window.previewStore ? (window.previewStore['edit-step-preview'] || []) : [];
+            items.forEach(item => {
+                if (item.url) photosBase64.push(item.url);
+            });
+
+            const deletedPhotos = [];
+            editPlantingStepForm.querySelectorAll('input[name="deleted_photos[]"]').forEach(inp => {
+                if (inp.value) deletedPhotos.push(inp.value);
+            });
+
+            const data = {
+                nomor: formData.get('nomor') || '1',
+                judul: formData.get('judul') || 'Langkah Baru',
+                waktu: formData.get('waktu') || null,
+                deskripsi: formData.get('deskripsi') || '-',
+                tips: formData.get('tips') || null,
+                deleted_photos: deletedPhotos,
+                photos_base64: photosBase64
+            };
+
             if (!navigator.onLine || String(stepId).startsWith('offline_')) {
-                e.preventDefault();
-                const formData = new FormData(editPlantingStepForm);
-                const photosBase64 = [];
-                const items = window.previewStore ? (window.previewStore['edit-step-preview'] || []) : [];
-                items.forEach(item => {
-                    if (item.url) photosBase64.push(item.url);
-                });
-
-                const deletedPhotos = [];
-                editPlantingStepForm.querySelectorAll('input[name="deleted_photos[]"]').forEach(inp => {
-                    if (inp.value) deletedPhotos.push(inp.value);
-                });
-
-                const data = {
-                    nomor: formData.get('nomor') || '1',
-                    judul: formData.get('judul') || 'Langkah Baru',
-                    waktu: formData.get('waktu') || null,
-                    deskripsi: formData.get('deskripsi') || '-',
-                    tips: formData.get('tips') || null,
-                    deleted_photos: deletedPhotos,
-                    photos_base64: photosBase64
-                };
-
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.updatePlantingStepOffline(stepId, data);
                 }
                 closeModal('modal-edit-step');
                 editPlantingStepForm.reset();
                 clearAllPreviewFiles('edit-step-preview');
+                AgriFormHelper.setLoading(submitBtn, false);
                 if (window.AgriSwal) {
                     AgriSwal.toastSuccess(`Perubahan langkah nomor ${data.nomor} berhasil disimpan di HP (Mode Offline).`);
                 }
                 await renderPlantingDataFromStore();
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.status === 422 && result && result.errors) {
+                    AgriFormHelper.showErrors(editPlantingStepForm, result.errors);
+                    AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                } else if (response.ok && result && result.success !== false) {
+                    if (window.AgriOfflineStore && result.step) {
+                        await AgriOfflineStore.putServerPlantingStep(result.step);
+                    }
+                    closeModal('modal-edit-step');
+                    editPlantingStepForm.reset();
+                    clearAllPreviewFiles('edit-step-preview');
+                    AgriSwal.toastSuccess(result.message || 'Langkah berhasil diperbarui!');
+                    await renderPlantingDataFromStore();
+                } else {
+                    AgriSwal.toastError(result?.message || 'Gagal memperbarui langkah.');
+                }
+            } catch (err) {
+                console.warn('Network error on edit step:', err);
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.updatePlantingStepOffline(stepId, data);
+                }
+                closeModal('modal-edit-step');
+                editPlantingStepForm.reset();
+                clearAllPreviewFiles('edit-step-preview');
+                AgriSwal.toastInfo(`Koneksi terganggu. Perubahan langkah nomor ${data.nomor} disimpan di HP.`);
+                await renderPlantingDataFromStore();
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }
@@ -2069,21 +2383,71 @@
     const quickPhotoStepForm = document.getElementById('form-quick-photo');
     if (quickPhotoStepForm) {
         quickPhotoStepForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!validateQuickPhotoSubmit()) return;
+
+            const submitBtn = quickPhotoStepForm.querySelector('button[type="submit"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Mengunggah...');
+
             const actionUrl = quickPhotoStepForm.getAttribute('action') || '';
             const parts = actionUrl.split('/');
             // /steps/penanaman-bibit/steps/{step}/foto -> stepId is parts[parts.length - 2]
             const stepId = parts[parts.length - 2];
 
-            if (!navigator.onLine || String(stepId).startsWith('offline_')) {
-                e.preventDefault();
-                if (!validateQuickPhotoSubmit()) return;
+            const photosBase64 = [];
+            const items = window.previewStore ? (window.previewStore['quick-photo-preview'] || []) : [];
+            items.forEach(item => {
+                if (item.url) photosBase64.push(item.url);
+            });
 
-                const photosBase64 = [];
-                const items = window.previewStore ? (window.previewStore['quick-photo-preview'] || []) : [];
-                items.forEach(item => {
-                    if (item.url) photosBase64.push(item.url);
+            if (!navigator.onLine || String(stepId).startsWith('offline_')) {
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.uploadPlantingStepPhotosOffline(stepId, photosBase64);
+                }
+                closeModal('modal-quick-photo');
+                quickPhotoStepForm.reset();
+                clearAllPreviewFiles('quick-photo-preview');
+                AgriFormHelper.setLoading(submitBtn, false);
+                if (window.AgriSwal) {
+                    AgriSwal.toastSuccess(`${photosBase64.length} foto berhasil ditambahkan ke langkah di HP (Mode Offline).`);
+                }
+                await renderPlantingDataFromStore();
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const formData = new FormData(quickPhotoStepForm);
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
                 });
 
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result && result.success !== false) {
+                    if (window.AgriOfflineStore && result.step) {
+                        await AgriOfflineStore.putServerPlantingStep(result.step);
+                    }
+                    closeModal('modal-quick-photo');
+                    quickPhotoStepForm.reset();
+                    clearAllPreviewFiles('quick-photo-preview');
+                    if (window.AgriSwal) {
+                        AgriSwal.toastSuccess(result.message || 'Foto dokumentasi berhasil diunggah!');
+                    }
+                    await renderPlantingDataFromStore();
+                } else {
+                    if (window.AgriSwal) {
+                        AgriSwal.toastError(result?.message || 'Gagal mengunggah foto.');
+                    }
+                }
+            } catch (err) {
+                console.warn('Network error on quick photo, fallback to offline:', err);
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.uploadPlantingStepPhotosOffline(stepId, photosBase64);
                 }
@@ -2091,9 +2455,11 @@
                 quickPhotoStepForm.reset();
                 clearAllPreviewFiles('quick-photo-preview');
                 if (window.AgriSwal) {
-                    AgriSwal.toastSuccess(`${photosBase64.length} foto berhasil ditambahkan ke langkah di HP (Mode Offline).`);
+                    AgriSwal.toastInfo('Koneksi terganggu. Foto dokumentasi disimpan di HP.');
                 }
                 await renderPlantingDataFromStore();
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }

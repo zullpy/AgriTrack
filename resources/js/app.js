@@ -1,9 +1,13 @@
 import 'sweetalert2/dist/sweetalert2.min.css';
 import Swal from 'sweetalert2';
 import { offlineStore } from './offline-store.js';
+import { agriDb, AgriFormHelper, AgriSyncManager } from './agri-db.js';
 
 window.Swal = Swal;
 window.AgriOfflineStore = offlineStore;
+window.agriDb = agriDb;
+window.AgriFormHelper = AgriFormHelper;
+window.AgriSyncManager = AgriSyncManager;
 
 // AgriTrack SweetAlert Custom Theme Preset
 window.AgriSwal = {
@@ -90,6 +94,70 @@ window.AgriSwal = {
                 title: 'agri-swal-toast-title'
             }
         });
+    },
+
+    alert: function(title, message, icon = 'info') {
+        const isError = icon === 'error';
+        const isSuccess = icon === 'success';
+        return Swal.fire({
+            title: title || (isError ? 'Terjadi Kesalahan' : (isSuccess ? 'Berhasil' : 'Pemberitahuan')),
+            html: message,
+            icon: icon,
+            iconColor: isError ? '#E4574C' : (isSuccess ? '#2FB344' : '#059669'),
+            confirmButtonText: 'Mengerti',
+            buttonsStyling: false,
+            customClass: {
+                popup: 'agri-swal-popup',
+                title: 'agri-swal-title',
+                htmlContainer: 'agri-swal-html',
+                confirmButton: isError ? 'agri-swal-btn-danger' : 'agri-swal-btn-primary',
+                actions: 'agri-swal-actions'
+            }
+        });
+    },
+
+    alertSuccess: function(title, message) {
+        return this.alert(title, message, 'success');
+    },
+
+    alertError: function(title, message) {
+        return this.alert(title, message, 'error');
+    },
+
+    confirm: function(title, message, onConfirm, confirmText = 'Lanjutkan', isDanger = false) {
+        return Swal.fire({
+            title: title || 'Konfirmasi Tindakan',
+            html: message,
+            icon: isDanger ? 'warning' : 'question',
+            iconColor: isDanger ? '#E4574C' : '#059669',
+            showCancelButton: true,
+            confirmButtonText: confirmText,
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+            focusCancel: true,
+            buttonsStyling: false,
+            customClass: {
+                popup: 'agri-swal-popup',
+                title: 'agri-swal-title',
+                htmlContainer: 'agri-swal-html',
+                confirmButton: isDanger ? 'agri-swal-btn-danger' : 'agri-swal-btn-primary',
+                cancelButton: 'agri-swal-btn-cancel',
+                actions: 'agri-swal-actions',
+                icon: isDanger ? 'agri-swal-icon-warning' : 'agri-swal-icon-question'
+            }
+        }).then((result) => {
+            if (result.isConfirmed && typeof onConfirm === 'function') {
+                onConfirm();
+            }
+            return result;
+        });
+    }
+};
+
+// Global native alert override to guarantee consistent SweetAlert theme across all scripts
+window.alert = function(message) {
+    if (window.AgriSwal && typeof window.AgriSwal.toastInfo === 'function') {
+        window.AgriSwal.toastInfo(String(message));
     }
 };
 
@@ -175,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 4. Global Delete confirmation with offline support
+    // 4. Global Delete confirmation with AJAX & offline support (Zero Full Page Refresh)
     document.addEventListener('submit', async (e) => {
         const form = e.target.closest('form[data-confirm-delete]');
         if (!form) return;
@@ -186,107 +254,219 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         e.preventDefault();
         const itemName = form.dataset.confirmDelete || 'data ini';
-        const title = form.dataset.confirmTitle || 'Hapus Data Obat?';
+        const title = form.dataset.confirmTitle || 'Hapus Data?';
 
         AgriSwal.confirmDelete(title, itemName, async () => {
-            if (!navigator.onLine) {
-                // Offline deletion
-                const actionUrl = form.getAttribute('action') || '';
-                const parts = actionUrl.split('/');
-                const id = parseInt(parts[parts.length - 1]);
+            const actionUrl = form.getAttribute('action') || '';
+            const parts = actionUrl.split('/');
+            const id = parseInt(parts[parts.length - 1], 10);
+            const row = form.closest('tr, .divide-y > div, .grid > div, [data-row-id], .card-item');
 
+            if (row) {
+                row.style.transition = 'all 0.3s ease';
+                row.style.opacity = '0.4';
+                row.style.pointerEvents = 'none';
+            }
+
+            if (!navigator.onLine) {
+                // Offline deletion in Dexie
                 await offlineStore.deleteMedicineOffline(id);
                 AgriSwal.toastSuccess(`"${itemName}" dihapus secara offline.`);
 
-                // Visually remove row or card
-                const row = form.closest('tr, .divide-y > div');
                 if (row) {
-                    row.style.opacity = '0.3';
-                    row.style.pointerEvents = 'none';
-                    setTimeout(() => row.remove(), 400);
+                    row.style.transform = 'scale(0.95)';
+                    row.style.opacity = '0';
+                    setTimeout(() => row.remove(), 300);
                 }
                 const p = await offlineStore.getPendingCount();
                 updateConnectionBadges('offline', p);
             } else {
-                form.dataset.confirmed = 'true';
-                form.submit();
+                // Online deletion via AJAX (No page reload)
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                try {
+                    const response = await fetch(actionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ _method: 'DELETE' })
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (response.ok && result && result.success !== false) {
+                        AgriSwal.toastSuccess(result.message || `"${itemName}" berhasil dihapus.`);
+                        if (row) {
+                            row.style.transform = 'scale(0.95)';
+                            row.style.opacity = '0';
+                            setTimeout(() => row.remove(), 300);
+                        }
+                        if (id) {
+                            await agriDb.medicines.where('server_id').equals(id).delete().catch(() => {});
+                            await agriDb.crops.where('server_id').equals(id).delete().catch(() => {});
+                        }
+                    } else {
+                        if (row) {
+                            row.style.opacity = '1';
+                            row.style.pointerEvents = 'auto';
+                        }
+                        AgriSwal.toastError(result?.message || 'Gagal menghapus data.');
+                    }
+                } catch (err) {
+                    console.warn('Network error during online delete, fallback to offline:', err);
+                    await offlineStore.deleteMedicineOffline(id);
+                    AgriSwal.toastSuccess(`"${itemName}" dihapus secara offline.`);
+                    if (row) {
+                        row.style.transform = 'scale(0.95)';
+                        row.style.opacity = '0';
+                        setTimeout(() => row.remove(), 300);
+                    }
+                    const p = await offlineStore.getPendingCount();
+                    updateConnectionBadges('offline', p);
+                }
             }
         });
     });
 
-    // 5. Intercept medicine create/edit forms when offline
+    // 5. Intercept medicine create/edit forms with AJAX (Zero Full Page Refresh, Inline Errors, Loading State)
     const medicineForm = document.querySelector('form#form-medicine');
     if (medicineForm) {
         medicineForm.addEventListener('submit', async (e) => {
-            if (!navigator.onLine) {
-                e.preventDefault();
+            e.preventDefault();
+            AgriFormHelper.clearErrors(medicineForm);
 
-                const formData = new FormData(medicineForm);
-                const rawHarga = (formData.get('harga') || '').toString().replace(/\D/g, '');
+            const submitBtn = medicineForm.querySelector('button[type="submit"]') || document.querySelector('button[form="form-medicine"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan Obat...');
 
-                // Kumpulkan foto dalam format base64 agar tersimpan di IndexedDB saat offline
-                const photosBase64 = [];
-                if (window.selectedCompressedFiles && window.selectedCompressedFiles.length > 0) {
-                    for (const item of window.selectedCompressedFiles) {
-                        if (item.dataUrl) {
-                            photosBase64.push(item.dataUrl);
-                        } else if (item.file) {
-                            const b64 = await new Promise((res) => {
-                                const r = new FileReader();
-                                r.onload = () => res(r.result);
-                                r.onerror = () => res(null);
-                                r.readAsDataURL(item.file);
-                            });
-                            if (b64) photosBase64.push(b64);
-                        }
-                    }
-                } else {
-                    const fileInput = document.getElementById('foto_nota');
-                    if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                        for (let i = 0; i < fileInput.files.length; i++) {
-                            const f = fileInput.files[i];
-                            const b64 = await new Promise((res) => {
-                                const r = new FileReader();
-                                r.onload = () => res(r.result);
-                                r.onerror = () => res(null);
-                                r.readAsDataURL(f);
-                            });
-                            if (b64) photosBase64.push(b64);
-                        }
+            const formData = new FormData(medicineForm);
+            const nama = (formData.get('nama') || '').toString().trim();
+            if (!nama) {
+                AgriFormHelper.showErrors(medicineForm, { nama: ['Nama obat wajib diisi.'] });
+                AgriFormHelper.setLoading(submitBtn, false);
+                return;
+            }
+
+            const rawHarga = (formData.get('harga') || '').toString().replace(/\D/g, '');
+            const actionUrl = medicineForm.getAttribute('action') || '';
+            const methodField = medicineForm.querySelector('input[name="_method"]');
+            const isEdit = methodField && methodField.value.toUpperCase() === 'PUT';
+
+            // Kumpulkan foto dalam format base64
+            const photosBase64 = [];
+            if (window.selectedCompressedFiles && window.selectedCompressedFiles.length > 0) {
+                for (const item of window.selectedCompressedFiles) {
+                    if (item.dataUrl) {
+                        photosBase64.push(item.dataUrl);
+                    } else if (item.file) {
+                        const b64 = await new Promise((res) => {
+                            const r = new FileReader();
+                            r.onload = () => res(r.result);
+                            r.onerror = () => res(null);
+                            r.readAsDataURL(item.file);
+                        });
+                        if (b64) photosBase64.push(b64);
                     }
                 }
+            } else {
+                const fileInput = document.getElementById('foto_nota');
+                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        const f = fileInput.files[i];
+                        const b64 = await new Promise((res) => {
+                            const r = new FileReader();
+                            r.onload = () => res(r.result);
+                            r.onerror = () => res(null);
+                            r.readAsDataURL(f);
+                        });
+                        if (b64) photosBase64.push(b64);
+                    }
+                }
+            }
 
-                const data = {
-                    nama: formData.get('nama') || '',
-                    jenis: formData.get('jenis') || 'Fungisida',
-                    cara_kerja: formData.get('cara_kerja') || null,
-                    sasaran_obat: formData.get('sasaran_obat') || '',
-                    tanaman_sasaran: formData.get('tanaman_sasaran') || '',
-                    dosis_anjuran: formData.get('dosis_anjuran') || '',
-                    harga: rawHarga !== '' ? parseInt(rawHarga, 10) : null,
-                    unsur_bahan: formData.get('unsur_bahan') || '',
-                    fase: formData.get('fase') || null,
-                    keterangan: formData.get('keterangan') || '',
-                    tanggal_beli: formData.get('tanggal_beli') || null,
-                    toko_obat: formData.get('toko_obat') || '',
-                    photos_base64: photosBase64
-                };
+            const dataObj = {
+                nama,
+                jenis: formData.get('jenis') || 'Fungisida',
+                cara_kerja: formData.get('cara_kerja') || null,
+                sasaran_obat: formData.get('sasaran_obat') || '',
+                tanaman_sasaran: formData.get('tanaman_sasaran') || '',
+                dosis_anjuran: formData.get('dosis_anjuran') || '',
+                harga: rawHarga !== '' ? parseInt(rawHarga, 10) : null,
+                unsur_bahan: formData.get('unsur_bahan') || '',
+                fase: formData.get('fase') || null,
+                keterangan: formData.get('keterangan') || '',
+                tanggal_beli: formData.get('tanggal_beli') || null,
+                toko_obat: formData.get('toko_obat') || '',
+                photos_base64: photosBase64
+            };
 
-                const methodField = medicineForm.querySelector('input[name="_method"]');
-                const isEdit = methodField && methodField.value.toUpperCase() === 'PUT';
-                const actionUrl = medicineForm.getAttribute('action') || '';
-
+            if (!navigator.onLine) {
+                // Offline save directly to Dexie
                 if (isEdit) {
                     const parts = actionUrl.split('/');
-                    const id = parseInt(parts[parts.length - 1]);
-                    await offlineStore.updateMedicineOffline(id, data);
-                    sessionStorage.setItem('agri_offline_flash', `Perubahan "${data.nama}" tersimpan di perangkat (Mode Offline).`);
+                    const id = parseInt(parts[parts.length - 1], 10);
+                    await offlineStore.updateMedicineOffline(id, dataObj);
+                    AgriSwal.toastSuccess(`Perubahan "${nama}" tersimpan di perangkat (Mode Offline).`);
                 } else {
-                    await offlineStore.addMedicineOffline(data);
-                    sessionStorage.setItem('agri_offline_flash', `Obat "${data.nama}" tersimpan di perangkat (Mode Offline).`);
+                    await offlineStore.addMedicineOffline(dataObj);
+                    AgriSwal.toastSuccess(`Obat "${nama}" berhasil disimpan di perangkat (Mode Offline).`);
                 }
+                AgriFormHelper.setLoading(submitBtn, false);
+                const p = await offlineStore.getPendingCount();
+                updateConnectionBadges('offline', p);
+                return;
+            }
 
-                window.location.href = '/data-obat';
+            // Online submit via AJAX JSON
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result && result.success !== false) {
+                    AgriSwal.toastSuccess(result.message || 'Obat berhasil disimpan!');
+                    // Cache to Dexie with synced status
+                    const med = result.medicine || result.data || {};
+                    if (med.id) {
+                        await AgriSyncManager.save('medicines', med, { sync_status: 'synced' }).catch(() => {});
+                    }
+                    if (!isEdit) {
+                        medicineForm.reset();
+                        if (window.selectedCompressedFiles) window.selectedCompressedFiles = [];
+                        const preview = document.getElementById('preview-container');
+                        if (preview) preview.innerHTML = '';
+                    }
+                } else if (response.status === 422 && result && result.errors) {
+                    AgriFormHelper.showErrors(medicineForm, result.errors);
+                    AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                } else {
+                    AgriSwal.toastError(result?.message || 'Gagal menyimpan obat.');
+                }
+            } catch (err) {
+                console.warn('Network error during online submit, fallback to offline:', err);
+                if (isEdit) {
+                    const parts = actionUrl.split('/');
+                    const id = parseInt(parts[parts.length - 1], 10);
+                    await offlineStore.updateMedicineOffline(id, dataObj);
+                } else {
+                    await offlineStore.addMedicineOffline(dataObj);
+                }
+                AgriSwal.toastInfo(`Koneksi terganggu. Data "${nama}" tersimpan di perangkat secara offline.`);
+                const p = await offlineStore.getPendingCount();
+                updateConnectionBadges('offline', p);
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }

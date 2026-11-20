@@ -4801,8 +4801,13 @@
                     formData.set('foto_nota', camInput.files[0]);
                 }
 
+                if (window.AgriFormHelper) window.AgriFormHelper.clearErrors(formCreate);
+
                 const nominalVal = parseInt((formData.get('nominal') || '').toString().replace(/[^0-9]/g, '') || '0', 10);
                 if (nominalVal <= 0) {
+                    if (window.AgriFormHelper) {
+                        window.AgriFormHelper.showErrors(formCreate, { nominal: ['Nominal transaksi harus lebih dari 0.'] });
+                    }
                     notifyError('Nominal harus lebih dari 0');
                     if (submitBtn) {
                         submitBtn.disabled = false;
@@ -4897,6 +4902,9 @@
                     } else {
                         let errorMsg = (data && data.message) ? data.message : `Gagal mencatat transaksi (Status: ${res.status}).`;
                         if (data && data.errors) {
+                            if (window.AgriFormHelper) {
+                                window.AgriFormHelper.showErrors(formCreate, data.errors);
+                            }
                             const firstErr = Object.values(data.errors)[0];
                             if (Array.isArray(firstErr)) errorMsg = firstErr[0];
                         }
@@ -4959,8 +4967,13 @@
                     const formData = new FormData(this);
                     const rawId = currentEditTransaction ? (currentEditTransaction.raw_id || currentEditTransaction.id) : null;
 
+                    if (window.AgriFormHelper) window.AgriFormHelper.clearErrors(formEdit);
+
                     const nominalVal = parseInt((formData.get('nominal') || '').toString().replace(/[^0-9]/g, '') || '0', 10);
                     if (nominalVal <= 0) {
+                        if (window.AgriFormHelper) {
+                            window.AgriFormHelper.showErrors(formEdit, { nominal: ['Nominal transaksi harus lebih dari 0.'] });
+                        }
                         notifyError('Nominal harus lebih dari 0');
                         if (submitBtn) {
                             submitBtn.disabled = false;
@@ -5061,6 +5074,9 @@
                     } else {
                         let errorMsg = (data && data.message) ? data.message : `Gagal memperbarui transaksi (Status: ${res.status}).`;
                         if (data && data.errors) {
+                            if (window.AgriFormHelper) {
+                                window.AgriFormHelper.showErrors(formEdit, data.errors);
+                            }
                             const firstErr = Object.values(data.errors)[0];
                             if (Array.isArray(firstErr)) errorMsg = firstErr[0];
                         }

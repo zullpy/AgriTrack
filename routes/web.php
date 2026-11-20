@@ -12,6 +12,7 @@ use App\Http\Controllers\KeuanganController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\PlantCatalogController;
 use App\Http\Controllers\StepController;
+use App\Http\Controllers\TanamanAktifController;
 use App\Services\FonnteService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +21,18 @@ Route::get('/', function () {
     return redirect('/dashboard');
 });
 
+Route::get('/tanaman-aktif', [TanamanAktifController::class, 'index'])->name('tanaman-aktif.index');
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::post('/tanaman-katalog/update-stage', [PlantCatalogController::class, 'updateStage'])->name('tanaman-katalog.update-stage');
+Route::post('/tanaman-katalog/{tanaman_katalog}/step', [PlantCatalogController::class, 'saveStep'])->name('tanaman-katalog.step.save');
+Route::delete('/tanaman-katalog/{tanaman_katalog}/step', [PlantCatalogController::class, 'deleteStep'])->name('tanaman-katalog.step.delete');
+Route::post('/tanaman-katalog/{tanaman_katalog}/tip', [PlantCatalogController::class, 'saveTip'])->name('tanaman-katalog.tip.save');
+Route::delete('/tanaman-katalog/{tanaman_katalog}/tip', [PlantCatalogController::class, 'deleteTip'])->name('tanaman-katalog.tip.delete');
+Route::post('/tanaman-katalog/{tanaman_katalog}/hama', [PlantCatalogController::class, 'storeHama'])->name('tanaman-katalog.hama.store');
+Route::put('/tanaman-katalog/hama/{hama}', [PlantCatalogController::class, 'updateHama'])->name('tanaman-katalog.hama.update');
+Route::match(['delete', 'post'], '/tanaman-katalog/hama/{hama}', [PlantCatalogController::class, 'destroyHama'])->name('tanaman-katalog.hama.destroy');
+Route::post('/tanaman-katalog/hama/{hama}/foto', [PlantCatalogController::class, 'uploadPhotoHama'])->name('tanaman-katalog.hama.foto.upload');
+Route::delete('/tanaman-katalog/hama/{hama}/foto', [PlantCatalogController::class, 'destroyPhotoHama'])->name('tanaman-katalog.hama.foto.destroy');
 Route::resource('tanaman-katalog', PlantCatalogController::class);
 
 Route::get('/data-obat', [MedicineController::class, 'index']);
@@ -45,21 +57,30 @@ Route::post('/stok-obat/pembelian', [MedicineController::class, 'storeGeneralPur
 
 // Tahapan & Sub-menu
 Route::get('/steps', [StepController::class, 'index'])->name('steps.index');
+
+// Tahapan Fermentasi Pupuk Organik & Kohe
+Route::get('/steps/fermentasi-pupuk', [StepController::class, 'fermentasiPupuk'])->name('steps.fermentasi-pupuk');
+Route::post('/steps/fermentasi-pupuk', [StepController::class, 'storeFermentasiPupuk'])->name('steps.fermentasi-pupuk.store');
+Route::put('/steps/fermentasi-pupuk/{step}', [StepController::class, 'updateFermentasiPupuk'])->name('steps.fermentasi-pupuk.update');
+Route::match(['delete', 'post'], '/steps/fermentasi-pupuk/{step}', [StepController::class, 'destroyFermentasiPupuk'])->name('steps.fermentasi-pupuk.destroy');
+Route::post('/steps/fermentasi-pupuk/{step}/foto', [StepController::class, 'uploadPhotoFermentasiPupuk'])->name('steps.fermentasi-pupuk.foto.upload');
+Route::delete('/steps/fermentasi-pupuk/{step}/foto', [StepController::class, 'destroyPhotoFermentasiPupuk'])->name('steps.fermentasi-pupuk.foto.destroy');
+
 Route::get('/steps/pengolahan-tanah', [StepController::class, 'pengolahanTanah'])->name('steps.pengolahan-tanah');
 Route::post('/steps/pengolahan-tanah', [StepController::class, 'storePengolahanTanah'])->name('steps.pengolahan-tanah.store');
 Route::put('/steps/pengolahan-tanah/{step}', [StepController::class, 'updatePengolahanTanah'])->name('steps.pengolahan-tanah.update');
-Route::delete('/steps/pengolahan-tanah/{step}', [StepController::class, 'destroyPengolahanTanah'])->name('steps.pengolahan-tanah.destroy');
+Route::match(['delete', 'post'], '/steps/pengolahan-tanah/{step}', [StepController::class, 'destroyPengolahanTanah'])->name('steps.pengolahan-tanah.destroy');
 Route::post('/steps/pengolahan-tanah/{step}/foto', [StepController::class, 'uploadPhotoPengolahanTanah'])->name('steps.pengolahan-tanah.foto.upload');
 Route::delete('/steps/pengolahan-tanah/{step}/foto', [StepController::class, 'destroyPhotoPengolahanTanah'])->name('steps.pengolahan-tanah.foto.destroy');
 // Tahapan Penanaman Bibit (Multi-Bibit & SOP Langkah)
 Route::get('/steps/penanaman-bibit', [StepController::class, 'penanamanBibit'])->name('steps.penanaman-bibit');
 Route::post('/steps/penanaman-bibit/seeds', [StepController::class, 'storePlantingSeed'])->name('steps.penanaman-bibit.seeds.store');
 Route::put('/steps/penanaman-bibit/seeds/{seed}', [StepController::class, 'updatePlantingSeed'])->name('steps.penanaman-bibit.seeds.update');
-Route::delete('/steps/penanaman-bibit/seeds/{seed}', [StepController::class, 'destroyPlantingSeed'])->name('steps.penanaman-bibit.seeds.destroy');
+Route::match(['delete', 'post'], '/steps/penanaman-bibit/seeds/{seed}', [StepController::class, 'destroyPlantingSeed'])->name('steps.penanaman-bibit.seeds.destroy');
 
 Route::post('/steps/penanaman-bibit/seeds/{seed}/steps', [StepController::class, 'storePlantingStep'])->name('steps.penanaman-bibit.steps.store');
 Route::put('/steps/penanaman-bibit/steps/{step}', [StepController::class, 'updatePlantingStep'])->name('steps.penanaman-bibit.steps.update');
-Route::delete('/steps/penanaman-bibit/steps/{step}', [StepController::class, 'destroyPlantingStep'])->name('steps.penanaman-bibit.steps.destroy');
+Route::match(['delete', 'post'], '/steps/penanaman-bibit/steps/{step}', [StepController::class, 'destroyPlantingStep'])->name('steps.penanaman-bibit.steps.destroy');
 
 Route::post('/steps/penanaman-bibit/steps/{step}/foto', [StepController::class, 'uploadPhotoPlantingStep'])->name('steps.penanaman-bibit.steps.foto.upload');
 Route::delete('/steps/penanaman-bibit/steps/{step}/foto', [StepController::class, 'destroyPhotoPlantingStep'])->name('steps.penanaman-bibit.steps.foto.destroy');
@@ -68,7 +89,7 @@ Route::delete('/steps/penanaman-bibit/steps/{step}/foto', [StepController::class
 Route::get('/steps/catatan', [StepController::class, 'catatan'])->name('steps.catatan');
 Route::post('/steps/catatan', [StepController::class, 'storeCatatan'])->name('steps.catatan.store');
 Route::put('/steps/catatan/{note}', [StepController::class, 'updateCatatan'])->name('steps.catatan.update');
-Route::delete('/steps/catatan/{note}', [StepController::class, 'destroyCatatan'])->name('steps.catatan.destroy');
+Route::match(['delete', 'post'], '/steps/catatan/{note}', [StepController::class, 'destroyCatatan'])->name('steps.catatan.destroy');
 
 // Keuangan
 Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');
@@ -160,6 +181,7 @@ Route::prefix('api')->group(function () {
     Route::post('/kalender-hst/sync', [KalenderHstSyncController::class, 'sync']);
     Route::get('/keuangan', [KeuanganSyncController::class, 'index']);
     Route::post('/keuangan/sync', [KeuanganSyncController::class, 'sync']);
+    Route::get('/steps/fermentasi-pupuk', [StepSyncController::class, 'getFermentasiPupuk']);
     Route::get('/steps/pengolahan-tanah', [StepSyncController::class, 'getPengolahanTanah']);
     Route::post('/steps/pengolahan-tanah/sync', [StepSyncController::class, 'syncPengolahanTanah']);
     Route::get('/steps/penanaman-bibit', [StepSyncController::class, 'getPenanamanBibit']);

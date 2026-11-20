@@ -18,13 +18,13 @@
         </include>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
+        <env name="APP_ENV" value="testing" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
@@ -32,10 +32,13 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
-        <env name="CLOUDINARY_CLOUD_NAME" value=""/>
-        <env name="CLOUDINARY_API_KEY" value=""/>
-        <env name="CLOUDINARY_API_SECRET" value=""/>
-        <env name="CLOUDINARY_URL" value=""/>
-        <env name="CLOUDINARY_UPLOAD_PRESET" value=""/>
+        <env name="CLOUDINARY_CLOUD_NAME" value="" force="true"/>
+        <env name="CLOUDINARY_API_KEY" value="" force="true"/>
+        <env name="CLOUDINARY_API_SECRET" value="" force="true"/>
+        <env name="CLOUDINARY_URL" value="" force="true"/>
+        <env name="CLOUDINARY_UPLOAD_PRESET" value="" force="true"/>
+        <env name="FONNTE_TOKEN" value="test-fonnte-token-12345" force="true"/>
+        <env name="FONNTE_TARGET_PHONE" value="08123456789" force="true"/>
+        <env name="FONNTE_ENABLED" value="true" force="true"/>
     </php>
 </phpunit>

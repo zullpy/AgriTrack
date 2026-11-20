@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\FertilizerFermentationStep;
 use App\Models\LandPreparationStep;
 use App\Models\PlantingSeed;
 use App\Models\PlantingStep;
@@ -272,6 +273,124 @@ class StepTest extends TestCase
         ]);
 
         $deleteResponse->assertRedirect('/steps/pengolahan-tanah');
+        $step->refresh();
+        $this->assertEmpty($step->foto_urls);
+    }
+
+    public function test_can_delete_photo_pengolahan_tanah_via_json_request(): void
+    {
+        Storage::fake('public');
+        $this->get('/steps/pengolahan-tanah');
+        $step = LandPreparationStep::first();
+
+        $file = UploadedFile::fake()->image('kamera_json.jpg');
+        $this->post("/steps/pengolahan-tanah/{$step->id}/foto", [
+            'foto_kamera' => [$file],
+        ]);
+
+        $step->refresh();
+        $this->assertCount(1, $step->foto_urls);
+        $photoUrl = $step->foto_urls[0];
+
+        $jsonDeleteResponse = $this->deleteJson("/steps/pengolahan-tanah/{$step->id}/foto", [
+            'photo_url' => $photoUrl,
+        ]);
+
+        $jsonDeleteResponse->assertOk();
+        $jsonDeleteResponse->assertJson([
+            'success' => true,
+            'remaining_count' => 0,
+        ]);
+        $step->refresh();
+        $this->assertEmpty($step->foto_urls);
+    }
+
+    public function test_can_view_fermentasi_pupuk_and_auto_seed(): void
+    {
+        $response = $this->get('/steps/fermentasi-pupuk');
+
+        $response->assertStatus(200);
+        $response->assertSee('Tahapan Fermentasi Pupuk Organik');
+        $this->assertDatabaseCount('fertilizer_fermentation_steps', 6);
+    }
+
+    public function test_can_create_new_fertilizer_fermentation_step(): void
+    {
+        $response = $this->post('/steps/fermentasi-pupuk', [
+            'nomor' => '7',
+            'judul' => 'Pengemasan Kompos Dalam Karung Kedap Udara',
+            'waktu' => 'Hari ke-30',
+            'deskripsi' => 'Kemas kompos matang ke dalam karung goni atau karung plastik tebal.',
+            'tips' => 'Jauhkan dari sinar matahari langsung.',
+        ]);
+
+        $response->assertRedirect('/steps/fermentasi-pupuk');
+        $this->assertDatabaseHas('fertilizer_fermentation_steps', [
+            'nomor' => '7',
+            'judul' => 'Pengemasan Kompos Dalam Karung Kedap Udara',
+        ]);
+    }
+
+    public function test_can_update_fertilizer_fermentation_step(): void
+    {
+        $this->get('/steps/fermentasi-pupuk');
+        $step = FertilizerFermentationStep::where('nomor', '1')->first();
+
+        $response = $this->put("/steps/fermentasi-pupuk/{$step->id}", [
+            'nomor' => '1',
+            'judul' => 'Persiapan Bahan Baku Kohe Diperbarui',
+            'waktu' => 'Hari ke-1',
+            'deskripsi' => 'Deskripsi fermentasi yang disunting.',
+            'tips' => 'Tips terbaru.',
+        ]);
+
+        $response->assertRedirect('/steps/fermentasi-pupuk');
+        $this->assertDatabaseHas('fertilizer_fermentation_steps', [
+            'id' => $step->id,
+            'judul' => 'Persiapan Bahan Baku Kohe Diperbarui',
+        ]);
+    }
+
+    public function test_can_delete_fertilizer_fermentation_step(): void
+    {
+        $this->get('/steps/fermentasi-pupuk');
+        $step = FertilizerFermentationStep::where('nomor', '6')->first();
+
+        $response = $this->delete("/steps/fermentasi-pupuk/{$step->id}");
+
+        $response->assertRedirect('/steps/fermentasi-pupuk');
+        $this->assertDatabaseMissing('fertilizer_fermentation_steps', [
+            'id' => $step->id,
+        ]);
+    }
+
+    public function test_can_upload_and_delete_photo_on_fermentasi_pupuk_standard_and_json(): void
+    {
+        Storage::fake('public');
+        $this->get('/steps/fermentasi-pupuk');
+        $step = FertilizerFermentationStep::first();
+
+        $file = UploadedFile::fake()->image('fermentasi_foto.jpg');
+
+        $this->post("/steps/fermentasi-pupuk/{$step->id}/foto", [
+            'foto_kamera' => [$file],
+        ]);
+
+        $step->refresh();
+        $this->assertCount(1, $step->foto_urls);
+        $photoUrl = $step->foto_urls[0];
+
+        // Test delete via JSON
+        $deleteResponse = $this->deleteJson("/steps/fermentasi-pupuk/{$step->id}/foto", [
+            'photo_url' => $photoUrl,
+        ]);
+
+        $deleteResponse->assertOk();
+        $deleteResponse->assertJson([
+            'success' => true,
+            'remaining_count' => 0,
+        ]);
+
         $step->refresh();
         $this->assertEmpty($step->foto_urls);
     }

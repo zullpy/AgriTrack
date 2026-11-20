@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\FertilizerFermentationStep;
 use App\Models\LandPreparationStep;
 use App\Models\PlantingSeed;
 use App\Models\PlantingStep;
@@ -19,6 +20,22 @@ class StepSyncController extends Controller
         protected ImageCompressionService $compressionService,
         protected CloudinaryService $cloudinaryService
     ) {}
+
+    /**
+     * Get all Fertilizer Fermentation Steps for offline sync initial load.
+     */
+    public function getFermentasiPupuk(): JsonResponse
+    {
+        $steps = FertilizerFermentationStep::orderBy('urutan')
+            ->orderBy('nomor')
+            ->orderBy('id')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'steps' => $steps,
+        ]);
+    }
 
     /**
      * Get all Land Preparation Steps for offline sync initial load.

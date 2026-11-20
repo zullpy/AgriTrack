@@ -124,28 +124,36 @@ class CloudinaryService
      */
     public function deleteImage(string $urlOrPublicId): bool
     {
-        $target = trim($urlOrPublicId);
-        if (empty($target)) {
+        try {
+            $target = trim($urlOrPublicId);
+            if (empty($target)) {
+                return false;
+            }
+
+            // Cek jika gambar berada di Cloudinary
+            if (str_contains($target, 'cloudinary.com')) {
+                return $this->deleteFromCloudinary($target);
+            }
+
+            // Coba hapus dari storage lokal terlebih dahulu
+            $deletedLocal = $this->deleteFromLocalStorage($target);
+            if ($deletedLocal) {
+                return true;
+            }
+
+            // Jika tidak ditemukan di lokal dan Cloudinary terkonfigurasi, coba hapus dari Cloudinary
+            if ($this->isConfigured()) {
+                return $this->deleteFromCloudinary($target);
+            }
+
+            return false;
+        } catch (Throwable $e) {
+            Log::warning('Exception di CloudinaryService::deleteImage: '.$e->getMessage(), [
+                'target' => $urlOrPublicId,
+            ]);
+
             return false;
         }
-
-        // Cek jika gambar berada di Cloudinary
-        if (str_contains($target, 'cloudinary.com')) {
-            return $this->deleteFromCloudinary($target);
-        }
-
-        // Coba hapus dari storage lokal terlebih dahulu
-        $deletedLocal = $this->deleteFromLocalStorage($target);
-        if ($deletedLocal) {
-            return true;
-        }
-
-        // Jika tidak ditemukan di lokal dan Cloudinary terkonfigurasi, coba hapus dari Cloudinary
-        if ($this->isConfigured()) {
-            return $this->deleteFromCloudinary($target);
-        }
-
-        return false;
     }
 
     /**
@@ -251,30 +259,40 @@ class CloudinaryService
      */
     protected function deleteFromLocalStorage(string $urlOrPath): bool
     {
-        $normalized = preg_replace('#^https?://[^/]+#', '', $urlOrPath);
-        $normalized = preg_replace('#^/storage/#', '', $normalized);
-        $normalized = preg_replace('#^storage/#', '', $normalized);
-        $normalized = ltrim($normalized, '/');
+        try {
+            $normalized = preg_replace('#^https?://[^/]+#', '', $urlOrPath);
+            $normalized = preg_replace('#^/storage/#', '', $normalized);
+            $normalized = preg_replace('#^storage/#', '', $normalized);
+            $normalized = ltrim($normalized, '/');
 
-        if (empty($normalized)) {
+            if (empty($normalized)) {
+                return false;
+            }
+
+            $deleted = false;
+            try {
+                if (Storage::disk('public')->exists($normalized)) {
+                    $deleted = Storage::disk('public')->delete($normalized) || $deleted;
+                }
+            } catch (Throwable $e) {
+                Log::debug('Storage::disk(public)->delete exception: '.$e->getMessage());
+            }
+
+            $appPublicPath = storage_path('app/public/'.$normalized);
+            if (file_exists($appPublicPath)) {
+                $deleted = @unlink($appPublicPath) || $deleted;
+            }
+
+            $publicStoragePath = public_path('storage/'.$normalized);
+            if (file_exists($publicStoragePath)) {
+                $deleted = @unlink($publicStoragePath) || $deleted;
+            }
+
+            return $deleted;
+        } catch (Throwable $e) {
+            Log::warning('Exception di deleteFromLocalStorage: '.$e->getMessage(), ['target' => $urlOrPath]);
+
             return false;
         }
-
-        $deleted = false;
-        if (Storage::disk('public')->exists($normalized)) {
-            $deleted = Storage::disk('public')->delete($normalized);
-        }
-
-        $appPublicPath = storage_path('app/public/'.$normalized);
-        if (file_exists($appPublicPath)) {
-            $deleted = @unlink($appPublicPath) || $deleted;
-        }
-
-        $publicStoragePath = public_path('storage/'.$normalized);
-        if (file_exists($publicStoragePath)) {
-            $deleted = @unlink($publicStoragePath) || $deleted;
-        }
-
-        return $deleted;
     }
 }

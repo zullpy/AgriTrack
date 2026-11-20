@@ -42,7 +42,7 @@
         <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2.5 flex-wrap">
                 <h1 class="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight shrink-0">Data Obat Tanaman</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                <span id="medicines-total-counter" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
                     {{ $medicines->total() }} Obat
                 </span>
             </div>
@@ -124,7 +124,7 @@
 
         {{-- Baris 1: Kategori Pills --}}
         <div class="w-full max-w-full min-w-0 overflow-hidden">
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar w-full max-w-full">
+            <div id="category-pills-container" class="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar w-full max-w-full">
                 @php
                     $currentJenis = request('jenis');
                     $categoryItems = $categoryListForThemes;
@@ -610,7 +610,7 @@
                                 $catBadge = $getCategoryBadge($medicine->jenis);
                                 $ckBadge  = $getCaraKerjaBadge($medicine->cara_kerja);
                             @endphp
-                            <tr class="hover:bg-gray-50/60 transition-colors group">
+                            <tr id="medicine-row-{{ $medicine->id }}" class="hover:bg-gray-50/60 transition-colors group">
                                 <td class="px-5 py-3.5">
                                     @php $mPhotos = $medicine->foto_urls; @endphp
                                     <div class="flex items-center gap-3">
@@ -1517,6 +1517,7 @@ window.deleteOfflineItem = function(clientId, name) {
     AgriSwal.confirmDelete('Hapus Draft Offline?', name, async () => {
         await window.AgriOfflineStore.deleteMedicineOffline(null, clientId);
         document.querySelectorAll(`[data-client-id="${clientId}"]`).forEach(el => el.remove());
+        if (typeof updateMedicinesCounter === 'function') updateMedicinesCounter();
         AgriSwal.toastSuccess(`Draft "${name}" dihapus.`);
     });
 };
@@ -1737,17 +1738,11 @@ async function handleCategoryFormSubmit(event) {
             }
             resetCategoryForm();
             await loadCategoriesList();
-
-            // Refresh halaman agar filter pills dan badges ikut terupdate secara otomatis
-            setTimeout(() => {
-                window.location.reload();
-            }, 800);
+            renderCategoryPills(cachedCategories);
         } else {
             const errMsg = json.message || (json.errors ? Object.values(json.errors).flat().join(', ') : 'Gagal menyimpan kategori.');
             if (window.AgriSwal) {
                 window.AgriSwal.toastError(errMsg);
-            } else {
-                alert(errMsg);
             }
         }
     } catch (err) {
@@ -1759,12 +1754,36 @@ async function handleCategoryFormSubmit(event) {
     }
 }
 
+function renderCategoryPills(items) {
+    const pillsContainer = document.getElementById('category-pills-container');
+    if (!pillsContainer) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentJenis = urlParams.get('jenis');
+
+    const pillsHtml = [
+        `<span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-0.5">Kategori:</span>`,
+        `<a href="?${(() => { const p = new URLSearchParams(window.location.search); p.delete('jenis'); p.delete('page'); return p.toString(); })()}" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${!currentJenis ? 'bg-primary text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">Semua</a>`
+    ];
+
+    (items || []).forEach(cat => {
+        const isActive = currentJenis === cat.nama;
+        const p = new URLSearchParams(window.location.search);
+        p.set('jenis', cat.nama);
+        p.delete('page');
+        pillsHtml.push(`
+            <a href="?${p.toString()}" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${isActive ? 'bg-primary text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+                ${cat.nama}
+            </a>
+        `);
+    });
+
+    pillsContainer.innerHTML = pillsHtml.join('');
+}
+
 function handleDeleteCategoryClick(id, nama, medCount) {
     if (medCount > 0) {
         if (window.AgriSwal) {
             window.AgriSwal.toastError(`Kategori "${nama}" tidak dapat dihapus karena masih digunakan oleh ${medCount} data obat.`);
-        } else {
-            alert(`Kategori "${nama}" tidak dapat dihapus karena masih digunakan.`);
         }
         return;
     }
@@ -1793,7 +1812,7 @@ function handleDeleteCategoryClick(id, nama, medCount) {
             if (res.ok && json.success) {
                 if (window.AgriSwal) window.AgriSwal.toastSuccess(json.message);
                 await loadCategoriesList();
-                setTimeout(() => window.location.reload(), 800);
+                renderCategoryPills(cachedCategories);
             } else {
                 if (window.AgriSwal) window.AgriSwal.toastError(json.message || 'Gagal menghapus kategori.');
             }
@@ -1805,8 +1824,86 @@ function handleDeleteCategoryClick(id, nama, medCount) {
 
     if (window.AgriSwal && typeof window.AgriSwal.confirmDelete === 'function') {
         window.AgriSwal.confirmDelete('Hapus Kategori Obat?', nama, doDelete);
-    } else if (confirm(`Yakin ingin menghapus kategori "${nama}"?`)) {
+    } else {
         doDelete();
+    }
+}
+
+// Intercept form delete obat untuk zero-reload DOM update
+document.addEventListener('submit', function(e) {
+    const form = e.target.closest('form[action^="/data-obat/"]');
+    if (!form) return;
+    const methodInp = form.querySelector('input[name="_method"]');
+    if (!methodInp || methodInp.value.toUpperCase() !== 'DELETE') return;
+
+    if (form.dataset.confirmed !== 'true') return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    const actionUrl = form.getAttribute('action');
+    const parts = actionUrl.split('/');
+    const medicineId = parts[parts.length - 1];
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+    fetch(actionUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({ _method: 'DELETE' })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const card = document.getElementById(`medicine-card-${medicineId}`);
+            const row = document.getElementById(`medicine-row-${medicineId}`);
+            if (card) {
+                card.style.transition = 'all 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    card.remove();
+                    updateMedicinesCounter();
+                }, 300);
+            }
+            if (row) {
+                row.style.transition = 'all 0.3s ease';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                    updateMedicinesCounter();
+                }, 300);
+            }
+            if (window.AgriSwal) {
+                window.AgriSwal.toastSuccess(data.message || 'Obat berhasil dihapus.');
+            }
+        } else {
+            if (window.AgriSwal) {
+                window.AgriSwal.toastError(data.message || 'Gagal menghapus obat.');
+            }
+        }
+    })
+    .catch(err => {
+        console.error('Gagal menghapus obat:', err);
+        delete form.dataset.confirmed;
+        form.submit();
+    });
+}, true);
+
+function updateMedicinesCounter() {
+    const counter = document.getElementById('medicines-total-counter');
+    if (!counter) return;
+    const cards = document.querySelectorAll('[id^="medicine-card-"]');
+    if (cards.length > 0) {
+        counter.textContent = cards.length + ' Obat';
+    } else {
+        const rows = document.querySelectorAll('[id^="medicine-row-"]');
+        counter.textContent = rows.length + ' Obat';
     }
 }
 

@@ -69,17 +69,17 @@
 
     {{-- ── Quick Navigation Tabs ── --}}
     <div class="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit max-w-full overflow-x-auto no-scrollbar">
+        <a href="/steps/fermentasi-pupuk"
+           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
+            1. Fermentasi Pupuk
+        </a>
         <a href="/steps/pengolahan-tanah"
            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-amber-800 shadow-xs whitespace-nowrap transition-all">
-            1. Pengolahan Tanah
+            2. Pengolahan Tanah
         </a>
         <a href="/steps/penanaman-bibit"
            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
-            2. Penanaman Bibit
-        </a>
-        <a href="/steps/catatan"
-           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 whitespace-nowrap transition-all">
-            3. Catatan Penting
+            3. Penanaman Bibit
         </a>
     </div>
 
@@ -928,6 +928,81 @@
         openModal('modal-quick-photo');
     }
 
+    function executeDeleteStepPhoto(form, btn) {
+        const itemEl = btn.closest('.group\\/photo') || btn.closest('.relative');
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+
+        const formData = new FormData(form);
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(async (res) => {
+            if (!res.ok) {
+                let msg = 'Gagal menghapus foto.';
+                try {
+                    const d = await res.json();
+                    if (d && d.message) msg = d.message;
+                } catch(e) {}
+                throw new Error(msg);
+            }
+            return res.json();
+        })
+        .then((data) => {
+            if (data && data.step && window.AgriOfflineStore) {
+                AgriOfflineStore.cacheLandPreparationSteps([data.step]);
+            }
+            if (typeof renderLandStepsFromStore === 'function') {
+                renderLandStepsFromStore();
+            }
+            if (itemEl) {
+                itemEl.style.transition = 'all 0.25s ease';
+                itemEl.style.opacity = '0';
+                itemEl.style.transform = 'scale(0.85)';
+                setTimeout(() => {
+                    itemEl.remove();
+                    const grid = document.getElementById('view-photos-grid');
+                    const remaining = grid ? grid.querySelectorAll('img').length : 0;
+                    const subtitle = document.getElementById('view-photos-subtitle');
+                    if (subtitle) {
+                        subtitle.textContent = remaining + ' foto dokumentasi tersimpan';
+                    }
+                    if (remaining === 0 && grid) {
+                        grid.innerHTML = `
+                            <div class="col-span-full py-10 text-center text-gray-400">
+                                <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                                </svg>
+                                <p class="text-xs font-semibold text-gray-600">Belum ada foto dokumentasi untuk tahapan ini</p>
+                            </div>
+                        `;
+                    }
+                }, 250);
+            }
+            if (window.AgriSwal) {
+                AgriSwal.toastSuccess('Foto berhasil dihapus');
+            } else if (window.Swal) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Foto berhasil dihapus',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        })
+        .catch((err) => {
+            console.error('AJAX delete failed, fallback to form.submit():', err);
+            form.submit();
+        });
+    }
+
     function confirmDeleteStepPhoto(btn) {
         const form = btn.closest('form');
         if (!form) return;
@@ -937,35 +1012,13 @@
                 'Hapus Foto Dokumentasi?',
                 'Foto dokumentasi ini beserta file fisiknya di server',
                 function() {
-                    form.submit();
+                    executeDeleteStepPhoto(form, btn);
                 }
             );
             return;
         }
 
-        if (window.Swal) {
-            Swal.fire({
-                title: 'Hapus Foto Dokumentasi?',
-                html: 'Apakah Anda yakin ingin menghapus foto dokumentasi ini?<br><span class="text-xs text-gray-500">File fisik foto akan dihapus permanen dari server penyimpanan.</span>',
-                icon: 'warning',
-                iconColor: '#E4574C',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal',
-                reverseButtons: true,
-                confirmButtonColor: '#E4574C',
-                cancelButtonColor: '#6B7280'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-            return;
-        }
-
-        if (confirm('Hapus foto ini secara permanen dari penyimpanan server?')) {
-            form.submit();
-        }
+        executeDeleteStepPhoto(form, btn);
     }
 
     function confirmDeleteStep(stepId, nomor, judul) {
@@ -973,6 +1026,13 @@
         form.action = '/steps/pengolahan-tanah/' + stepId;
 
         const handleDeleteConfirmed = async () => {
+            const card = document.getElementById('step-card-' + stepId);
+            if (card) {
+                card.style.transition = 'all 0.3s ease';
+                card.style.opacity = '0.4';
+                card.style.pointerEvents = 'none';
+            }
+
             if (!navigator.onLine || String(stepId).startsWith('offline_')) {
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.deleteLandPreparationStepOffline(stepId);
@@ -980,13 +1040,67 @@
                 if (window.AgriSwal) {
                     AgriSwal.toastSuccess(`Langkah nomor ${nomor} ("${judul}") berhasil dihapus secara offline.`);
                 }
-                const card = document.getElementById('step-card-' + stepId);
                 if (card) {
-                    card.style.opacity = '0.3';
-                    card.style.pointerEvents = 'none';
-                    setTimeout(() => card.remove(), 400);
+                    card.style.transform = 'scale(0.95)';
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.remove();
+                        if (typeof renderLandStepsFromStore === 'function') renderLandStepsFromStore();
+                    }, 300);
                 }
-            } else {
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            try {
+                const fd = new FormData();
+                fd.append('_token', csrfToken);
+                fd.append('_method', 'DELETE');
+
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-HTTP-Method-Override': 'DELETE'
+                    },
+                    body: fd
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result && result.success !== false) {
+                    if (window.AgriOfflineStore) {
+                        try { await AgriOfflineStore.deleteLandPreparationStepOffline(stepId); } catch(e){}
+                    }
+                    if (card) {
+                        card.style.transform = 'scale(0.95)';
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.remove();
+                            updateStepsCounter();
+                            if (typeof renderLandStepsFromStore === 'function') renderLandStepsFromStore();
+                        }, 300);
+                    }
+                    if (window.AgriSwal) {
+                        AgriSwal.toastSuccess(result.message || 'Langkah berhasil dihapus.');
+                    }
+                } else {
+                    if (card) {
+                        card.style.opacity = '1';
+                        card.style.pointerEvents = 'auto';
+                    }
+                    if (window.AgriSwal) {
+                        AgriSwal.toastError(result?.message || 'Gagal menghapus langkah.');
+                    }
+                }
+            } catch (err) {
+                console.warn('Network error during delete step:', err);
+                if (card) {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                }
                 form.submit();
             }
         };
@@ -1000,28 +1114,7 @@
             return;
         }
 
-        if (window.Swal) {
-            Swal.fire({
-                title: 'Hapus Tahapan Ini?',
-                html: `Apakah Anda yakin ingin menghapus <strong>Langkah ${nomor}: "${judul}"</strong> beserta seluruh foto dokumentasinya?<br><span class="text-xs text-gray-500">Langkah yang dihapus tidak dapat dipulihkan kembali.</span>`,
-                icon: 'warning',
-                iconColor: '#E4574C',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal',
-                reverseButtons: true,
-                confirmButtonColor: '#E4574C',
-                cancelButtonColor: '#6B7280'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    handleDeleteConfirmed();
-                }
-            });
-            return;
-        }
-
-        document.getElementById('delete-step-message').textContent = 'Langkah nomor ' + nomor + ' ("' + judul + '") beserta seluruh foto dokumentasinya akan dihapus.';
-        openModal('modal-delete-step');
+        handleDeleteConfirmed();
     }
 
     function openLightbox(url, title) {
@@ -1165,7 +1258,9 @@
     function validateQuickPhotoSubmit() {
         const items = window.previewStore ? (window.previewStore['quick-photo-preview'] || []) : [];
         if (items.length === 0) {
-            if (window.Swal) {
+            if (window.AgriSwal) {
+                AgriSwal.alert('Foto Belum Dipilih', 'Silakan pilih dari galeri atau jepret foto dokumentasi terlebih dahulu.', 'warning');
+            } else if (window.Swal) {
                 Swal.fire({
                     icon: 'warning',
                     iconColor: '#D97706',
@@ -1174,8 +1269,6 @@
                     confirmButtonText: 'Mengerti',
                     confirmButtonColor: '#059669'
                 });
-            } else {
-                alert('Silakan pilih atau jepret foto dokumentasi terlebih dahulu.');
             }
             return false;
         }
@@ -1192,6 +1285,15 @@
     // ══════════════════════════════════════════════════════════════════
     // OFFLINE SUPPORT & CLIENT-SIDE RENDERING
     // ══════════════════════════════════════════════════════════════════
+    function updateStepsCounter() {
+        const counter = document.getElementById('steps-counter');
+        const list = document.getElementById('land-steps-list');
+        if (counter && list) {
+            const count = list.querySelectorAll('[id^="step-card-"]').length;
+            counter.textContent = count + ' Langkah Tersimpan';
+        }
+    }
+
     function escapeHtml(str) {
         if (!str) return '';
         const div = document.createElement('div');
@@ -1200,9 +1302,15 @@
     }
 
     async function renderLandStepsFromStore() {
-        if (!window.AgriOfflineStore) return;
+        if (!window.AgriOfflineStore) {
+            updateStepsCounter();
+            return;
+        }
         const steps = await AgriOfflineStore.getAllLandPreparationSteps();
-        if (!steps || steps.length === 0) return;
+        if (!steps || steps.length === 0) {
+            updateStepsCounter();
+            return;
+        }
 
         const counter = document.getElementById('steps-counter');
         if (counter) {
@@ -1314,34 +1422,83 @@
     const addStepForm = document.getElementById('form-add-step');
     if (addStepForm) {
         addStepForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            AgriFormHelper.clearErrors(addStepForm);
+            const submitBtn = addStepForm.querySelector('button[type="submit"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
+            const formData = new FormData(addStepForm);
+            const photosBase64 = [];
+            const items = window.previewStore ? (window.previewStore['add-photo-preview'] || []) : [];
+            items.forEach(item => {
+                if (item.url) photosBase64.push(item.url);
+            });
+
+            const data = {
+                nomor: formData.get('nomor') || '1',
+                judul: formData.get('judul') || 'Langkah Baru',
+                waktu: formData.get('waktu') || null,
+                deskripsi: formData.get('deskripsi') || '-',
+                tips: formData.get('tips') || null,
+                photos_base64: photosBase64
+            };
+
             if (!navigator.onLine) {
-                e.preventDefault();
-                const formData = new FormData(addStepForm);
-                const photosBase64 = [];
-                const items = window.previewStore ? (window.previewStore['add-photo-preview'] || []) : [];
-                items.forEach(item => {
-                    if (item.url) photosBase64.push(item.url);
-                });
-
-                const data = {
-                    nomor: formData.get('nomor') || '1',
-                    judul: formData.get('judul') || 'Langkah Baru',
-                    waktu: formData.get('waktu') || null,
-                    deskripsi: formData.get('deskripsi') || '-',
-                    tips: formData.get('tips') || null,
-                    photos_base64: photosBase64
-                };
-
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.addLandPreparationStepOffline(data);
                 }
                 closeModal('modal-add-step');
                 addStepForm.reset();
                 clearAllPreviewFiles('add-photo-preview');
+                AgriFormHelper.setLoading(submitBtn, false);
                 if (window.AgriSwal) {
                     AgriSwal.toastSuccess(`Langkah nomor ${data.nomor} ("${data.judul}") berhasil disimpan di HP (Mode Offline).`);
                 }
                 await renderLandStepsFromStore();
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch(addStepForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.status === 422 && result && result.errors) {
+                    AgriFormHelper.showErrors(addStepForm, result.errors);
+                    AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                } else if (response.ok && result && result.success !== false) {
+                    closeModal('modal-add-step');
+                    addStepForm.reset();
+                    clearAllPreviewFiles('add-photo-preview');
+                    if (result.step && window.AgriOfflineStore) {
+                        try { await AgriOfflineStore.cacheLandPreparationSteps([result.step]); } catch(e){}
+                    }
+                    AgriSwal.toastSuccess(result.message || 'Langkah berhasil ditambahkan!');
+                    await renderLandStepsFromStore();
+                } else {
+                    AgriSwal.toastError(result?.message || 'Gagal menyimpan langkah.');
+                }
+            } catch (err) {
+                console.warn('Network error, fallback to offline:', err);
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.addLandPreparationStepOffline(data);
+                }
+                closeModal('modal-add-step');
+                addStepForm.reset();
+                clearAllPreviewFiles('add-photo-preview');
+                AgriSwal.toastInfo(`Koneksi terganggu. Langkah nomor ${data.nomor} disimpan di HP.`);
+                await renderLandStepsFromStore();
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }
@@ -1350,44 +1507,93 @@
     const editStepForm = document.getElementById('form-edit-step');
     if (editStepForm) {
         editStepForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            AgriFormHelper.clearErrors(editStepForm);
+            const submitBtn = editStepForm.querySelector('button[type="submit"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+
             const actionUrl = editStepForm.getAttribute('action') || '';
             const parts = actionUrl.split('/');
             const stepId = parts[parts.length - 1];
 
+            const formData = new FormData(editStepForm);
+            const photosBase64 = [];
+            const items = window.previewStore ? (window.previewStore['edit-photo-preview'] || []) : [];
+            items.forEach(item => {
+                if (item.url) photosBase64.push(item.url);
+            });
+
+            const deletedPhotos = [];
+            editStepForm.querySelectorAll('input[name="deleted_photos[]"]').forEach(inp => {
+                if (inp.value) deletedPhotos.push(inp.value);
+            });
+
+            const data = {
+                nomor: formData.get('nomor') || '1',
+                judul: formData.get('judul') || 'Langkah Baru',
+                waktu: formData.get('waktu') || null,
+                deskripsi: formData.get('deskripsi') || '-',
+                tips: formData.get('tips') || null,
+                deleted_photos: deletedPhotos,
+                photos_base64: photosBase64
+            };
+
             if (!navigator.onLine || String(stepId).startsWith('offline_')) {
-                e.preventDefault();
-                const formData = new FormData(editStepForm);
-                const photosBase64 = [];
-                const items = window.previewStore ? (window.previewStore['edit-photo-preview'] || []) : [];
-                items.forEach(item => {
-                    if (item.url) photosBase64.push(item.url);
-                });
-
-                const deletedPhotos = [];
-                editStepForm.querySelectorAll('input[name="deleted_photos[]"]').forEach(inp => {
-                    if (inp.value) deletedPhotos.push(inp.value);
-                });
-
-                const data = {
-                    nomor: formData.get('nomor') || '1',
-                    judul: formData.get('judul') || 'Langkah Baru',
-                    waktu: formData.get('waktu') || null,
-                    deskripsi: formData.get('deskripsi') || '-',
-                    tips: formData.get('tips') || null,
-                    deleted_photos: deletedPhotos,
-                    photos_base64: photosBase64
-                };
-
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.updateLandPreparationStepOffline(stepId, data);
                 }
                 closeModal('modal-edit-step');
                 editStepForm.reset();
                 clearAllPreviewFiles('edit-photo-preview');
+                AgriFormHelper.setLoading(submitBtn, false);
                 if (window.AgriSwal) {
                     AgriSwal.toastSuccess(`Perubahan langkah nomor ${data.nomor} berhasil disimpan di HP (Mode Offline).`);
                 }
                 await renderLandStepsFromStore();
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.status === 422 && result && result.errors) {
+                    AgriFormHelper.showErrors(editStepForm, result.errors);
+                    AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                } else if (response.ok && result && result.success !== false) {
+                    closeModal('modal-edit-step');
+                    editStepForm.reset();
+                    clearAllPreviewFiles('edit-photo-preview');
+                    if (result.step && window.AgriOfflineStore) {
+                        try { await AgriOfflineStore.cacheLandPreparationSteps([result.step]); } catch(e){}
+                    }
+                    AgriSwal.toastSuccess(result.message || 'Langkah berhasil diperbarui!');
+                    await renderLandStepsFromStore();
+                } else {
+                    AgriSwal.toastError(result?.message || 'Gagal memperbarui langkah.');
+                }
+            } catch (err) {
+                console.warn('Network error on edit step:', err);
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.updateLandPreparationStepOffline(stepId, data);
+                }
+                closeModal('modal-edit-step');
+                editStepForm.reset();
+                clearAllPreviewFiles('edit-photo-preview');
+                AgriSwal.toastInfo(`Koneksi terganggu. Perubahan langkah nomor ${data.nomor} disimpan di HP.`);
+                await renderLandStepsFromStore();
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }
@@ -1396,36 +1602,83 @@
     const quickPhotoForm = document.getElementById('form-quick-photo');
     if (quickPhotoForm) {
         quickPhotoForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!validateQuickPhotoSubmit()) return;
+
+            const submitBtn = quickPhotoForm.querySelector('button[type="submit"]');
+            AgriFormHelper.setLoading(submitBtn, true, 'Mengunggah...');
+
             const actionUrl = quickPhotoForm.getAttribute('action') || '';
             const parts = actionUrl.split('/');
             const stepId = parts[parts.length - 2];
 
+            const photosBase64 = [];
+            const items = window.previewStore ? (window.previewStore['quick-photo-preview'] || []) : [];
+            items.forEach(item => {
+                if (item.url) photosBase64.push(item.url);
+            });
+
             if (!navigator.onLine || String(stepId).startsWith('offline_')) {
-                e.preventDefault();
-                if (!validateQuickPhotoSubmit()) return;
-
-                const photosBase64 = [];
-                const items = window.previewStore ? (window.previewStore['quick-photo-preview'] || []) : [];
-                items.forEach(item => {
-                    if (item.url) photosBase64.push(item.url);
-                });
-
                 if (window.AgriOfflineStore) {
                     await AgriOfflineStore.uploadLandPreparationPhotosOffline(stepId, photosBase64);
                 }
                 closeModal('modal-quick-photo');
                 quickPhotoForm.reset();
                 clearAllPreviewFiles('quick-photo-preview');
+                AgriFormHelper.setLoading(submitBtn, false);
                 if (window.AgriSwal) {
                     AgriSwal.toastSuccess(`${photosBase64.length} foto berhasil ditambahkan ke langkah di HP (Mode Offline).`);
                 }
                 await renderLandStepsFromStore();
+                return;
+            }
+
+            try {
+                const fd = new FormData(quickPhotoForm);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: fd
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result && result.success !== false) {
+                    closeModal('modal-quick-photo');
+                    quickPhotoForm.reset();
+                    clearAllPreviewFiles('quick-photo-preview');
+                    if (result.step && window.AgriOfflineStore) {
+                        try { await AgriOfflineStore.cacheLandPreparationSteps([result.step]); } catch(e){}
+                    }
+                    AgriSwal.toastSuccess(result.message || 'Foto berhasil diunggah!');
+                    await renderLandStepsFromStore();
+                } else {
+                    AgriSwal.toastError(result?.message || 'Gagal mengunggah foto.');
+                }
+            } catch (err) {
+                console.warn('Network error, fallback to offline photo upload:', err);
+                if (window.AgriOfflineStore) {
+                    await AgriOfflineStore.uploadLandPreparationPhotosOffline(stepId, photosBase64);
+                }
+                closeModal('modal-quick-photo');
+                quickPhotoForm.reset();
+                clearAllPreviewFiles('quick-photo-preview');
+                AgriSwal.toastInfo(`Koneksi terganggu. ${photosBase64.length} foto disimpan di HP.`);
+                await renderLandStepsFromStore();
+            } finally {
+                AgriFormHelper.setLoading(submitBtn, false);
             }
         });
     }
 
     // Cache server data & initialize offline listener
     document.addEventListener('DOMContentLoaded', async function() {
+        updateStepsCounter();
         if (window.AgriOfflineStore) {
             try {
                 @if(isset($steps) && count($steps) > 0)

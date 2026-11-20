@@ -25,10 +25,32 @@ class DashboardTest extends TestCase
         $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('Katalog Tanaman');
+        $response->assertSee('Dashboard');
     }
 
-    public function test_dashboard_displays_three_plant_cards(): void
+    public function test_dashboard_displays_plant_catalogs(): void
+    {
+        $this->seed(PlantCatalogSeeder::class);
+
+        $response = $this->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertSee('Timun');
+        $response->assertSee('id="catalog-search-input"', false);
+        $response->assertSee('handleCatalogSearch', false);
+        $response->assertDontSee('⏱️');
+        $response->assertDontSee('🌱 Semai');
+    }
+
+    public function test_tanaman_aktif_page_loads_successfully(): void
+    {
+        $response = $this->get('/tanaman-aktif');
+
+        $response->assertStatus(200);
+        $response->assertSee('Tanaman Aktif');
+    }
+
+    public function test_tanaman_aktif_displays_three_plant_cards(): void
     {
         $this->seed(PlantCatalogSeeder::class);
 
@@ -36,38 +58,34 @@ class DashboardTest extends TestCase
         Crop::create(['nama_tanaman' => 'Cabe', 'varietas' => 'Rawit', 'tanggal_tanam' => now(), 'status' => 'Sedang Ditanam']);
         Crop::create(['nama_tanaman' => 'Jagung', 'varietas' => 'Manis', 'tanggal_tanam' => now(), 'status' => 'Sedang Ditanam']);
 
-        $response = $this->get('/dashboard');
+        $response = $this->get('/tanaman-aktif');
 
         $response->assertStatus(200);
 
-        // 3 plant cards: Timun, Cabe, Jagung
         $response->assertSee('Timun');
         $response->assertSee('Cabe');
         $response->assertSee('Jagung');
 
-        // Plant emojis
         $response->assertSee('🥒');
         $response->assertSee('🌶️');
         $response->assertSee('🌽');
     }
 
-    public function test_dashboard_contains_four_menus_for_plants(): void
+    public function test_tanaman_aktif_contains_four_menus_for_plants(): void
     {
-        $response = $this->get('/dashboard');
+        $response = $this->get('/tanaman-aktif');
 
         $response->assertStatus(200);
 
-        // Assert 4 menus are present in modal
         $response->assertSee('Tahap Semai Bibit');
         $response->assertSee('Tahap Penanaman');
         $response->assertSee('Pemeliharaan');
         $response->assertSee('Tips dan Catatan Penting');
         $response->assertSee('/kalender-hst');
         $response->assertSee('/steps/penanaman-bibit');
-        $response->assertSee('/steps/catatan');
     }
 
-    public function test_dashboard_renders_active_crop_badge_on_matching_card(): void
+    public function test_tanaman_aktif_renders_active_crop_badge_on_matching_card(): void
     {
         Crop::create([
             'nama_tanaman' => 'Cabai Rawit Merah',
@@ -76,13 +94,13 @@ class DashboardTest extends TestCase
             'status' => 'Sedang Ditanam',
         ]);
 
-        $response = $this->get('/dashboard');
+        $response = $this->get('/tanaman-aktif');
 
         $response->assertStatus(200);
         $response->assertSee('25 HST');
     }
 
-    public function test_plant_catalog_edit_cancel_button_points_to_dashboard(): void
+    public function test_plant_catalog_edit_page_loads_successfully(): void
     {
         $this->seed(PlantCatalogSeeder::class);
         $catalog = PlantCatalog::first();
@@ -90,18 +108,21 @@ class DashboardTest extends TestCase
         $response = $this->get(route('tanaman-katalog.edit', $catalog));
 
         $response->assertStatus(200);
-        $response->assertSee(route('dashboard'));
+        $response->assertSee('Edit Panduan '.$catalog->name);
         $response->assertSee('Batal');
     }
 
-    public function test_plant_catalog_index_redirects_to_dashboard(): void
+    public function test_plant_catalog_index_renders_catalog_page(): void
     {
+        $this->seed(PlantCatalogSeeder::class);
         $response = $this->get(route('tanaman-katalog.index'));
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertStatus(200);
+        $response->assertSee('Katalog Tanaman');
+        $response->assertSee('Timun');
     }
 
-    public function test_dashboard_uses_crop_emoji_when_crop_not_in_plant_catalogs(): void
+    public function test_tanaman_aktif_uses_crop_emoji_when_crop_not_in_plant_catalogs(): void
     {
         Crop::create([
             'nama_tanaman' => 'Tomat',
@@ -110,7 +131,7 @@ class DashboardTest extends TestCase
             'status' => 'Sedang Ditanam',
         ]);
 
-        $response = $this->get('/dashboard');
+        $response = $this->get('/tanaman-aktif');
 
         $response->assertStatus(200);
         $response->assertSee('Tomat');
@@ -174,7 +195,7 @@ class DashboardTest extends TestCase
         $this->assertDatabaseMissing('plant_catalogs', ['id' => $catalog->id]);
     }
 
-    public function test_ended_or_harvested_crops_do_not_appear_on_dashboard(): void
+    public function test_ended_or_harvested_crops_do_not_appear_on_tanaman_aktif(): void
     {
         Crop::create([
             'nama_tanaman' => 'Tomat Lawas',
@@ -197,7 +218,7 @@ class DashboardTest extends TestCase
             'status' => 'Sedang Ditanam',
         ]);
 
-        $response = $this->get('/dashboard');
+        $response = $this->get('/tanaman-aktif');
 
         $response->assertStatus(200);
         $response->assertSee('Melon Aktif');
@@ -205,7 +226,7 @@ class DashboardTest extends TestCase
         $response->assertDontSee('Cabai Panen');
     }
 
-    public function test_dashboard_displays_empty_state_when_no_active_crops(): void
+    public function test_tanaman_aktif_displays_empty_state_when_no_active_crops(): void
     {
         Crop::create([
             'nama_tanaman' => 'Bawang Merah Selesai',
@@ -214,7 +235,7 @@ class DashboardTest extends TestCase
             'status' => 'Diakhiri',
         ]);
 
-        $response = $this->get('/dashboard');
+        $response = $this->get('/tanaman-aktif');
 
         $response->assertStatus(200);
         $response->assertSee('Belum Ada Tanaman Aktif');
@@ -222,7 +243,7 @@ class DashboardTest extends TestCase
         $response->assertDontSee('Bawang Merah Selesai');
     }
 
-    public function test_dashboard_displays_semai_crop_and_provides_semai_guide_data(): void
+    public function test_tanaman_aktif_displays_semai_crop_and_provides_semai_guide_data(): void
     {
         Crop::create([
             'nama_tanaman' => 'Cabai Rawit',
@@ -232,7 +253,7 @@ class DashboardTest extends TestCase
             'tipe' => 'hss',
         ]);
 
-        $response = $this->get('/dashboard');
+        $response = $this->get('/tanaman-aktif');
 
         $response->assertStatus(200);
         $response->assertSee('Cabai Rawit');

@@ -19,10 +19,9 @@ class FonnteNotificationTest extends TestCase
     {
         parent::setUp();
 
-        $jsonFile = storage_path('app/fonnte_testing.json');
-        if (file_exists($jsonFile)) {
-            @unlink($jsonFile);
-        }
+        clearstatcache();
+        @unlink(storage_path('app/fonnte_testing.json'));
+        @unlink(storage_path('app/fonnte.json'));
 
         // Configure test fonnte settings
         config([
@@ -34,10 +33,9 @@ class FonnteNotificationTest extends TestCase
 
     protected function tearDown(): void
     {
-        $jsonFile = storage_path('app/fonnte_testing.json');
-        if (file_exists($jsonFile)) {
-            @unlink($jsonFile);
-        }
+        clearstatcache();
+        @unlink(storage_path('app/fonnte_testing.json'));
+        @unlink(storage_path('app/fonnte.json'));
 
         Carbon::setTestNow();
 

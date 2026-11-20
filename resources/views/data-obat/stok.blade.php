@@ -1619,12 +1619,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Pastikan foto tersinkron saat form pembelian disubmit & cegah kirim request multipart
+    // Form pembelian obat disubmit via AJAX tanpa reload halaman
     ['general-purchase-form', 'quick-purchase-form'].forEach(formId => {
         const form = document.getElementById(formId);
         if (!form) return;
         const prefix = formId === 'general-purchase-form' ? 'gp' : 'qp';
-        form.addEventListener('submit', function() {
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (window.AgriFormHelper) AgriFormHelper.clearErrors(form);
+
             const targetInput = document.getElementById(prefix + '-foto-nota');
             const camInput = document.getElementById(prefix + '-foto-camera');
             if (targetInput) {
@@ -1636,16 +1640,85 @@ document.addEventListener('DOMContentLoaded', () => {
                 camInput.disabled = true;
             }
 
-            // Pastikan form dikirim murni url-encoded (Bukan multipart/form-data) untuk mencegah blokir WAF OpenResty 403
-            form.removeAttribute('enctype');
-            form.enctype = 'application/x-www-form-urlencoded';
-
             const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                const span = submitBtn.querySelector('span');
-                if (span) span.innerText = 'Menyimpan...';
+            if (window.AgriFormHelper) {
+                AgriFormHelper.setLoading(submitBtn, true, 'Menyimpan...');
+            }
+
+            const formData = new FormData(form);
+            const actionUrl = form.getAttribute('action') || window.location.href;
+
+            if (!navigator.onLine) {
+                const rawData = {};
+                for (const [k, v] of formData.entries()) {
+                    if (k !== '_token') rawData[k] = v;
+                }
+                if (window.AgriSyncManager) {
+                    await AgriSyncManager.save('medicine_purchases', rawData, { action: 'create' });
+                }
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastSuccess('Pembelian obat tersimpan di perangkat (Mode Offline).');
+                }
+                if (formId === 'general-purchase-form') closeGeneralPurchaseModal();
+                else closeQuickPurchaseModal();
+                if (window.AgriFormHelper) AgriFormHelper.setLoading(submitBtn, false);
+                return;
+            }
+
+            try {
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result && result.success !== false) {
+                    if (window.AgriSwal) {
+                        window.AgriSwal.toastSuccess(result.message || 'Pembelian obat berhasil dicatat!');
+                    }
+                    if (formId === 'general-purchase-form') {
+                        closeGeneralPurchaseModal();
+                    } else {
+                        closeQuickPurchaseModal();
+                    }
+                    form.reset();
+
+                    if (result.medicine) {
+                        const med = result.medicine;
+                        const stockBadges = document.querySelectorAll(`[data-med-id="${med.id}"] .stock-count, [data-stock-for="${med.id}"]`);
+                        stockBadges.forEach(el => {
+                            el.textContent = `${med.stok} ${med.kemasan_satuan || 'Btl'}`;
+                        });
+                    }
+                } else if (response.status === 422 && result && result.errors) {
+                    if (window.AgriFormHelper) {
+                        AgriFormHelper.showErrors(form, result.errors);
+                    }
+                    if (window.AgriSwal) {
+                        window.AgriSwal.toastError('Mohon periksa input yang ditandai merah.');
+                    }
+                } else {
+                    if (window.AgriSwal) {
+                        window.AgriSwal.toastError(result?.message || 'Gagal mencatat pembelian obat.');
+                    }
+                }
+            } catch (err) {
+                console.warn('Network error during purchase submit, fallback to offline:', err);
+                if (window.AgriSwal) {
+                    window.AgriSwal.toastInfo('Koneksi terganggu. Data pembelian tersimpan offline.');
+                }
+                if (formId === 'general-purchase-form') closeGeneralPurchaseModal();
+                else closeQuickPurchaseModal();
+            } finally {
+                if (window.AgriFormHelper) {
+                    AgriFormHelper.setLoading(submitBtn, false);
+                }
             }
         });
     });

@@ -14,6 +14,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="AgriTrack">
     <link rel="apple-touch-icon" href="/images/icon.png">
+    {{-- Dexie.js for Offline-First IndexedDB Client Persistence --}}
+    <script src="https://cdn.jsdelivr.net/npm/dexie@4.0.11/dist/dexie.min.js"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         /* Sidebar active glow */
@@ -387,14 +389,14 @@
 
                 <a href="/dashboard"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
-                          {{ request()->is('dashboard*') ? 'nav-active text-primary-dark' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
-                    <span class="w-8 h-8 rounded-lg {{ request()->is('dashboard*') ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
+                          {{ request()->is('dashboard*') || request()->is('tanaman-katalog*') ? 'nav-active text-primary-dark font-semibold' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
+                    <span class="w-8 h-8 rounded-lg {{ request()->is('dashboard*') || request()->is('tanaman-katalog*') ? 'bg-primary/10' : 'bg-gray-100' }} flex items-center justify-center transition-colors">
                         <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0c0-3.866 3.134-7 7-7-1.5 4-4 7-7 7zm0 0c0-3.866-3.134-7-7-7 1.5 4 4 7 7 7z"/>
                         </svg>
                     </span>
                     <span>Dashboard</span>
-                    @if(request()->is('dashboard*'))
+                    @if(request()->is('dashboard*') || request()->is('tanaman-katalog*'))
                         <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
                     @endif
                 </a>
@@ -442,10 +444,11 @@
 
                 {{-- 3. Tahapan (with submenus) --}}
                 @php
-                    $isStepsActive = request()->is('steps*');
+                    $isCatatan = request()->is('steps/catatan*');
+                    $isStepsActive = request()->is('steps*') && !$isCatatan;
+                    $isFermentasiPupuk = request()->is('steps/fermentasi-pupuk*');
                     $isPengolahanTanah = request()->is('steps/pengolahan-tanah*');
                     $isPenanamanBibit = request()->is('steps/penanaman-bibit*');
-                    $isCatatan = request()->is('steps/catatan*');
                 @endphp
                 <div class="space-y-1" id="tahapan-menu-wrapper">
                     <button type="button"
@@ -466,6 +469,13 @@
                     </button>
 
                     <div id="tahapan-submenu" class="pl-11 pr-2 space-y-1 {{ $isStepsActive ? 'block' : 'hidden' }}">
+                        <a href="/steps/fermentasi-pupuk"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isFermentasiPupuk ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isFermentasiPupuk ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Tahapan Fermentasi Pupuk</span>
+                        </a>
+
                         <a href="/steps/pengolahan-tanah"
                            class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
                                   {{ $isPengolahanTanah ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
@@ -479,21 +489,30 @@
                             <span class="w-1.5 h-1.5 rounded-full {{ $isPenanamanBibit ? 'bg-primary' : 'bg-gray-300' }}"></span>
                             <span>Tahapan Penanaman Bibit</span>
                         </a>
-
-                        <a href="/steps/catatan"
-                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
-                                  {{ $isCatatan ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ $isCatatan ? 'bg-primary' : 'bg-gray-300' }}"></span>
-                            <span>Catatan Penting</span>
-                        </a>
                     </div>
                 </div>
 
-                {{-- 4. Kalender (with submenus HST & HSS) --}}
+                {{-- 4. Informasi Penting Pertanian --}}
+                <a href="/steps/catatan"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                          {{ $isCatatan ? 'nav-active text-primary-dark font-semibold' : 'text-text-secondary hover:bg-gray-50 hover:text-text' }}">
+                    <span class="w-8 h-8 rounded-lg {{ $isCatatan ? 'bg-primary/10 text-primary-dark' : 'bg-gray-100 text-gray-500' }} flex items-center justify-center transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.53-4h7.5m-7.5-4h3.75m-6.75-6.75H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                        </svg>
+                    </span>
+                    <span>Informasi Penting</span>
+                    @if($isCatatan)
+                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    @endif
+                </a>
+
+                {{-- 4. Tanaman Aktif & Schedule (with submenus) --}}
                 @php
+                    $isTanamanAktifPage = request()->is('tanaman-aktif*');
                     $isKalenderHss = request()->is('kalender-hss*');
                     $isKalenderHst = request()->is('kalender-hst*') || (request()->is('kalender*') && !$isKalenderHss);
-                    $isKalenderActive = $isKalenderHst || $isKalenderHss;
+                    $isKalenderActive = $isTanamanAktifPage || $isKalenderHst || $isKalenderHss;
                 @endphp
                 <div class="space-y-1" id="kalender-menu-wrapper">
                     <button type="button"
@@ -506,7 +525,7 @@
                                     <path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-68-76a12,12,0,1,1-12-12A12,12,0,0,1,140,132Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,132ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,140,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"></path>
                                 </svg>
                             </span>
-                            <span>Kalender</span>
+                            <span>Tanaman Aktif & Schedule</span>
                         </div>
                         <svg id="kalender-chevron" class="w-4 h-4 text-gray-400 transition-transform duration-200 {{ $isKalenderActive ? 'rotate-180 text-primary' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -514,6 +533,13 @@
                     </button>
 
                     <div id="kalender-submenu" class="pl-11 pr-2 space-y-1 {{ $isKalenderActive ? 'block' : 'hidden' }}">
+                        <a href="/tanaman-aktif"
+                           class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                  {{ $isTanamanAktifPage ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isTanamanAktifPage ? 'bg-primary' : 'bg-gray-300' }}"></span>
+                            <span>Tanaman Aktif</span>
+                        </a>
+
                         <a href="/kalender-hst"
                            class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
                                   {{ $isKalenderHst ? 'text-primary-dark font-semibold bg-emerald-100' : 'text-text-secondary hover:text-text hover:bg-gray-50' }}">
@@ -608,8 +634,10 @@
                     </div>
                     <span class="text-base font-semibold text-text">AgriTrack</span>
                 </div>
-                <div class="connection-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+                <div class="flex items-center gap-2">
+                    <div class="connection-badge inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+                    </div>
                 </div>
             </header>
 
@@ -621,84 +649,7 @@
     </div>
 
     {{-- ── Mobile bottom navigation ── --}}
-    <nav class="lg:hidden fixed bottom-0 inset-x-0 w-full z-30 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]" style="width: 100%; left: 0; right: 0;">
-        <div class="flex items-center justify-around w-full px-1.5 pt-1.5 pb-2" style="width: 100%; display: flex;">
-            {{-- 1. Dashboard --}}
-            @php $isDashboard = request()->is('dashboard*') || request()->is('/'); @endphp
-            <a href="/dashboard"
-               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isDashboard ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDashboard ? '2' : '1.8' }}">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0c0-3.866 3.134-7 7-7-1.5 4-4 7-7 7zm0 0c0-3.866-3.134-7-7-7 1.5 4 4 7 7 7z"/>
-                    </svg>
-                </div>
-                <span class="text-[10px] font-medium mt-0.5 {{ $isDashboard ? 'font-semibold' : '' }}"
-                      style="{{ $isDashboard ? 'color: #16a34a;' : 'color: #6b7280;' }}">Dashboard</span>
-            </a>
-
-            {{-- 2. Data Obat / Stok --}}
-            @php $isDataObat = request()->is('data-obat*') || request()->is('stok-obat*'); @endphp
-            <a href="/data-obat"
-               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isDataObat ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isDataObat ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 3h6M10 3v6.5L4.8 19.2A1.5 1.5 0 006.1 21h11.8a1.5 1.5 0 001.3-2.2L14 9.5V3" />
-                    </svg>
-                </div>
-                <span class="text-[10px] font-medium mt-0.5 {{ $isDataObat ? 'font-semibold' : '' }}"
-                      style="{{ $isDataObat ? 'color: #16a34a;' : 'color: #6b7280;' }}">Obat</span>
-            </a>
-
-            {{-- 3. Tahapan --}}
-            @php $isTahapan = request()->is('steps*'); @endphp
-            <a href="/steps"
-               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isTahapan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isTahapan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 20h3.5v-3.5h3.5v-3.5h3.5v-3.5H18V6" />
-                    </svg>
-                </div>
-                <span class="text-[10px] font-medium mt-0.5 {{ $isTahapan ? 'font-semibold' : '' }}"
-                      style="{{ $isTahapan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Tahapan</span>
-            </a>
-
-            <!-- 4. Kalender -->
-            @php $isKalenderNav = request()->is('kalender*') || request()->is('kalender-hst*') || request()->is('kalender-hss*'); @endphp
-            <a href="{{ request()->is('kalender-hss*') ? '/kalender-hss' : '/kalender-hst' }}"
-               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isKalenderNav ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKalenderNav ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                    </svg>
-                </div>
-                <span class="text-[10px] font-medium mt-0.5 {{ $isKalenderNav ? 'font-semibold' : '' }}"
-                      style="{{ $isKalenderNav ? 'color: #16a34a;' : 'color: #6b7280;' }}">Kalender</span>
-            </a>
-
-            <!-- 5. Keuangan -->
-            @php $isKeuangan = request()->is('keuangan*'); @endphp
-            <a href="/keuangan"
-               class="flex-1 flex flex-col items-center justify-center py-1 transition-all"
-               style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="px-3 py-1 rounded-full flex items-center justify-center transition-all"
-                     style="{{ $isKeuangan ? 'background-color: #E1F7E8; color: #16a34a;' : 'color: #9ca3af;' }}">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $isKeuangan ? '2' : '1.8' }}" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <span class="text-[10px] font-medium mt-0.5 {{ $isKeuangan ? 'font-semibold' : '' }}"
-                      style="{{ $isKeuangan ? 'color: #16a34a;' : 'color: #6b7280;' }}">Keuangan</span>
-            </a>
-        </div>
-    </nav>
+    <x-bottom-nav />
 
     {{-- SweetAlert2 CDN Library --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -772,6 +723,70 @@
                             title: 'agri-swal-toast-title'
                         }
                     });
+                },
+
+                alert: function(title, message, icon = 'info') {
+                    const isError = icon === 'error';
+                    const isSuccess = icon === 'success';
+                    return Swal.fire({
+                        title: title || (isError ? 'Terjadi Kesalahan' : (isSuccess ? 'Berhasil' : 'Pemberitahuan')),
+                        html: message,
+                        icon: icon,
+                        iconColor: isError ? '#E4574C' : (isSuccess ? '#2FB344' : '#059669'),
+                        confirmButtonText: 'Mengerti',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'agri-swal-popup',
+                            title: 'agri-swal-title',
+                            htmlContainer: 'agri-swal-html',
+                            confirmButton: isError ? 'agri-swal-btn-danger' : 'agri-swal-btn-primary',
+                            actions: 'agri-swal-actions'
+                        }
+                    });
+                },
+
+                alertSuccess: function(title, message) {
+                    return this.alert(title, message, 'success');
+                },
+
+                alertError: function(title, message) {
+                    return this.alert(title, message, 'error');
+                },
+
+                confirm: function(title, message, onConfirm, confirmText = 'Lanjutkan', isDanger = false) {
+                    return Swal.fire({
+                        title: title || 'Konfirmasi Tindakan',
+                        html: message,
+                        icon: isDanger ? 'warning' : 'question',
+                        iconColor: isDanger ? '#E4574C' : '#059669',
+                        showCancelButton: true,
+                        confirmButtonText: confirmText,
+                        cancelButtonText: 'Batal',
+                        reverseButtons: true,
+                        focusCancel: true,
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'agri-swal-popup',
+                            title: 'agri-swal-title',
+                            htmlContainer: 'agri-swal-html',
+                            confirmButton: isDanger ? 'agri-swal-btn-danger' : 'agri-swal-btn-primary',
+                            cancelButton: 'agri-swal-btn-cancel',
+                            actions: 'agri-swal-actions',
+                            icon: isDanger ? 'agri-swal-icon-warning' : 'agri-swal-icon-question'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed && typeof onConfirm === 'function') {
+                            onConfirm();
+                        }
+                        return result;
+                    });
+                }
+            };
+
+            // Global native alert override to guarantee consistent SweetAlert theme across all scripts
+            window.alert = function(message) {
+                if (window.AgriSwal && typeof window.AgriSwal.toastInfo === 'function') {
+                    window.AgriSwal.toastInfo(String(message));
                 }
             };
 
@@ -782,11 +797,86 @@
 
                 e.preventDefault();
                 const itemName = form.dataset.confirmDelete || 'data ini';
-                const title = form.dataset.confirmTitle || 'Hapus Data Obat?';
+                const title = form.dataset.confirmTitle || 'Hapus Data?';
 
-                window.AgriSwal.confirmDelete(title, itemName, function() {
-                    form.dataset.confirmed = 'true';
-                    form.submit();
+                window.AgriSwal.confirmDelete(title, itemName, async function() {
+                    const actionPath = (new URL(form.action, window.location.origin)).pathname;
+                    const isDetailPage = form.hasAttribute('data-detail-redirect') ||
+                        actionPath === window.location.pathname ||
+                        (window.location.pathname.startsWith(actionPath) && window.location.pathname.length > actionPath.length);
+
+                    if (isDetailPage) {
+                        form.dataset.confirmed = 'true';
+                        form.submit();
+                        return;
+                    }
+
+                    const csrfToken = form.querySelector('input[name="_token"]')?.value
+                        || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                        || '';
+
+                    const formData = new FormData(form);
+                    if (!formData.has('_method')) {
+                        const methodInput = form.querySelector('input[name="_method"]');
+                        if (methodInput) formData.append('_method', methodInput.value);
+                    }
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: formData
+                        });
+
+                        const result = await response.json().catch(() => null);
+
+                        if (response.ok && result && result.success !== false) {
+                            if (window.AgriSwal) {
+                                window.AgriSwal.toastSuccess(result.message || 'Data berhasil dihapus.');
+                            }
+
+                            const targetId = result.id || form.action.split('/').filter(Boolean).pop();
+                            const possibleElements = [
+                                document.getElementById(`medicine-card-${targetId}`),
+                                document.getElementById(`medicine-row-${targetId}`),
+                                document.getElementById(`crop-card-${targetId}`),
+                                document.getElementById(`harvested-crop-card-${targetId}`),
+                                document.getElementById(`activity-item-${targetId}`),
+                                form.closest('tr'),
+                                form.closest('.medicine-card'),
+                                form.closest('.crop-card'),
+                                form.closest('[data-item-card]')
+                            ];
+
+                            let removed = false;
+                            possibleElements.forEach(el => {
+                                if (el) {
+                                    el.style.transition = 'all 0.3s ease-out';
+                                    el.style.opacity = '0';
+                                    el.style.transform = 'scale(0.95)';
+                                    setTimeout(() => el.remove(), 300);
+                                    removed = true;
+                                }
+                            });
+
+                            if (!removed && result.redirect) {
+                                window.location.href = result.redirect;
+                            }
+                        } else if (response.redirected) {
+                            window.location.href = response.url;
+                        } else {
+                            form.dataset.confirmed = 'true';
+                            form.submit();
+                        }
+                    } catch (err) {
+                        console.warn('Network error during delete, fallback to form submit:', err);
+                        form.dataset.confirmed = 'true';
+                        form.submit();
+                    }
                 });
             });
         }

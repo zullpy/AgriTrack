@@ -162,21 +162,31 @@ class AgriOfflineStore {
         const medStore = tx.objectStore('medicines');
         const queueStore = tx.objectStore('sync_queue');
 
-        const localId = 'offline_' + Date.now();
+        const uuid = (typeof window.AgriFormHelper !== 'undefined' && window.AgriFormHelper.generateUUID)
+            ? window.AgriFormHelper.generateUUID()
+            : ('uuid_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+        const localId = uuid;
+
         const record = {
             ...data,
             id: null,
+            server_id: null,
+            uuid: uuid,
             client_id: localId,
             is_synced: false,
-            created_at: new Date().toISOString()
+            sync_status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         medStore.put(record);
         queueStore.add({
+            uuid: uuid,
             type: 'medicine',
             action: 'create',
             local_id: localId,
             data: data,
+            sync_status: 'pending',
             timestamp: Date.now()
         });
 
@@ -253,23 +263,33 @@ class AgriOfflineStore {
         const actStore = tx.objectStore('crop_activities');
         const queueStore = tx.objectStore('sync_queue');
 
-        const localId = 'offline_act_' + Date.now();
+        const uuid = (typeof window.AgriFormHelper !== 'undefined' && window.AgriFormHelper.generateUUID)
+            ? window.AgriFormHelper.generateUUID()
+            : ('uuid_act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+        const localId = uuid;
+
         const record = {
             ...data,
             id: null,
+            server_id: null,
+            uuid: uuid,
             crop_id: parseInt(cropId, 10),
             client_id: localId,
             is_synced: false,
-            created_at: new Date().toISOString()
+            sync_status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         actStore.put(record);
         queueStore.add({
+            uuid: uuid,
             type: 'crop_activity',
             action: 'create',
             local_id: localId,
             crop_id: parseInt(cropId, 10),
             data: data,
+            sync_status: 'pending',
             timestamp: Date.now()
         });
 
@@ -755,13 +775,18 @@ class AgriOfflineStore {
 
         await this._ensureOfflineCategoryHierarchy(catStore, queueStore, data.kategori, data.sub_kategori, data.tipe);
 
-        const localId = 'offline_trx_' + Date.now();
+        const uuid = (typeof window.AgriFormHelper !== 'undefined' && window.AgriFormHelper.generateUUID)
+            ? window.AgriFormHelper.generateUUID()
+            : ('uuid_trx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+        const localId = uuid;
         const nominal = parseInt((data.nominal || '0').toString().replace(/[^0-9]/g, ''), 10) || 0;
         const formatRupiah = (num) => 'Rp ' + Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
         const record = {
             id: localId,
             raw_id: null,
+            server_id: null,
+            uuid: uuid,
             client_id: localId,
             source: 'manual',
             tipe: data.tipe || 'pengeluaran',
@@ -780,15 +805,19 @@ class AgriOfflineStore {
             nota_url: data.foto_nota_base64 || data.foto_base64 || null,
             is_synced: false,
             is_offline: true,
-            created_at: new Date().toISOString()
+            sync_status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         trxStore.put(record);
         queueStore.add({
+            uuid: uuid,
             type: 'keuangan',
             action: 'create_transaction',
             local_id: localId,
             data: data,
+            sync_status: 'pending',
             timestamp: Date.now()
         });
 
@@ -989,7 +1018,10 @@ class AgriOfflineStore {
         const landStore = tx.objectStore('land_preparation_steps');
         const queueStore = tx.objectStore('sync_queue');
 
-        const localId = 'offline_land_' + Date.now();
+        const uuid = (typeof window.AgriFormHelper !== 'undefined' && window.AgriFormHelper.generateUUID)
+            ? window.AgriFormHelper.generateUUID()
+            : ('uuid_land_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+        const localId = uuid;
         const rawNomor = (data.nomor || '1').toString().trim();
         const numPart = parseInt(rawNomor.replace(/[^0-9]/g, ''), 10);
         const urutan = !isNaN(numPart) && numPart > 0 ? numPart : 999;
@@ -1003,6 +1035,8 @@ class AgriOfflineStore {
 
         const record = {
             id: localId,
+            server_id: null,
+            uuid: uuid,
             client_id: localId,
             nomor: rawNomor,
             urutan: urutan,
@@ -1014,15 +1048,20 @@ class AgriOfflineStore {
             foto: photoItems,
             foto_urls: photosBase64,
             foto_count: photosBase64.length,
-            is_synced: false
+            is_synced: false,
+            sync_status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         landStore.put(record);
         queueStore.add({
+            uuid: uuid,
             type: 'land_step',
             action: 'create',
             local_id: localId,
             data: data,
+            sync_status: 'pending',
             timestamp: Date.now()
         });
 
@@ -1281,6 +1320,77 @@ class AgriOfflineStore {
         });
     }
 
+    async putServerSeed(seed) {
+        if (!seed) return;
+        const tx = await this.getTransaction(['planting_seeds'], 'readwrite');
+        const seedStore = tx.objectStore('planting_seeds');
+        return new Promise((resolve) => {
+            const client_id = 'srv_' + seed.id;
+            seedStore.put({
+                id: seed.id,
+                client_id: client_id,
+                nama_bibit: seed.nama_bibit,
+                varietas: seed.varietas,
+                deskripsi: seed.deskripsi,
+                urutan: seed.urutan,
+                is_synced: true
+            });
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+        });
+    }
+
+    async putServerPlantingStep(step) {
+        if (!step) return;
+        const tx = await this.getTransaction(['planting_steps'], 'readwrite');
+        const stepStore = tx.objectStore('planting_steps');
+        return new Promise((resolve) => {
+            const client_id = 'srv_' + step.id;
+            stepStore.put({
+                ...step,
+                client_id: client_id,
+                planting_seed_id: step.planting_seed_id,
+                is_synced: true
+            });
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+        });
+    }
+
+    async removeServerSeed(seedId) {
+        const tx = await this.getTransaction(['planting_seeds', 'planting_steps'], 'readwrite');
+        const seedStore = tx.objectStore('planting_seeds');
+        const stepStore = tx.objectStore('planting_steps');
+        return new Promise((resolve) => {
+            seedStore.delete('srv_' + seedId);
+            seedStore.delete(seedId);
+            const req = stepStore.openCursor();
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    if (String(cursor.value.planting_seed_id) === String(seedId)) {
+                        cursor.delete();
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(true);
+                }
+            };
+            req.onerror = () => resolve(false);
+        });
+    }
+
+    async removeServerPlantingStep(stepId) {
+        const tx = await this.getTransaction(['planting_steps'], 'readwrite');
+        const stepStore = tx.objectStore('planting_steps');
+        return new Promise((resolve) => {
+            stepStore.delete('srv_' + stepId);
+            stepStore.delete(stepId);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+        });
+    }
+
     async getAllPlantingSeedsWithSteps() {
         const tx = await this.getTransaction(['planting_seeds', 'planting_steps'], 'readonly');
         const seedStore = tx.objectStore('planting_seeds');
@@ -1344,24 +1454,34 @@ class AgriOfflineStore {
         const seedStore = tx.objectStore('planting_seeds');
         const queueStore = tx.objectStore('sync_queue');
 
-        const localId = 'offline_seed_' + Date.now();
+        const uuid = (typeof window.AgriFormHelper !== 'undefined' && window.AgriFormHelper.generateUUID)
+            ? window.AgriFormHelper.generateUUID()
+            : ('uuid_seed_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+        const localId = uuid;
         const record = {
             id: localId,
+            server_id: null,
+            uuid: uuid,
             client_id: localId,
             nama_bibit: data.nama_bibit || 'Bibit Baru',
             varietas: data.varietas || '',
             deskripsi: data.deskripsi || '',
             urutan: 999,
             steps: [],
-            is_synced: false
+            is_synced: false,
+            sync_status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         seedStore.put(record);
         queueStore.add({
+            uuid: uuid,
             type: 'planting_seed',
             action: 'create_seed',
             local_id: localId,
             data: data,
+            sync_status: 'pending',
             timestamp: Date.now()
         });
 
@@ -1448,7 +1568,10 @@ class AgriOfflineStore {
         const stepStore = tx.objectStore('planting_steps');
         const queueStore = tx.objectStore('sync_queue');
 
-        const localId = 'offline_pstep_' + Date.now();
+        const uuid = (typeof window.AgriFormHelper !== 'undefined' && window.AgriFormHelper.generateUUID)
+            ? window.AgriFormHelper.generateUUID()
+            : ('uuid_pstep_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+        const localId = uuid;
         const rawNomor = (data.nomor || '1').toString().trim();
         const numPart = parseInt(rawNomor.replace(/[^0-9]/g, ''), 10);
         const urutan = !isNaN(numPart) && numPart > 0 ? numPart : 999;
@@ -1462,6 +1585,8 @@ class AgriOfflineStore {
 
         const record = {
             id: localId,
+            server_id: null,
+            uuid: uuid,
             client_id: localId,
             planting_seed_id: seedId,
             nomor: rawNomor,
@@ -1473,15 +1598,20 @@ class AgriOfflineStore {
             foto: photoItems,
             foto_urls: photosBase64,
             foto_count: photosBase64.length,
-            is_synced: false
+            is_synced: false,
+            sync_status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         stepStore.put(record);
         queueStore.add({
+            uuid: uuid,
             type: 'planting_step',
             action: 'create_step',
             local_id: localId,
             data: { planting_seed_id: seedId, ...data },
+            sync_status: 'pending',
             timestamp: Date.now()
         });
 
